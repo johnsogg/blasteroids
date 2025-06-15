@@ -48,11 +48,13 @@ All core features have been implemented and tested. The game is feature-complete
 ### 🎨 Visual & Audio Polish
 - [x] Add particle effects for explosions
 - [x] Improve UI styling and layout
+- [x] Add fuel management system with visual gauge
 - [ ] Implement ship trails/afterimage effect
 
 ### 🎮 Gameplay Features
 
 - [x] Add local high score storage
+- [x] Add fuel management system with strategic resource limits
 - [ ] Add extra life bonus at certain score thresholds
 - [ ] Implement UFO enemy ships (original Asteroids feature)
 - [ ] Add power-ups or weapon variants
@@ -73,6 +75,7 @@ All core features have been implemented and tested. The game is feature-complete
 **Audio:** ✅ Complete sound effects system with 7 synthesized sounds  
 **UI/UX:** ✅ Retro scoreboard with persistent high scores and ship life icons  
 **Visual:** ✅ Particle effects and authentic vector graphics  
+**Gameplay:** ✅ Strategic fuel management with strafing capabilities  
 **Quality:** ✅ Thoroughly tested with comprehensive feature checklist
 
-The game successfully recreates the authentic 1979 Asteroids experience with modern TypeScript, retro UI styling, and web technologies!
+The game successfully recreates the authentic 1979 Asteroids experience with modern TypeScript, enhanced with strategic fuel management, strafing controls, and retro UI styling!

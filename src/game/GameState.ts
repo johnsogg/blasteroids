@@ -7,6 +7,7 @@ export class GameState {
     private _level: number = 1;
     private _gameOver: boolean = false;
     private _highScore: number = 0;
+    private _fuel: number = 100;
     private readonly HIGH_SCORE_KEY = 'blasteroids-highscore';
 
     get score(): number {
@@ -27,6 +28,14 @@ export class GameState {
 
     get highScore(): number {
         return this._highScore;
+    }
+
+    get fuel(): number {
+        return this._fuel;
+    }
+
+    get fuelPercentage(): number {
+        return this._fuel;
     }
 
     get scoreStatus(): 'normal' | 'near-high' | 'new-high' {
@@ -58,6 +67,21 @@ export class GameState {
 
     nextLevel(): void {
         this._level++;
+        this.refillFuel(); // Refill fuel on level completion
+        this.updateUI();
+    }
+
+    consumeFuel(amount: number): boolean {
+        if (this._fuel >= amount) {
+            this._fuel = Math.max(0, this._fuel - amount);
+            this.updateUI();
+            return true;
+        }
+        return false;
+    }
+
+    refillFuel(): void {
+        this._fuel = 100;
         this.updateUI();
     }
 
@@ -66,6 +90,7 @@ export class GameState {
         this._lives = 3;
         this._level = 1;
         this._gameOver = false;
+        this._fuel = 100;
         this.loadHighScore(); // Preserve high score across resets
         this.updateUI();
     }

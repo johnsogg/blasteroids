@@ -390,36 +390,51 @@ export class Game {
             ship.rotation += rotationSpeed * deltaTime;
         }
 
-        // Main thrust
+        // Main thrust (2x fuel consumption)
         ship.thrusting = this.input.thrust;
         if (this.input.thrust) {
-            const thrustVector = Vector2.fromAngle(ship.rotation, thrustPower * deltaTime);
-            ship.velocity = ship.velocity.add(thrustVector);
-            
-            // Play thrust sound periodically while thrusting
-            if (currentTime - this.lastThrustTime > 200) { // Every 200ms
-                this.audio.playThrust().catch(() => {
-                    // Ignore audio errors
-                });
-                this.lastThrustTime = currentTime;
+            const fuelNeeded = 2 * deltaTime; // 2 units per second
+            if (this.gameState.consumeFuel(fuelNeeded)) {
+                const thrustVector = Vector2.fromAngle(ship.rotation, thrustPower * deltaTime);
+                ship.velocity = ship.velocity.add(thrustVector);
+                
+                // Play thrust sound periodically while thrusting
+                if (currentTime - this.lastThrustTime > 200) { // Every 200ms
+                    this.audio.playThrust().catch(() => {
+                        // Ignore audio errors
+                    });
+                    this.lastThrustTime = currentTime;
+                }
+            } else {
+                ship.thrusting = false; // Can't thrust without fuel
             }
         }
 
-        // Strafe thrusters (50% power)
+        // Strafe thrusters (50% power, 1x fuel consumption each)
         const strafePower = thrustPower * 0.5;
         
         ship.strafingLeft = this.input.strafeLeft;
         if (this.input.strafeLeft) {
-            // Port thruster - thrust perpendicular to ship (90 degrees left)
-            const strafeVector = Vector2.fromAngle(ship.rotation - Math.PI / 2, strafePower * deltaTime);
-            ship.velocity = ship.velocity.add(strafeVector);
+            const fuelNeeded = 1 * deltaTime; // 1 unit per second
+            if (this.gameState.consumeFuel(fuelNeeded)) {
+                // Port thruster - thrust perpendicular to ship (90 degrees left)
+                const strafeVector = Vector2.fromAngle(ship.rotation - Math.PI / 2, strafePower * deltaTime);
+                ship.velocity = ship.velocity.add(strafeVector);
+            } else {
+                ship.strafingLeft = false; // Can't strafe without fuel
+            }
         }
         
         ship.strafingRight = this.input.strafeRight;
         if (this.input.strafeRight) {
-            // Starboard thruster - thrust perpendicular to ship (90 degrees right)
-            const strafeVector = Vector2.fromAngle(ship.rotation + Math.PI / 2, strafePower * deltaTime);
-            ship.velocity = ship.velocity.add(strafeVector);
+            const fuelNeeded = 1 * deltaTime; // 1 unit per second
+            if (this.gameState.consumeFuel(fuelNeeded)) {
+                // Starboard thruster - thrust perpendicular to ship (90 degrees right)
+                const strafeVector = Vector2.fromAngle(ship.rotation + Math.PI / 2, strafePower * deltaTime);
+                ship.velocity = ship.velocity.add(strafeVector);
+            } else {
+                ship.strafingRight = false; // Can't strafe without fuel
+            }
         }
 
         // Apply friction
@@ -519,6 +534,53 @@ export class Game {
         });
     }
 
+    private getFuelColor(percentage: number): string {
+        if (percentage < 20) {
+            return '#ff0000'; // Red
+        }
+        
+        // Smooth transition from yellow to green (20% to 100%)
+        const normalizedPercentage = (percentage - 20) / 80; // 0 to 1
+        const red = Math.round(255 * (1 - normalizedPercentage)); // 255 to 0
+        const green = 255; // Constant
+        const blue = 0; // Constant
+        
+        return `rgb(${red}, ${green}, ${blue})`;
+    }
+
+    private renderFuelGauge(): void {
+        const gaugeWidth = 200;
+        const gaugeHeight = 20;
+        const gaugeX = (this.canvas.width - gaugeWidth) / 2;
+        const gaugeY = 20;
+        const cornerRadius = 4;
+        
+        this.ctx.save();
+        
+        // Set 40% opacity for subtle appearance
+        this.ctx.globalAlpha = 0.4;
+        
+        // Draw gauge outline with rounded corners (medium gray)
+        this.ctx.strokeStyle = '#888888';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.roundRect(gaugeX, gaugeY, gaugeWidth, gaugeHeight, cornerRadius);
+        this.ctx.stroke();
+        
+        // Draw fuel fill with rounded corners
+        const fuelPercentage = this.gameState.fuelPercentage;
+        const fillWidth = (gaugeWidth - 4) * (fuelPercentage / 100); // -4 for border
+        
+        if (fillWidth > 0) {
+            this.ctx.fillStyle = this.getFuelColor(fuelPercentage);
+            this.ctx.beginPath();
+            this.ctx.roundRect(gaugeX + 2, gaugeY + 2, fillWidth, gaugeHeight - 4, cornerRadius - 1);
+            this.ctx.fill();
+        }
+        
+        this.ctx.restore();
+    }
+
     private render(): void {
         // Clear canvas
         this.ctx.fillStyle = '#000000';
@@ -531,6 +593,9 @@ export class Game {
 
         // Draw particles
         this.particles.render(this.ctx);
+
+        // Draw fuel gauge
+        this.renderFuelGauge();
 
         // Draw game over screen if needed
         if (this.gameState.gameOver) {

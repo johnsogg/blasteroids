@@ -44,9 +44,16 @@ src/
 ## Game Mechanics
 
 ### Controls
-- Arrow Keys/WASD: Ship rotation and main thrust
-- Q/E: Port/starboard strafing thrusters (50% power)
+- Arrow Keys/WASD: Ship rotation and main thrust (2 fuel/sec)
+- Q/E: Port/starboard strafing thrusters (50% power, 1 fuel/sec each)
 - Spacebar: Fire bullets (150ms rate limit)
+
+### Fuel System
+- Fuel capacity: 100 units displayed in top-center gauge
+- Main thruster consumes 2 fuel per second
+- Strafe thrusters consume 1 fuel per second each
+- Fuel refills to 100% upon level completion
+- Ship cannot move without sufficient fuel
 
 ### Physics
 - Ships have momentum and inertia like classic Asteroids
