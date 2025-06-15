@@ -1,7 +1,7 @@
 import { Vector2 } from '~/utils/Vector2';
 
 export class Shapes {
-    static drawShip(ctx: CanvasRenderingContext2D, position: Vector2, rotation: number, color: string, invulnerable?: boolean, invulnerableTime?: number, showThrust?: boolean, scale: number = 1.0): void {
+    static drawShip(ctx: CanvasRenderingContext2D, position: Vector2, rotation: number, color: string, invulnerable?: boolean, invulnerableTime?: number, showThrust?: boolean, scale: number = 1.0, strafingLeft?: boolean, strafingRight?: boolean): void {
         // Skip drawing if invulnerable and blinking (blink every 0.2 seconds)
         if (invulnerable && invulnerableTime && Math.floor(invulnerableTime * 5) % 2 === 0) {
             return;
@@ -25,17 +25,49 @@ export class Shapes {
         
         ctx.stroke();
         
-        // Draw thrust flames if thrusting
+        // Draw main thrust flames if thrusting
         if (showThrust) {
             ctx.strokeStyle = '#ff6600'; // Orange flames
             ctx.lineWidth = 2;
             ctx.beginPath();
             
-            // Thrust flames - random length for flicker effect
+            // Main thrust flames - random length for flicker effect
             const flameLength = 8 + Math.random() * 6;
             ctx.moveTo(-8, -3);
             ctx.lineTo(-8 - flameLength, 0);
             ctx.lineTo(-8, 3);
+            
+            ctx.stroke();
+        }
+
+        // Draw port (left) strafe thruster flames
+        if (strafingLeft) {
+            ctx.strokeStyle = '#ff6600'; // Orange flames
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            
+            // Port thruster flames - smaller than main thruster
+            const strafeFlameLength = 4 + Math.random() * 3;
+            ctx.moveTo(-3, -8);
+            ctx.lineTo(-3 - strafeFlameLength, -8 - strafeFlameLength);
+            ctx.moveTo(-3, -8);
+            ctx.lineTo(-3, -8 - strafeFlameLength * 0.8);
+            
+            ctx.stroke();
+        }
+
+        // Draw starboard (right) strafe thruster flames
+        if (strafingRight) {
+            ctx.strokeStyle = '#ff6600'; // Orange flames
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            
+            // Starboard thruster flames - smaller than main thruster
+            const strafeFlameLength = 4 + Math.random() * 3;
+            ctx.moveTo(-3, 8);
+            ctx.lineTo(-3 - strafeFlameLength, 8 + strafeFlameLength);
+            ctx.moveTo(-3, 8);
+            ctx.lineTo(-3, 8 + strafeFlameLength * 0.8);
             
             ctx.stroke();
         }

@@ -44,7 +44,8 @@ src/
 ## Game Mechanics
 
 ### Controls
-- Arrow Keys/WASD: Ship rotation and thrust
+- Arrow Keys/WASD: Ship rotation and main thrust
+- Q/E: Port/starboard strafing thrusters (50% power)
 - Spacebar: Fire bullets (150ms rate limit)
 
 ### Physics

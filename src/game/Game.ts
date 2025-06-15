@@ -18,6 +18,8 @@ interface GameObject {
     invulnerable?: boolean; // For ship invincibility period
     invulnerableTime?: number; // Time remaining invulnerable
     thrusting?: boolean; // For ship thrust visual effect
+    strafingLeft?: boolean; // For port thruster visual effect
+    strafingRight?: boolean; // For starboard thruster visual effect
 }
 
 export class Game {
@@ -388,7 +390,7 @@ export class Game {
             ship.rotation += rotationSpeed * deltaTime;
         }
 
-        // Thrust
+        // Main thrust
         ship.thrusting = this.input.thrust;
         if (this.input.thrust) {
             const thrustVector = Vector2.fromAngle(ship.rotation, thrustPower * deltaTime);
@@ -401,6 +403,23 @@ export class Game {
                 });
                 this.lastThrustTime = currentTime;
             }
+        }
+
+        // Strafe thrusters (50% power)
+        const strafePower = thrustPower * 0.5;
+        
+        ship.strafingLeft = this.input.strafeLeft;
+        if (this.input.strafeLeft) {
+            // Port thruster - thrust perpendicular to ship (90 degrees left)
+            const strafeVector = Vector2.fromAngle(ship.rotation - Math.PI / 2, strafePower * deltaTime);
+            ship.velocity = ship.velocity.add(strafeVector);
+        }
+        
+        ship.strafingRight = this.input.strafeRight;
+        if (this.input.strafeRight) {
+            // Starboard thruster - thrust perpendicular to ship (90 degrees right)
+            const strafeVector = Vector2.fromAngle(ship.rotation + Math.PI / 2, strafePower * deltaTime);
+            ship.velocity = ship.velocity.add(strafeVector);
         }
 
         // Apply friction
@@ -491,7 +510,7 @@ export class Game {
         // Draw object at all calculated positions
         positions.forEach(pos => {
             if (obj.type === 'ship') {
-                Shapes.drawShip(this.ctx, pos, obj.rotation, obj.color, obj.invulnerable, obj.invulnerableTime, obj.thrusting);
+                Shapes.drawShip(this.ctx, pos, obj.rotation, obj.color, obj.invulnerable, obj.invulnerableTime, obj.thrusting, 1.0, obj.strafingLeft, obj.strafingRight);
             } else if (obj.type === 'asteroid') {
                 Shapes.drawAsteroid(this.ctx, pos, obj.rotation, obj.size, obj.color);
             } else if (obj.type === 'bullet') {
