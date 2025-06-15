@@ -3,6 +3,8 @@ import { Collision } from '~/physics/Collision';
 import { Shapes } from '~/render/Shapes';
 import { Vector2 } from '~/utils/Vector2';
 
+import { GameState } from './GameState';
+
 interface GameObject {
     position: Vector2;
     velocity: Vector2;
@@ -18,6 +20,7 @@ export class Game {
     private ctx: CanvasRenderingContext2D;
     private gameObjects: GameObject[] = [];
     private input: InputManager;
+    private gameState: GameState;
     private lastTime = 0;
     private running = false;
     private lastShotTime = 0;
@@ -26,6 +29,7 @@ export class Game {
         this.canvas = canvas;
         this.ctx = ctx;
         this.input = new InputManager();
+        this.gameState = new GameState();
         this.init();
     }
 
@@ -77,6 +81,17 @@ export class Game {
 
     private update(deltaTime: number): void {
         const currentTime = performance.now();
+        
+        // Check for restart if game is over
+        if (this.gameState.gameOver && this.input.restart) {
+            this.restart();
+            return;
+        }
+        
+        // Skip updates if game is over
+        if (this.gameState.gameOver) {
+            return;
+        }
         
         // Update objects
         this.gameObjects.forEach(obj => {
@@ -140,25 +155,65 @@ export class Game {
         if (ship) {
             for (const asteroid of asteroids) {
                 if (Collision.checkCircleCollision(ship, asteroid)) {
-                    // Simple respawn for now - just move ship to center
-                    ship.position = new Vector2(400, 300);
-                    ship.velocity = Vector2.zero();
-                    ship.rotation = 0;
-                    
-                    // Visual feedback - make ship blink by changing color briefly
-                    const originalColor = ship.color;
-                    ship.color = '#ff0000';
-                    setTimeout(() => {
-                        ship.color = originalColor;
-                    }, 200);
-                    
+                    this.destroyShip(ship);
                     break; // Only one collision per frame
                 }
             }
         }
     }
 
+    private destroyShip(ship: GameObject): void {
+        // Lose a life
+        this.gameState.loseLife();
+        
+        // Reset ship position and velocity
+        ship.position = new Vector2(400, 300);
+        ship.velocity = Vector2.zero();
+        ship.rotation = 0;
+        
+        // Visual feedback - make ship blink red briefly
+        const originalColor = ship.color;
+        ship.color = '#ff0000';
+        setTimeout(() => {
+            ship.color = originalColor;
+        }, 500);
+        
+        // If game over, stop the game
+        if (this.gameState.gameOver) {
+            this.showGameOver();
+        }
+    }
+
+    private showGameOver(): void {
+        // Add game over text to the canvas
+        this.ctx.save();
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = '48px Courier New';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('GAME OVER', this.canvas.width / 2, this.canvas.height / 2);
+        
+        this.ctx.font = '24px Courier New';
+        this.ctx.fillText('Press R to Restart', this.canvas.width / 2, this.canvas.height / 2 + 60);
+        this.ctx.restore();
+    }
+
+    private restart(): void {
+        // Reset game state
+        this.gameState.reset();
+        
+        // Clear all objects and reinitialize
+        this.gameObjects = [];
+        this.init();
+        
+        // Reset timing
+        this.lastShotTime = 0;
+    }
+
     private destroyAsteroid(asteroid: GameObject): void {
+        // Add score based on asteroid size
+        const points = GameState.getAsteroidScore(asteroid.size.x);
+        this.gameState.addScore(points);
+
         // Remove the asteroid
         const index = this.gameObjects.indexOf(asteroid);
         if (index > -1) {
@@ -253,5 +308,10 @@ export class Game {
                 Shapes.drawBullet(this.ctx, obj.position, obj.color);
             }
         });
+
+        // Draw game over screen if needed
+        if (this.gameState.gameOver) {
+            this.showGameOver();
+        }
     }
 }

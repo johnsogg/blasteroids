@@ -24,4 +24,5 @@ export class InputManager {
     get left(): boolean { return this.isKeyPressed('ArrowLeft') || this.isKeyPressed('KeyA'); }
     get right(): boolean { return this.isKeyPressed('ArrowRight') || this.isKeyPressed('KeyD'); }
     get shoot(): boolean { return this.isKeyPressed('Space'); }
+    get restart(): boolean { return this.isKeyPressed('KeyR'); }
 }
