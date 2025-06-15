@@ -1,4 +1,6 @@
 import { InputManager } from '~/input/InputManager';
+import { Collision } from '~/physics/Collision';
+import { Shapes } from '~/render/Shapes';
 import { Vector2 } from '~/utils/Vector2';
 
 interface GameObject {
@@ -7,7 +9,8 @@ interface GameObject {
     size: Vector2;
     rotation: number;
     color: string;
-    type: 'ship' | 'asteroid';
+    type: 'ship' | 'asteroid' | 'bullet';
+    age?: number; // For bullets with lifespan
 }
 
 export class Game {
@@ -17,6 +20,7 @@ export class Game {
     private input: InputManager;
     private lastTime = 0;
     private running = false;
+    private lastShotTime = 0;
 
     constructor(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
         this.canvas = canvas;
@@ -72,26 +76,111 @@ export class Game {
     };
 
     private update(deltaTime: number): void {
+        const currentTime = performance.now();
+        
+        // Update objects
         this.gameObjects.forEach(obj => {
             if (obj.type === 'ship') {
-                this.updateShip(obj, deltaTime);
+                this.updateShip(obj, deltaTime, currentTime);
             } else if (obj.type === 'asteroid') {
                 // Rotate asteroids
                 obj.rotation += deltaTime;
+            } else if (obj.type === 'bullet') {
+                // Age bullets
+                obj.age = (obj.age || 0) + deltaTime;
             }
 
             // Update position
             obj.position = obj.position.add(obj.velocity.multiply(deltaTime));
 
-            // Wrap around screen edges
-            if (obj.position.x < 0) obj.position.x = this.canvas.width;
-            if (obj.position.x > this.canvas.width) obj.position.x = 0;
-            if (obj.position.y < 0) obj.position.y = this.canvas.height;
-            if (obj.position.y > this.canvas.height) obj.position.y = 0;
+            // Wrap around screen edges (except bullets)
+            if (obj.type !== 'bullet') {
+                if (obj.position.x < 0) obj.position.x = this.canvas.width;
+                if (obj.position.x > this.canvas.width) obj.position.x = 0;
+                if (obj.position.y < 0) obj.position.y = this.canvas.height;
+                if (obj.position.y > this.canvas.height) obj.position.y = 0;
+            }
+        });
+
+        // Check collisions
+        this.checkCollisions();
+
+        // Remove old bullets
+        this.gameObjects = this.gameObjects.filter(obj => {
+            if (obj.type === 'bullet') {
+                const maxAge = 3; // seconds
+                const outOfBounds = obj.position.x < -50 || obj.position.x > this.canvas.width + 50 ||
+                                  obj.position.y < -50 || obj.position.y > this.canvas.height + 50;
+                return (obj.age || 0) < maxAge && !outOfBounds;
+            }
+            return true;
         });
     }
 
-    private updateShip(ship: GameObject, deltaTime: number): void {
+    private checkCollisions(): void {
+        const bullets = this.gameObjects.filter(obj => obj.type === 'bullet');
+        const asteroids = this.gameObjects.filter(obj => obj.type === 'asteroid');
+        const ship = this.gameObjects.find(obj => obj.type === 'ship');
+        
+        // Check bullet-asteroid collisions
+        for (const bullet of bullets) {
+            for (const asteroid of asteroids) {
+                if (Collision.checkCircleCollision(bullet, asteroid)) {
+                    // Mark for removal by setting age very high
+                    bullet.age = 999;
+                    
+                    // Create smaller asteroids if this one is large enough
+                    this.destroyAsteroid(asteroid);
+                    break; // Bullet can only hit one asteroid
+                }
+            }
+        }
+
+        // Check ship-asteroid collisions
+        if (ship) {
+            for (const asteroid of asteroids) {
+                if (Collision.checkCircleCollision(ship, asteroid)) {
+                    // Simple respawn for now - just move ship to center
+                    ship.position = new Vector2(400, 300);
+                    ship.velocity = Vector2.zero();
+                    ship.rotation = 0;
+                    
+                    // Visual feedback - make ship blink by changing color briefly
+                    const originalColor = ship.color;
+                    ship.color = '#ff0000';
+                    setTimeout(() => {
+                        ship.color = originalColor;
+                    }, 200);
+                    
+                    break; // Only one collision per frame
+                }
+            }
+        }
+    }
+
+    private destroyAsteroid(asteroid: GameObject): void {
+        // Remove the asteroid
+        const index = this.gameObjects.indexOf(asteroid);
+        if (index > -1) {
+            this.gameObjects.splice(index, 1);
+        }
+
+        // Create smaller asteroids if it's large enough
+        if (asteroid.size.x > 15) {
+            for (let i = 0; i < 2; i++) {
+                this.gameObjects.push({
+                    position: asteroid.position.add(new Vector2((Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20)),
+                    velocity: new Vector2((Math.random() - 0.5) * 150, (Math.random() - 0.5) * 150),
+                    size: new Vector2(asteroid.size.x * 0.6, asteroid.size.y * 0.6),
+                    rotation: Math.random() * Math.PI * 2,
+                    color: '#ffffff',
+                    type: 'asteroid'
+                });
+            }
+        }
+    }
+
+    private updateShip(ship: GameObject, deltaTime: number, currentTime: number): void {
         const rotationSpeed = 5; // radians per second
         const thrustPower = 300; // pixels per second squared
         const maxSpeed = 400; // pixels per second
@@ -119,6 +208,34 @@ export class Game {
         if (speed > maxSpeed) {
             ship.velocity = ship.velocity.multiply(maxSpeed / speed);
         }
+
+        // Shooting
+        if (this.input.shoot && currentTime - this.lastShotTime > 150) { // 150ms between shots
+            this.shoot(ship);
+            this.lastShotTime = currentTime;
+        }
+    }
+
+    private shoot(ship: GameObject): void {
+        const bulletSpeed = 500; // pixels per second
+        const bulletVelocity = Vector2.fromAngle(ship.rotation, bulletSpeed);
+        
+        // Add ship's velocity to bullet for realistic physics
+        const finalVelocity = ship.velocity.add(bulletVelocity);
+        
+        // Position bullet slightly in front of ship
+        const bulletOffset = Vector2.fromAngle(ship.rotation, ship.size.x);
+        const bulletPosition = ship.position.add(bulletOffset);
+
+        this.gameObjects.push({
+            position: bulletPosition,
+            velocity: finalVelocity,
+            size: new Vector2(3, 3),
+            rotation: 0,
+            color: '#ffff00',
+            type: 'bullet',
+            age: 0
+        });
     }
 
     private render(): void {
@@ -126,14 +243,15 @@ export class Game {
         this.ctx.fillStyle = '#000000';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Draw objects
+        // Draw objects with vector graphics
         this.gameObjects.forEach(obj => {
-            this.ctx.save();
-            this.ctx.translate(obj.position.x, obj.position.y);
-            this.ctx.rotate(obj.rotation);
-            this.ctx.fillStyle = obj.color;
-            this.ctx.fillRect(-obj.size.x / 2, -obj.size.y / 2, obj.size.x, obj.size.y);
-            this.ctx.restore();
+            if (obj.type === 'ship') {
+                Shapes.drawShip(this.ctx, obj.position, obj.rotation, obj.color);
+            } else if (obj.type === 'asteroid') {
+                Shapes.drawAsteroid(this.ctx, obj.position, obj.rotation, obj.size, obj.color);
+            } else if (obj.type === 'bullet') {
+                Shapes.drawBullet(this.ctx, obj.position, obj.color);
+            }
         });
     }
 }
