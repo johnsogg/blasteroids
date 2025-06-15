@@ -1,5 +1,7 @@
 import './style.css';
 
+import { Game } from '~/game/Game';
+
 console.log('Blasteroids initializing...');
 
 const canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
@@ -10,4 +12,8 @@ if (!ctx) {
 }
 
 console.log('Canvas initialized:', canvas.width, 'x', canvas.height);
-console.log('Ready to build Blasteroids!');
+
+const game = new Game(canvas, ctx);
+game.start();
+
+console.log('Blasteroids started!');
