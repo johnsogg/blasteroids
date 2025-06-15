@@ -1,7 +1,7 @@
 import { Vector2 } from '~/utils/Vector2';
 
 export class Shapes {
-    static drawShip(ctx: CanvasRenderingContext2D, position: Vector2, rotation: number, color: string, invulnerable?: boolean, invulnerableTime?: number, showThrust?: boolean): void {
+    static drawShip(ctx: CanvasRenderingContext2D, position: Vector2, rotation: number, color: string, invulnerable?: boolean, invulnerableTime?: number, showThrust?: boolean, scale: number = 1.0): void {
         // Skip drawing if invulnerable and blinking (blink every 0.2 seconds)
         if (invulnerable && invulnerableTime && Math.floor(invulnerableTime * 5) % 2 === 0) {
             return;
@@ -10,6 +10,7 @@ export class Shapes {
         ctx.save();
         ctx.translate(position.x, position.y);
         ctx.rotate(rotation);
+        ctx.scale(scale, scale);
         
         ctx.strokeStyle = invulnerable ? '#ffff00' : color; // Yellow when invulnerable
         ctx.lineWidth = 2;

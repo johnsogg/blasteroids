@@ -68,3 +68,7 @@ src/
 ## Current Status
 
 See [TODO.md](./TODO.md) for current development tasks and roadmap.
+
+## Memories
+
+- Keep the TODO.md file up to date with the current status

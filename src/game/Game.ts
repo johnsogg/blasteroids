@@ -1,5 +1,7 @@
+import { AudioManager } from '~/audio/AudioManager';
 import { InputManager } from '~/input/InputManager';
 import { Collision } from '~/physics/Collision';
+import { ParticleSystem } from '~/render/ParticleSystem';
 import { Shapes } from '~/render/Shapes';
 import { Vector2 } from '~/utils/Vector2';
 
@@ -24,15 +26,22 @@ export class Game {
     private gameObjects: GameObject[] = [];
     private input: InputManager;
     private gameState: GameState;
+    private audio: AudioManager;
+    private particles: ParticleSystem;
     private lastTime = 0;
     private running = false;
     private lastShotTime = 0;
+    private lastThrustTime = 0;
+    private gameOverSoundPlayed = false;
 
     constructor(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
         this.canvas = canvas;
         this.ctx = ctx;
         this.input = new InputManager();
         this.gameState = new GameState();
+        this.audio = new AudioManager();
+        this.particles = new ParticleSystem();
+        this.gameState.init(); // Initialize high score
         this.init();
     }
 
@@ -55,6 +64,12 @@ export class Game {
 
     start(): void {
         this.running = true;
+        
+        // Play game start fanfare
+        this.audio.playGameStart().catch(() => {
+            // Ignore audio errors
+        });
+        
         this.gameLoop();
     }
 
@@ -122,6 +137,9 @@ export class Game {
             }
         });
 
+        // Update particles
+        this.particles.update(deltaTime);
+
         // Check collisions
         this.checkCollisions();
 
@@ -174,33 +192,60 @@ export class Game {
     }
 
     private destroyShip(ship: GameObject): void {
+        // Create ship explosion particles
+        this.particles.createShipExplosion(ship.position);
+
+        // Play ship destruction sound
+        this.audio.playShipHit().catch(() => {
+            // Ignore audio errors
+        });
+
         // Lose a life
         this.gameState.loseLife();
         
-        // Reset ship position and velocity
-        ship.position = new Vector2(400, 300);
-        ship.velocity = Vector2.zero();
-        ship.rotation = 0;
-        
-        // Make ship invulnerable for 3 seconds
-        ship.invulnerable = true;
-        ship.invulnerableTime = 3.0;
-        
-        // If game over, stop the game
+        // If game over, remove the ship from the game
         if (this.gameState.gameOver) {
+            const shipIndex = this.gameObjects.indexOf(ship);
+            if (shipIndex > -1) {
+                this.gameObjects.splice(shipIndex, 1);
+            }
             this.showGameOver();
+        } else {
+            // Reset ship position and velocity
+            ship.position = new Vector2(400, 300);
+            ship.velocity = Vector2.zero();
+            ship.rotation = 0;
+            
+            // Make ship invulnerable for 3 seconds
+            ship.invulnerable = true;
+            ship.invulnerableTime = 3.0;
+            
+            // Reset game over sound flag when not game over
+            this.gameOverSoundPlayed = false;
         }
     }
 
     private showGameOver(): void {
+        // Play sad trombone sound (only once)
+        if (!this.gameOverSoundPlayed) {
+            this.audio.playGameOver().catch(() => {
+                // Ignore audio errors
+            });
+            this.gameOverSoundPlayed = true;
+        }
+
         // Add game over text to the canvas
         this.ctx.save();
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.font = '48px Courier New';
         this.ctx.textAlign = 'center';
+        
+        // Game Over text in red with Orbitron font
+        this.ctx.fillStyle = '#ff0000';
+        this.ctx.font = '900 48px Orbitron, "Courier New", monospace';
         this.ctx.fillText('GAME OVER', this.canvas.width / 2, this.canvas.height / 2);
         
-        this.ctx.font = '24px Courier New';
+        // Restart text in light yellow with Orbitron font
+        this.ctx.fillStyle = '#ffff88';
+        this.ctx.font = '700 24px Orbitron, "Courier New", monospace';
         this.ctx.fillText('Press R to Restart', this.canvas.width / 2, this.canvas.height / 2 + 60);
         this.ctx.restore();
     }
@@ -213,8 +258,15 @@ export class Game {
         this.gameObjects = [];
         this.init();
         
-        // Reset timing
+        // Reset timing and flags
         this.lastShotTime = 0;
+        this.lastThrustTime = 0;
+        this.gameOverSoundPlayed = false;
+        
+        // Play game start fanfare
+        this.audio.playGameStart().catch(() => {
+            // Ignore audio errors
+        });
     }
 
     private nextLevel(): void {
@@ -278,6 +330,9 @@ export class Game {
     }
 
     private destroyAsteroid(asteroid: GameObject): void {
+        // Create asteroid explosion particles
+        this.particles.createAsteroidExplosion(asteroid.position, asteroid.size.x);
+
         // Add score based on asteroid size
         const points = GameState.getAsteroidScore(asteroid.size.x);
         this.gameState.addScore(points);
@@ -290,6 +345,11 @@ export class Game {
 
         // Create smaller asteroids if it's large enough to split
         if (asteroid.size.x > 20) {
+            // Play asteroid break sound (splitting into pieces)
+            this.audio.playAsteroidHit().catch(() => {
+                // Ignore audio errors
+            });
+
             // Create 2-3 smaller fragments
             const fragmentCount = 2 + Math.floor(Math.random() * 2);
             for (let i = 0; i < fragmentCount; i++) {
@@ -306,6 +366,11 @@ export class Game {
                     type: 'asteroid'
                 });
             }
+        } else {
+            // Play asteroid destruction sound (completely destroyed)
+            this.audio.playAsteroidDestroy().catch(() => {
+                // Ignore audio errors
+            });
         }
     }
 
@@ -328,6 +393,14 @@ export class Game {
         if (this.input.thrust) {
             const thrustVector = Vector2.fromAngle(ship.rotation, thrustPower * deltaTime);
             ship.velocity = ship.velocity.add(thrustVector);
+            
+            // Play thrust sound periodically while thrusting
+            if (currentTime - this.lastThrustTime > 200) { // Every 200ms
+                this.audio.playThrust().catch(() => {
+                    // Ignore audio errors
+                });
+                this.lastThrustTime = currentTime;
+            }
         }
 
         // Apply friction
@@ -365,6 +438,11 @@ export class Game {
             color: '#ffff00',
             type: 'bullet',
             age: 0
+        });
+
+        // Play shooting sound
+        this.audio.playShoot().catch(() => {
+            // Ignore audio errors (user hasn't interacted yet)
         });
     }
 
@@ -431,6 +509,9 @@ export class Game {
         this.gameObjects.forEach(obj => {
             this.drawObjectWithWrapAround(obj);
         });
+
+        // Draw particles
+        this.particles.render(this.ctx);
 
         // Draw game over screen if needed
         if (this.gameState.gameOver) {

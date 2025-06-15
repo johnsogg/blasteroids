@@ -31,3 +31,119 @@ body {
 #ui div {
     margin-bottom: 10px;
 }
+
+#livesCanvas {
+    background: transparent;
+}
+
+/* Retro scoreboard on the right */
+#scoreBoard {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    text-align: right;
+}
+
+#currentScore {
+    margin-bottom: 20px;
+}
+
+/* High score at bottom right */
+#highScoreDisplay {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    z-index: 10;
+}
+
+.high-score-text {
+    font-family: 'Orbitron', 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: #888;
+    letter-spacing: 1px;
+}
+
+/* Level display at bottom left */
+#levelDisplay {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 10;
+}
+
+.level-text {
+    font-family: 'Orbitron', 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: #888;
+    letter-spacing: 1px;
+}
+
+.score-label {
+    font-family: 'Orbitron', 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: #888;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+}
+
+.score-value {
+    font-family: 'Orbitron', 'Courier New', monospace;
+    font-size: 36px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: 3px;
+    line-height: 1;
+    text-shadow: 0 0 10px currentColor;
+    /* Retro digital display effect */
+    background: linear-gradient(180deg, transparent 45%, rgba(255,255,255,0.1) 50%, transparent 55%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+/* Retro zero styling with diagonal line */
+.score-value::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+}
+
+/* Custom styling for zeros with diagonal lines */
+.score-value {
+    position: relative;
+}
+
+/* Retro zero with diagonal line */
+.retro-zero {
+    position: relative;
+    display: inline-block;
+}
+
+.retro-zero::after {
+    content: '';
+    position: absolute;
+    top: 10%;
+    left: 20%;
+    width: 60%;
+    height: 80%;
+    border-left: 2px solid currentColor;
+    transform: rotate(25deg);
+    opacity: 0.8;
+}
+
+/* Animation for new high score */
+.score-value.new-high {
+    animation: pulse-green 1s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-green {
+    from {
+        text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00;
+    }
+    to {
+        text-shadow: 0 0 20px #00ff00, 0 0 30px #00ff00, 0 0 40px #00ff00;
+    }
+}
