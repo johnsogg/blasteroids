@@ -368,20 +368,68 @@ export class Game {
         });
     }
 
+    private drawObjectWithWrapAround(obj: GameObject): void {
+        // Get object radius for wrap-around detection
+        const radius = obj.type === 'bullet' ? 5 : Math.max(obj.size.x, obj.size.y) / 2;
+        
+        // Calculate all positions where object should be drawn
+        const positions: Vector2[] = [obj.position];
+        
+        // Check if object is near edges and add wrap-around positions
+        if (obj.position.x - radius < 0) {
+            // Near left edge, also draw on right side
+            positions.push(new Vector2(obj.position.x + this.canvas.width, obj.position.y));
+        }
+        if (obj.position.x + radius > this.canvas.width) {
+            // Near right edge, also draw on left side  
+            positions.push(new Vector2(obj.position.x - this.canvas.width, obj.position.y));
+        }
+        if (obj.position.y - radius < 0) {
+            // Near top edge, also draw on bottom
+            positions.push(new Vector2(obj.position.x, obj.position.y + this.canvas.height));
+        }
+        if (obj.position.y + radius > this.canvas.height) {
+            // Near bottom edge, also draw on top
+            positions.push(new Vector2(obj.position.x, obj.position.y - this.canvas.height));
+        }
+        
+        // Handle corner cases (object near both horizontal and vertical edges)
+        if (positions.length > 2) {
+            // Add diagonal wrap-around positions for corners
+            if (obj.position.x - radius < 0 && obj.position.y - radius < 0) {
+                positions.push(new Vector2(obj.position.x + this.canvas.width, obj.position.y + this.canvas.height));
+            }
+            if (obj.position.x + radius > this.canvas.width && obj.position.y - radius < 0) {
+                positions.push(new Vector2(obj.position.x - this.canvas.width, obj.position.y + this.canvas.height));
+            }
+            if (obj.position.x - radius < 0 && obj.position.y + radius > this.canvas.height) {
+                positions.push(new Vector2(obj.position.x + this.canvas.width, obj.position.y - this.canvas.height));
+            }
+            if (obj.position.x + radius > this.canvas.width && obj.position.y + radius > this.canvas.height) {
+                positions.push(new Vector2(obj.position.x - this.canvas.width, obj.position.y - this.canvas.height));
+            }
+        }
+        
+        // Draw object at all calculated positions
+        positions.forEach(pos => {
+            if (obj.type === 'ship') {
+                Shapes.drawShip(this.ctx, pos, obj.rotation, obj.color, obj.invulnerable, obj.invulnerableTime, obj.thrusting);
+            } else if (obj.type === 'asteroid') {
+                Shapes.drawAsteroid(this.ctx, pos, obj.rotation, obj.size, obj.color);
+            } else if (obj.type === 'bullet') {
+                Shapes.drawBullet(this.ctx, pos, obj.color);
+            }
+        });
+    }
+
     private render(): void {
         // Clear canvas
         this.ctx.fillStyle = '#000000';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Draw objects with vector graphics
+        // Draw objects with vector graphics and wrap-around
         this.gameObjects.forEach(obj => {
-            if (obj.type === 'ship') {
-                Shapes.drawShip(this.ctx, obj.position, obj.rotation, obj.color, obj.invulnerable, obj.invulnerableTime, obj.thrusting);
-            } else if (obj.type === 'asteroid') {
-                Shapes.drawAsteroid(this.ctx, obj.position, obj.rotation, obj.size, obj.color);
-            } else if (obj.type === 'bullet') {
-                Shapes.drawBullet(this.ctx, obj.position, obj.color);
-            }
+            this.drawObjectWithWrapAround(obj);
         });
 
         // Draw game over screen if needed
