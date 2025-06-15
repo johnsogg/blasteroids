@@ -1,12 +1,17 @@
 import { Vector2 } from '~/utils/Vector2';
 
 export class Shapes {
-    static drawShip(ctx: CanvasRenderingContext2D, position: Vector2, rotation: number, color: string): void {
+    static drawShip(ctx: CanvasRenderingContext2D, position: Vector2, rotation: number, color: string, invulnerable?: boolean, invulnerableTime?: number, showThrust?: boolean): void {
+        // Skip drawing if invulnerable and blinking (blink every 0.2 seconds)
+        if (invulnerable && invulnerableTime && Math.floor(invulnerableTime * 5) % 2 === 0) {
+            return;
+        }
+        
         ctx.save();
         ctx.translate(position.x, position.y);
         ctx.rotate(rotation);
         
-        ctx.strokeStyle = color;
+        ctx.strokeStyle = invulnerable ? '#ffff00' : color; // Yellow when invulnerable
         ctx.lineWidth = 2;
         ctx.beginPath();
         
@@ -18,6 +23,22 @@ export class Shapes {
         ctx.closePath();
         
         ctx.stroke();
+        
+        // Draw thrust flames if thrusting
+        if (showThrust) {
+            ctx.strokeStyle = '#ff6600'; // Orange flames
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            // Thrust flames - random length for flicker effect
+            const flameLength = 8 + Math.random() * 6;
+            ctx.moveTo(-8, -3);
+            ctx.lineTo(-8 - flameLength, 0);
+            ctx.lineTo(-8, 3);
+            
+            ctx.stroke();
+        }
+        
         ctx.restore();
     }
 

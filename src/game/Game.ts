@@ -13,6 +13,9 @@ interface GameObject {
     color: string;
     type: 'ship' | 'asteroid' | 'bullet';
     age?: number; // For bullets with lifespan
+    invulnerable?: boolean; // For ship invincibility period
+    invulnerableTime?: number; // Time remaining invulnerable
+    thrusting?: boolean; // For ship thrust visual effect
 }
 
 export class Game {
@@ -44,16 +47,9 @@ export class Game {
             type: 'ship'
         });
 
-        // Create some asteroid rectangles
-        for (let i = 0; i < 3; i++) {
-            this.gameObjects.push({
-                position: new Vector2(Math.random() * 800, Math.random() * 600),
-                velocity: new Vector2((Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100),
-                size: new Vector2(30, 30),
-                rotation: Math.random() * Math.PI * 2,
-                color: '#ffffff',
-                type: 'asteroid'
-            });
+        // Create initial asteroids with variety
+        for (let i = 0; i < 4; i++) {
+            this.createAsteroid();
         }
     }
 
@@ -97,6 +93,15 @@ export class Game {
         this.gameObjects.forEach(obj => {
             if (obj.type === 'ship') {
                 this.updateShip(obj, deltaTime, currentTime);
+                
+                // Update invulnerability
+                if (obj.invulnerable && obj.invulnerableTime) {
+                    obj.invulnerableTime -= deltaTime;
+                    if (obj.invulnerableTime <= 0) {
+                        obj.invulnerable = false;
+                        obj.invulnerableTime = 0;
+                    }
+                }
             } else if (obj.type === 'asteroid') {
                 // Rotate asteroids
                 obj.rotation += deltaTime;
@@ -130,6 +135,12 @@ export class Game {
             }
             return true;
         });
+
+        // Check if level is complete (no asteroids left)
+        const remainingAsteroids = this.gameObjects.filter(obj => obj.type === 'asteroid');
+        if (remainingAsteroids.length === 0) {
+            this.nextLevel();
+        }
     }
 
     private checkCollisions(): void {
@@ -151,8 +162,8 @@ export class Game {
             }
         }
 
-        // Check ship-asteroid collisions
-        if (ship) {
+        // Check ship-asteroid collisions (only if ship is not invulnerable)
+        if (ship && !ship.invulnerable) {
             for (const asteroid of asteroids) {
                 if (Collision.checkCircleCollision(ship, asteroid)) {
                     this.destroyShip(ship);
@@ -171,12 +182,9 @@ export class Game {
         ship.velocity = Vector2.zero();
         ship.rotation = 0;
         
-        // Visual feedback - make ship blink red briefly
-        const originalColor = ship.color;
-        ship.color = '#ff0000';
-        setTimeout(() => {
-            ship.color = originalColor;
-        }, 500);
+        // Make ship invulnerable for 3 seconds
+        ship.invulnerable = true;
+        ship.invulnerableTime = 3.0;
         
         // If game over, stop the game
         if (this.gameState.gameOver) {
@@ -209,6 +217,66 @@ export class Game {
         this.lastShotTime = 0;
     }
 
+    private nextLevel(): void {
+        // Advance to next level
+        this.gameState.nextLevel();
+        
+        // Spawn more asteroids based on level (3 + level number)
+        const asteroidCount = 3 + this.gameState.level;
+        
+        for (let i = 0; i < asteroidCount; i++) {
+            this.createAsteroid();
+        }
+    }
+
+    private createAsteroid(basePosition?: Vector2): void {
+        // Choose random size category
+        const sizeCategory = Math.random();
+        let size: number;
+        let speed: number;
+        
+        if (sizeCategory < 0.3) {
+            // Large asteroids (30-40px) - slow
+            size = 30 + Math.random() * 10;
+            speed = 20 + Math.random() * 40;
+        } else if (sizeCategory < 0.6) {
+            // Medium asteroids (20-30px) - medium speed
+            size = 20 + Math.random() * 10;
+            speed = 40 + Math.random() * 60;
+        } else {
+            // Small asteroids (10-20px) - fast
+            size = 10 + Math.random() * 10;
+            speed = 60 + Math.random() * 80;
+        }
+        
+        // Position - either random or near a base position (for splitting)
+        let x, y;
+        if (basePosition) {
+            // Spawn near the base position (for asteroid splitting)
+            x = basePosition.x + (Math.random() - 0.5) * 100;
+            y = basePosition.y + (Math.random() - 0.5) * 100;
+        } else {
+            // Spawn away from ship (at center)
+            do {
+                x = Math.random() * this.canvas.width;
+                y = Math.random() * this.canvas.height;
+            } while (Math.abs(x - 400) < 150 && Math.abs(y - 300) < 150); // Avoid center area
+        }
+        
+        // Random velocity direction
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = Vector2.fromAngle(angle, speed);
+        
+        this.gameObjects.push({
+            position: new Vector2(x, y),
+            velocity: velocity,
+            size: new Vector2(size, size),
+            rotation: Math.random() * Math.PI * 2,
+            color: '#ffffff',
+            type: 'asteroid'
+        });
+    }
+
     private destroyAsteroid(asteroid: GameObject): void {
         // Add score based on asteroid size
         const points = GameState.getAsteroidScore(asteroid.size.x);
@@ -220,13 +288,19 @@ export class Game {
             this.gameObjects.splice(index, 1);
         }
 
-        // Create smaller asteroids if it's large enough
-        if (asteroid.size.x > 15) {
-            for (let i = 0; i < 2; i++) {
+        // Create smaller asteroids if it's large enough to split
+        if (asteroid.size.x > 20) {
+            // Create 2-3 smaller fragments
+            const fragmentCount = 2 + Math.floor(Math.random() * 2);
+            for (let i = 0; i < fragmentCount; i++) {
+                const fragmentSize = asteroid.size.x * (0.4 + Math.random() * 0.3); // 40-70% of original
+                const speed = 80 + Math.random() * 60; // Faster fragments
+                const angle = Math.random() * Math.PI * 2;
+                
                 this.gameObjects.push({
-                    position: asteroid.position.add(new Vector2((Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20)),
-                    velocity: new Vector2((Math.random() - 0.5) * 150, (Math.random() - 0.5) * 150),
-                    size: new Vector2(asteroid.size.x * 0.6, asteroid.size.y * 0.6),
+                    position: asteroid.position.add(new Vector2((Math.random() - 0.5) * 40, (Math.random() - 0.5) * 40)),
+                    velocity: Vector2.fromAngle(angle, speed),
+                    size: new Vector2(fragmentSize, fragmentSize),
                     rotation: Math.random() * Math.PI * 2,
                     color: '#ffffff',
                     type: 'asteroid'
@@ -250,6 +324,7 @@ export class Game {
         }
 
         // Thrust
+        ship.thrusting = this.input.thrust;
         if (this.input.thrust) {
             const thrustVector = Vector2.fromAngle(ship.rotation, thrustPower * deltaTime);
             ship.velocity = ship.velocity.add(thrustVector);
@@ -301,7 +376,7 @@ export class Game {
         // Draw objects with vector graphics
         this.gameObjects.forEach(obj => {
             if (obj.type === 'ship') {
-                Shapes.drawShip(this.ctx, obj.position, obj.rotation, obj.color);
+                Shapes.drawShip(this.ctx, obj.position, obj.rotation, obj.color, obj.invulnerable, obj.invulnerableTime, obj.thrusting);
             } else if (obj.type === 'asteroid') {
                 Shapes.drawAsteroid(this.ctx, obj.position, obj.rotation, obj.size, obj.color);
             } else if (obj.type === 'bullet') {

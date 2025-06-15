@@ -1,6 +1,7 @@
 export class GameState {
     private _score: number = 0;
     private _lives: number = 3;
+    private _level: number = 1;
     private _gameOver: boolean = false;
 
     get score(): number {
@@ -13,6 +14,10 @@ export class GameState {
 
     get gameOver(): boolean {
         return this._gameOver;
+    }
+
+    get level(): number {
+        return this._level;
     }
 
     addScore(points: number): void {
@@ -28,9 +33,15 @@ export class GameState {
         this.updateUI();
     }
 
+    nextLevel(): void {
+        this._level++;
+        this.updateUI();
+    }
+
     reset(): void {
         this._score = 0;
         this._lives = 3;
+        this._level = 1;
         this._gameOver = false;
         this.updateUI();
     }
@@ -38,6 +49,7 @@ export class GameState {
     private updateUI(): void {
         const scoreElement = document.getElementById('scoreValue');
         const livesElement = document.getElementById('livesValue');
+        const levelElement = document.getElementById('levelValue');
         
         if (scoreElement) {
             scoreElement.textContent = this._score.toString();
@@ -45,6 +57,10 @@ export class GameState {
         
         if (livesElement) {
             livesElement.textContent = this._lives.toString();
+        }
+        
+        if (levelElement) {
+            levelElement.textContent = this._level.toString();
         }
     }
 
