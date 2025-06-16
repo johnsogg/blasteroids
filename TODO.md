@@ -66,11 +66,11 @@ All core features have been implemented and tested. The game is feature-complete
 
 ### 🔧 Technical Improvements
 
-- [ ] Refactor GameObject interface into proper entity classes
+- [x] Refactor GameObject interface into proper entity classes
 - [x] Extract magic numbers into constants file
 - [ ] Add unit tests for physics and collision systems
 - [ ] Performance optimizations for large numbers of objects
-- [ ] Add TypeScript strict mode improvements
+- [x] Add TypeScript strict mode improvements
 
 ## 📊 Current Status
 

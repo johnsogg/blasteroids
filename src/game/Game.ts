@@ -4,41 +4,18 @@ import { Collision } from "~/physics/Collision";
 import { ParticleSystem } from "~/render/ParticleSystem";
 import { Shapes } from "~/render/Shapes";
 import { Vector2 } from "~/utils/Vector2";
+import type { GameEntity, Ship } from "~/entities";
+import { isShip } from "~/entities";
 
 import { GameState } from "./GameState";
 
-interface GameObject {
-    position: Vector2;
-    velocity: Vector2;
-    size: Vector2;
-    rotation: number;
-    color: string;
-    type:
-        | "ship"
-        | "asteroid"
-        | "bullet"
-        | "gift"
-        | "warpBubbleIn"
-        | "warpBubbleOut";
-    age?: number; // For bullets with lifespan, warp bubble animations
-    invulnerable?: boolean; // For ship invincibility period
-    invulnerableTime?: number; // Time remaining invulnerable
-    thrusting?: boolean; // For ship thrust visual effect
-    strafingLeft?: boolean; // For port thruster visual effect
-    strafingRight?: boolean; // For starboard thruster visual effect
-    // Gift system properties
-    giftSpawnTime?: number; // When the gift was spawned
-    giftCollectionDeadline?: number; // When the gift expires
-    warpAnimationProgress?: number; // 0-1 for warp bubble animation
-    closingWarpCreated?: boolean; // Whether closing warp has been created for this gift
-    warpDisappearing?: boolean; // Whether warp bubble is in disappearing animation
-    warpDisappearStartTime?: number; // When the disappearing animation started
-}
+// Legacy type alias for backward compatibility during refactoring
+type GameObject = GameEntity;
 
 export class Game {
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
-    private gameObjects: GameObject[] = [];
+    private gameObjects: GameEntity[] = [];
     private input: InputManager;
     private gameState: GameState;
     private audio: AudioManager;
@@ -66,14 +43,15 @@ export class Game {
 
     private init(): void {
         // Create a simple ship rectangle
-        this.gameObjects.push({
+        const ship: Ship = {
             position: new Vector2(400, 300),
             velocity: Vector2.zero(),
             size: new Vector2(20, 10),
             rotation: 0,
             color: "#00ff00",
             type: "ship",
-        });
+        };
+        this.gameObjects.push(ship);
 
         // Create initial asteroids with variety
         for (let i = 0; i < 4; i++) {
@@ -131,7 +109,7 @@ export class Game {
 
         // Update objects
         this.gameObjects.forEach((obj) => {
-            if (obj.type === "ship") {
+            if (obj.type === "ship" && isShip(obj)) {
                 this.updateShip(obj, deltaTime, currentTime);
 
                 // Update invulnerability
@@ -261,7 +239,8 @@ export class Game {
         const warpBubblesOut = this.gameObjects.filter(
             (obj) => obj.type === "warpBubbleOut"
         );
-        const ship = this.gameObjects.find((obj) => obj.type === "ship");
+        const shipEntity = this.gameObjects.find((obj) => obj.type === "ship");
+        const ship = shipEntity && isShip(shipEntity) ? shipEntity : null;
 
         // Check bullet-asteroid collisions
         for (const bullet of bullets) {
@@ -319,7 +298,7 @@ export class Game {
         }
     }
 
-    private destroyShip(ship: GameObject): void {
+    private destroyShip(ship: Ship): void {
         // Create ship explosion particles
         this.particles.createShipExplosion(ship.position);
 
@@ -537,7 +516,7 @@ export class Game {
     }
 
     private updateShip(
-        ship: GameObject,
+        ship: Ship,
         deltaTime: number,
         currentTime: number
     ): void {
