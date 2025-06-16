@@ -67,7 +67,7 @@ All core features have been implemented and tested. The game is feature-complete
 ### 🔧 Technical Improvements
 
 - [ ] Refactor GameObject interface into proper entity classes
-- [ ] Extract magic numbers into constants file
+- [x] Extract magic numbers into constants file
 - [ ] Add unit tests for physics and collision systems
 - [ ] Performance optimizations for large numbers of objects
 - [ ] Add TypeScript strict mode improvements
@@ -87,4 +87,4 @@ The game successfully recreates the authentic 1979 Asteroids experience with mod
 
 ## Bugs
 
-- [ ] The strafe engine animations are on the wrong side.
+- [x] The strafe engine animations are on the wrong side.
