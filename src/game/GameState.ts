@@ -101,7 +101,9 @@ export class GameState {
         const highScoreElement = document.getElementById("highScoreValue");
 
         if (scoreElement) {
-            const formattedScore = this.formatRetroNumber(this._score.toString());
+            const formattedScore = this.formatRetroNumber(
+                this._score.toString()
+            );
             scoreElement.innerHTML = formattedScore;
 
             // Update score color based on status
@@ -126,7 +128,7 @@ export class GameState {
 
         if (highScoreElement) {
             const formattedHighScore = this.formatRetroNumber(
-                this._highScore.toString(),
+                this._highScore.toString()
             );
             highScoreElement.innerHTML = formattedHighScore;
         }
@@ -134,7 +136,7 @@ export class GameState {
 
     private updateLivesDisplay(): void {
         const livesCanvas = document.getElementById(
-            "livesCanvas",
+            "livesCanvas"
         ) as HTMLCanvasElement;
         if (!livesCanvas) return;
 
@@ -157,12 +159,21 @@ export class GameState {
             const color = i < this._lives ? "#00ff00" : "#888888";
 
             // Draw ship icon at 50% size facing up-right
-            Shapes.drawShip(ctx, position, rotation, color, false, 0, false, 0.5);
+            Shapes.drawShip(
+                ctx,
+                position,
+                rotation,
+                color,
+                false,
+                0,
+                false,
+                0.5
+            );
         }
     }
 
     private formatRetroNumber(numStr: string): string {
-    // Add retro styling to zeros with diagonal lines
+        // Add retro styling to zeros with diagonal lines
         return numStr.replace(/0/g, '<span class="retro-zero">0</span>');
     }
 
@@ -172,7 +183,7 @@ export class GameState {
             if (saved) {
                 this._highScore = parseInt(saved, 10) || 0;
             }
-        } catch (error) {
+        } catch (_error) {
             // localStorage might not be available
             this._highScore = 0;
         }
@@ -180,8 +191,11 @@ export class GameState {
 
     private saveHighScore(): void {
         try {
-            localStorage.setItem(this.HIGH_SCORE_KEY, this._highScore.toString());
-        } catch (error) {
+            localStorage.setItem(
+                this.HIGH_SCORE_KEY,
+                this._highScore.toString()
+            );
+        } catch (_error) {
             // localStorage might not be available
         }
     }

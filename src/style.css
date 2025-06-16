@@ -3,7 +3,7 @@ body {
     padding: 0;
     background-color: #000000;
     color: #ffffff;
-    font-family: 'Courier New', monospace;
+    font-family: "Courier New", monospace;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -58,7 +58,7 @@ body {
 }
 
 .high-score-text {
-    font-family: 'Orbitron', 'Courier New', monospace;
+    font-family: "Orbitron", "Courier New", monospace;
     font-size: 18px;
     font-weight: 700;
     color: #888;
@@ -74,7 +74,7 @@ body {
 }
 
 .level-text {
-    font-family: 'Orbitron', 'Courier New', monospace;
+    font-family: "Orbitron", "Courier New", monospace;
     font-size: 18px;
     font-weight: 700;
     color: #888;
@@ -82,7 +82,7 @@ body {
 }
 
 .score-label {
-    font-family: 'Orbitron', 'Courier New', monospace;
+    font-family: "Orbitron", "Courier New", monospace;
     font-size: 16px;
     font-weight: 700;
     color: #888;
@@ -91,7 +91,7 @@ body {
 }
 
 .score-value {
-    font-family: 'Orbitron', 'Courier New', monospace;
+    font-family: "Orbitron", "Courier New", monospace;
     font-size: 36px;
     font-weight: 900;
     color: #ffffff;
@@ -99,14 +99,19 @@ body {
     line-height: 1;
     text-shadow: 0 0 10px currentColor;
     /* Retro digital display effect */
-    background: linear-gradient(180deg, transparent 45%, rgba(255,255,255,0.1) 50%, transparent 55%);
+    background: linear-gradient(
+        180deg,
+        transparent 45%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 55%
+    );
     -webkit-background-clip: text;
     background-clip: text;
 }
 
 /* Retro zero styling with diagonal line */
 .score-value::before {
-    content: '';
+    content: "";
     position: absolute;
     z-index: -1;
 }
@@ -123,7 +128,7 @@ body {
 }
 
 .retro-zero::after {
-    content: '';
+    content: "";
     position: absolute;
     top: 10%;
     left: 20%;
@@ -141,9 +146,14 @@ body {
 
 @keyframes pulse-green {
     from {
-        text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00;
+        text-shadow:
+            0 0 10px #00ff00,
+            0 0 20px #00ff00;
     }
     to {
-        text-shadow: 0 0 20px #00ff00, 0 0 30px #00ff00, 0 0 40px #00ff00;
+        text-shadow:
+            0 0 20px #00ff00,
+            0 0 30px #00ff00,
+            0 0 40px #00ff00;
     }
 }
