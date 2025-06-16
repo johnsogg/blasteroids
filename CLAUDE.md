@@ -16,6 +16,7 @@ Blasteroids is a web-based Asteroids-style game built with TypeScript and HTML5 
 ## Architecture
 
 ### Core Systems
+
 - **Game Loop**: Fixed timestep game loop using requestAnimationFrame
 - **Physics**: Vector2-based position/velocity system with realistic momentum
 - **Input**: Keyboard input manager supporting Arrow keys and WASD
@@ -23,6 +24,7 @@ Blasteroids is a web-based Asteroids-style game built with TypeScript and HTML5 
 - **Rendering**: Vector graphics using Canvas 2D context, authentic Asteroids styling
 
 ### Key Classes
+
 - `Game`: Main game controller managing entities and game loop
 - `GameState`: Score tracking, lives management, and game over handling
 - `Vector2`: Immutable 2D vector math utilities
@@ -31,6 +33,7 @@ Blasteroids is a web-based Asteroids-style game built with TypeScript and HTML5 
 - `Shapes`: Vector graphics rendering for ship, asteroids, and bullets
 
 ### Project Structure
+
 ```
 src/
 ├── game/          # Core game classes (Game, GameState)
@@ -44,11 +47,13 @@ src/
 ## Game Mechanics
 
 ### Controls
+
 - Arrow Keys/WASD: Ship rotation and main thrust (2 fuel/sec)
 - Q/E: Port/starboard strafing thrusters (50% power, 1 fuel/sec each)
 - Spacebar: Fire bullets (150ms rate limit)
 
 ### Fuel System
+
 - Fuel capacity: 100 units displayed in top-center gauge
 - Main thruster consumes 2 fuel per second
 - Strafe thrusters consume 1 fuel per second each
@@ -56,13 +61,15 @@ src/
 - Ship cannot move without sufficient fuel
 
 ### Physics
+
 - Ships have momentum and inertia like classic Asteroids
 - Bullets inherit ship velocity for realistic ballistics
 - Screen wrapping for ships and asteroids (bullets disappear off-screen)
 
 ### Scoring (Classic Asteroids Values)
+
 - Large asteroids: 20 points
-- Medium asteroids: 50 points  
+- Medium asteroids: 50 points
 - Small asteroids: 100 points
 
 ## Development Notes
@@ -83,3 +90,4 @@ See [TODO.md](./TODO.md) for current development tasks and roadmap.
 - Always run formatting and linting before commits
 - Use descriptive commit messages that explain the "why" not just the "what"
 - When committing to git, group changes into meaningful sets so their commits are logical
+- Keep the README.md up to date before pushing to remote
