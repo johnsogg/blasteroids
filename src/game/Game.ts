@@ -564,9 +564,9 @@ export class Game {
         if (this.input.strafeLeft) {
             const fuelNeeded = 1 * deltaTime; // 1 unit per second
             if (this.gameState.consumeFuel(fuelNeeded)) {
-                // Port thruster (left side) - flames point right, ship moves right
+                // Q key: Move ship LEFT (starboard thruster fires right-ward flames)
                 const strafeVector = Vector2.fromAngle(
-                    ship.rotation + Math.PI / 2,
+                    ship.rotation - Math.PI / 2,
                     strafePower * deltaTime
                 );
                 ship.velocity = ship.velocity.add(strafeVector);
@@ -579,9 +579,9 @@ export class Game {
         if (this.input.strafeRight) {
             const fuelNeeded = 1 * deltaTime; // 1 unit per second
             if (this.gameState.consumeFuel(fuelNeeded)) {
-                // Starboard thruster (right side) - flames point left, ship moves left
+                // E key: Move ship RIGHT (port thruster fires left-ward flames)
                 const strafeVector = Vector2.fromAngle(
-                    ship.rotation - Math.PI / 2,
+                    ship.rotation + Math.PI / 2,
                     strafePower * deltaTime
                 );
                 ship.velocity = ship.velocity.add(strafeVector);

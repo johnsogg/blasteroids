@@ -55,34 +55,34 @@ export class Shapes {
             ctx.stroke();
         }
 
-        // Draw port (left) strafe thruster flames
+        // Draw Q key strafe flames (ship moves LEFT, so flames point RIGHT)
         if (strafingLeft) {
             ctx.strokeStyle = "#ff6600"; // Orange flames
             ctx.lineWidth = 1.5;
             ctx.beginPath();
 
-            // Port thruster (left side) - flames point right, ship moves right
+            // Q key: Ship moves LEFT, so starboard thruster fires RIGHT-ward flames (aft)
             const strafeFlameLength = 4 + Math.random() * 3;
-            ctx.moveTo(-3, -8);
-            ctx.lineTo(-3 + strafeFlameLength, -8 - strafeFlameLength);
-            ctx.moveTo(-3, -8);
-            ctx.lineTo(-3 + strafeFlameLength * 0.8, -8);
+            ctx.moveTo(-3, 8); // Right side of ship
+            ctx.lineTo(-3 - strafeFlameLength, 8 + strafeFlameLength);
+            ctx.moveTo(-3, 8);
+            ctx.lineTo(-3 - strafeFlameLength * 0.8, 8);
 
             ctx.stroke();
         }
 
-        // Draw starboard (right) strafe thruster flames
+        // Draw E key strafe flames (ship moves RIGHT, so flames point LEFT)
         if (strafingRight) {
             ctx.strokeStyle = "#ff6600"; // Orange flames
             ctx.lineWidth = 1.5;
             ctx.beginPath();
 
-            // Starboard thruster (right side) - flames point left, ship moves left
+            // E key: Ship moves RIGHT, so port thruster fires LEFT-ward flames
             const strafeFlameLength = 4 + Math.random() * 3;
-            ctx.moveTo(-3, 8);
-            ctx.lineTo(-3 - strafeFlameLength, 8 + strafeFlameLength);
-            ctx.moveTo(-3, 8);
-            ctx.lineTo(-3 - strafeFlameLength * 0.8, 8);
+            ctx.moveTo(-3, -8); // Left side of ship
+            ctx.lineTo(-3 - strafeFlameLength, -8 - strafeFlameLength);
+            ctx.moveTo(-3, -8);
+            ctx.lineTo(-3 - strafeFlameLength * 0.8, -8);
 
             ctx.stroke();
         }
