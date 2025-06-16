@@ -80,3 +80,5 @@ See [TODO.md](./TODO.md) for current development tasks and roadmap.
 ## Memories
 
 - Keep the TODO.md file up to date with the current status
+- Always run formatting and linting before commits
+- Use descriptive commit messages that explain the "why" not just the "what"

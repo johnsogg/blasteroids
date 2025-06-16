@@ -49,12 +49,15 @@ All core features have been implemented and tested. The game is feature-complete
 - [x] Add particle effects for explosions
 - [x] Improve UI styling and layout
 - [x] Add fuel management system with visual gauge
+- [x] Implement gift system with warp bubble animations and theremin audio effects
 - [ ] Implement ship trails/afterimage effect
 
 ### 🎮 Gameplay Features
 
 - [x] Add local high score storage
 - [x] Add fuel management system with strategic resource limits
+- [x] Add fleet gift system with warp portals and collection mechanics
+- [ ] Add gift benefits (fuel refill, extra life, weapon upgrades, etc.)
 - [ ] Add extra life bonus at certain score thresholds
 - [ ] Implement UFO enemy ships (original Asteroids feature)
 - [ ] Add power-ups or weapon variants
