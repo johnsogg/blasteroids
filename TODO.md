@@ -36,6 +36,7 @@ All core features have been implemented and tested. The game is feature-complete
 ## 🚀 Potential Future Enhancements
 
 ### Audio System
+
 - [x] Complete sound effects system with Web Audio API synthesis
 - [x] Shooting sound effect (sharp laser zap)
 - [x] Asteroid breaking sound (high-pitched rock crackling)
@@ -46,6 +47,7 @@ All core features have been implemented and tested. The game is feature-complete
 - [x] Game start sound (triumphant fanfare)
 
 ### 🎨 Visual & Audio Polish
+
 - [x] Add particle effects for explosions
 - [x] Improve UI styling and layout
 - [x] Add fuel management system with visual gauge
@@ -82,3 +84,7 @@ All core features have been implemented and tested. The game is feature-complete
 **Quality:** ✅ Thoroughly tested with comprehensive feature checklist
 
 The game successfully recreates the authentic 1979 Asteroids experience with modern TypeScript, enhanced with strategic fuel management, strafing controls, and retro UI styling!
+
+## Bugs
+
+- [ ] The strafe engine animations are on the wrong side.
