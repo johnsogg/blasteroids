@@ -61,7 +61,7 @@ export class Shapes {
             ctx.lineWidth = 1.5;
             ctx.beginPath();
 
-            // Port thruster flames - thrust right to push ship left (Newton's 3rd law)
+            // Port thruster (left side) - flames point right, ship moves right
             const strafeFlameLength = 4 + Math.random() * 3;
             ctx.moveTo(-3, -8);
             ctx.lineTo(-3 + strafeFlameLength, -8 - strafeFlameLength);
@@ -77,7 +77,7 @@ export class Shapes {
             ctx.lineWidth = 1.5;
             ctx.beginPath();
 
-            // Starboard thruster flames - thrust left to push ship right (Newton's 3rd law)
+            // Starboard thruster (right side) - flames point left, ship moves left
             const strafeFlameLength = 4 + Math.random() * 3;
             ctx.moveTo(-3, 8);
             ctx.lineTo(-3 - strafeFlameLength, 8 + strafeFlameLength);
