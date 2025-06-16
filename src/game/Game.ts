@@ -511,8 +511,10 @@ export class Game {
             this.gameObjects.splice(giftIndex, 1);
         }
 
-        // TODO: Add gift benefits here in the future
-        // For now, the gift just provides audio/visual feedback when collected
+        // Award points for gift collection
+        this.gameState.addScore(150);
+
+        // TODO: Add additional gift benefits here in the future (fuel refill, extra life, weapon upgrades, etc.)
     }
 
     private updateShip(
