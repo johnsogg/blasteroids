@@ -119,6 +119,9 @@ export const SCORING = {
     MEDIUM_ASTEROID: 50,
     SMALL_ASTEROID: 100,
 
+    // Gift collection
+    GIFT: 150,
+
     // Thresholds
     EXTRA_LIFE_THRESHOLD: 10000, // Future feature
 } as const;
@@ -187,6 +190,47 @@ export const VFX = {
     // Warp bubble effects
     WARP_SPARKLE_COUNT: 8,
     WARP_COLLAPSE_LINES: 6,
+
+    // Particle system
+    PARTICLE_FRICTION: 0.98,
+
+    // Asteroid explosion particles
+    ASTEROID_PARTICLE_SIZE_RATIO: 8, // asteroidSize / 8
+    ASTEROID_PARTICLE_ANGLE_VARIATION: 0.5, // radians
+    ASTEROID_PARTICLE_SPEED_MIN: 50,
+    ASTEROID_PARTICLE_SPEED_MAX: 100,
+    ASTEROID_PARTICLE_LIFE_MIN: 0.8,
+    ASTEROID_PARTICLE_LIFE_VARIATION: 0.4, // +0.4 seconds
+    ASTEROID_PARTICLE_MAX_LIFE: 1.0,
+    ASTEROID_PARTICLE_SIZE_MIN: 1,
+    ASTEROID_PARTICLE_SIZE_VARIATION: 2,
+    ASTEROID_PARTICLE_SPAWN_SPREAD: 10, // pixels
+
+    // Ship explosion particles
+    SHIP_EXPLOSION_PARTICLES: 12,
+    SHIP_PARTICLE_ANGLE_VARIATION: 0.3, // radians
+    SHIP_PARTICLE_SPEED_MIN: 80,
+    SHIP_PARTICLE_SPEED_MAX: 120,
+    SHIP_PARTICLE_LIFE_MIN: 1.2,
+    SHIP_PARTICLE_LIFE_VARIATION: 0.6, // +0.6 seconds
+    SHIP_PARTICLE_MAX_LIFE: 1.5,
+    SHIP_PARTICLE_SIZE_MIN: 1.5,
+    SHIP_PARTICLE_SIZE_VARIATION: 2.5,
+    SHIP_PARTICLE_SPAWN_SPREAD: 5, // pixels
+    SHIP_PARTICLE_ORANGE_CHANCE: 0.7, // 30% orange, 70% white
+} as const;
+
+// =============================================================================
+// USER INTERFACE
+// =============================================================================
+export const UI = {
+    // Lives display
+    MAX_LIVES_DISPLAY: 3,
+    LIVES_SPACING: 30,
+    LIVES_ROTATION: -Math.PI / 4, // -45 degrees (up and right)
+    LIVES_ICON_SIZE: 0.5,
+    LIVES_X_OFFSET: 15,
+    LIVES_Y_OFFSET: 15,
 } as const;
 
 // =============================================================================

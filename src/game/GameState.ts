@@ -1,5 +1,6 @@
 import { Shapes } from "~/render/Shapes";
 import { Vector2 } from "~/utils/Vector2";
+import { UI } from "~/config/constants";
 
 export class GameState {
     private _score: number = 0;
@@ -146,13 +147,13 @@ export class GameState {
         // Clear the canvas
         ctx.clearRect(0, 0, livesCanvas.width, livesCanvas.height);
 
-        const maxLives = 3;
-        const spacing = 30;
-        const rotation = -Math.PI / 4; // -45 degrees (up and right)
+        const maxLives = UI.MAX_LIVES_DISPLAY;
+        const spacing = UI.LIVES_SPACING;
+        const rotation = UI.LIVES_ROTATION;
 
         for (let i = 0; i < maxLives; i++) {
-            const x = 15 + i * spacing;
-            const y = 15;
+            const x = UI.LIVES_X_OFFSET + i * spacing;
+            const y = UI.LIVES_Y_OFFSET;
             const position = new Vector2(x, y);
 
             // Active lives in green, lost lives in gray
@@ -167,7 +168,7 @@ export class GameState {
                 false,
                 0,
                 false,
-                0.5
+                UI.LIVES_ICON_SIZE
             );
         }
     }

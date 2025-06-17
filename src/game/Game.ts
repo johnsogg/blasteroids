@@ -6,6 +6,7 @@ import { Shapes } from "~/render/Shapes";
 import { Vector2 } from "~/utils/Vector2";
 import type { GameEntity, Ship } from "~/entities";
 import { isShip } from "~/entities";
+import { SCORING, SHIP, GIFT, BULLET } from "~/config/constants";
 
 import { GameState } from "./GameState";
 
@@ -26,7 +27,7 @@ export class Game {
     private lastThrustTime = 0;
     private gameOverSoundPlayed = false;
     private lastGiftSpawnTime = 0;
-    private giftSpawnInterval = 15000; // 15 seconds between gifts
+    private giftSpawnInterval = GIFT.SPAWN_INTERVAL; // Time between gifts
     private pendingGiftSpawn: Vector2 | null = null; // Deferred gift creation
     private pendingWarpBubbleCreation: GameObject | null = null; // Deferred warp bubble creation
 
@@ -44,11 +45,11 @@ export class Game {
     private init(): void {
         // Create a simple ship rectangle
         const ship: Ship = {
-            position: new Vector2(400, 300),
+            position: new Vector2(SHIP.SPAWN_X, SHIP.SPAWN_Y),
             velocity: Vector2.zero(),
-            size: new Vector2(20, 10),
+            size: new Vector2(SHIP.WIDTH, SHIP.HEIGHT),
             rotation: 0,
-            color: "#00ff00",
+            color: SHIP.COLOR,
             type: "ship",
         };
         this.gameObjects.push(ship);
@@ -129,15 +130,18 @@ export class Game {
             } else if (obj.type === "warpBubbleIn") {
                 // Update warp bubble opening animation
                 obj.age = (obj.age || 0) + deltaTime;
-                obj.warpAnimationProgress = Math.min(1, (obj.age || 0) / 3.0); // 3 second animation
+                obj.warpAnimationProgress = Math.min(
+                    1,
+                    (obj.age || 0) / GIFT.OPENING_ANIMATION_TIME
+                );
             } else if (obj.type === "warpBubbleOut") {
                 // Update warp bubble closing animation
                 obj.age = (obj.age || 0) + deltaTime;
                 if (!obj.warpDisappearing) {
                     obj.warpAnimationProgress = Math.min(
                         1,
-                        (obj.age || 0) / 1.0
-                    ); // 1 second animation, then stays open
+                        (obj.age || 0) / GIFT.CLOSING_ANIMATION_TIME
+                    ); // Animation timing from constants
                 }
             } else if (obj.type === "gift") {
                 // Age gifts and check for expiration
@@ -178,8 +182,8 @@ export class Game {
                     obj.position.y > this.canvas.height + 50;
                 return (obj.age || 0) < maxAge && !outOfBounds;
             } else if (obj.type === "warpBubbleIn") {
-                // Remove when animation is complete (3 seconds)
-                if ((obj.age || 0) >= 3.0) {
+                // Remove when animation is complete
+                if ((obj.age || 0) >= GIFT.OPENING_ANIMATION_TIME) {
                     // Schedule gift spawn for after filter operation
                     this.pendingGiftSpawn = obj.position.copy();
                     return false;
@@ -190,19 +194,24 @@ export class Game {
                 if (obj.warpDisappearing && obj.warpDisappearStartTime) {
                     const disappearElapsed =
                         currentTime - obj.warpDisappearStartTime;
-                    return disappearElapsed < 500; // 0.5 second disappear animation
+                    return (
+                        disappearElapsed < GIFT.DISAPPEAR_ANIMATION_TIME * 1000
+                    ); // Convert to milliseconds
                 }
-                // Otherwise keep the exit warp bubble visible for a reasonable time
-                return (obj.age || 0) < 5.0;
+                // Otherwise keep the exit warp bubble visible for designated time
+                return (obj.age || 0) < GIFT.WARP_BUBBLE_CREATION_DELAY;
             } else if (obj.type === "gift") {
-                // Check if it's time to create closing warp bubble (after 5 seconds of gift existence = t=8 total)
-                if ((obj.age || 0) >= 5.0 && !obj.closingWarpCreated) {
+                // Check if it's time to create closing warp bubble
+                if (
+                    (obj.age || 0) >= GIFT.WARP_BUBBLE_CREATION_DELAY &&
+                    !obj.closingWarpCreated
+                ) {
                     // Schedule for after filter operation (like pendingGiftSpawn)
                     this.pendingWarpBubbleCreation = obj;
                     obj.closingWarpCreated = true; // Mark so we don't create multiple
                 }
-                // Remove gift only after collision with exit warp or much longer time
-                return (obj.age || 0) < 10.0;
+                // Remove gift only after collision with exit warp or designated lifespan
+                return (obj.age || 0) < GIFT.LIFESPAN;
             }
             return true;
         });
@@ -319,13 +328,13 @@ export class Game {
             this.showGameOver();
         } else {
             // Reset ship position and velocity
-            ship.position = new Vector2(400, 300);
+            ship.position = new Vector2(SHIP.SPAWN_X, SHIP.SPAWN_Y);
             ship.velocity = Vector2.zero();
             ship.rotation = 0;
 
-            // Make ship invulnerable for 3 seconds
+            // Make ship invulnerable for designated time
             ship.invulnerable = true;
-            ship.invulnerableTime = 3.0;
+            ship.invulnerableTime = SHIP.INVULNERABLE_TIME;
 
             // Reset game over sound flag when not game over
             this.gameOverSoundPlayed = false;
@@ -512,7 +521,7 @@ export class Game {
         }
 
         // Award points for gift collection
-        this.gameState.addScore(150);
+        this.gameState.addScore(SCORING.GIFT);
 
         // TODO: Add additional gift benefits here in the future (fuel refill, extra life, weapon upgrades, etc.)
     }
@@ -605,8 +614,11 @@ export class Game {
         }
 
         // Shooting
-        if (this.input.shoot && currentTime - this.lastShotTime > 150) {
-            // 150ms between shots
+        if (
+            this.input.shoot &&
+            currentTime - this.lastShotTime > BULLET.FIRE_RATE
+        ) {
+            // Fire rate limited by constant
             this.shoot(ship);
             this.lastShotTime = currentTime;
         }
