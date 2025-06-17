@@ -12,26 +12,34 @@
     - [ ] Largest size that fits in window to match some aspect ratio
 - [x] When the player beats a level, show an animation to let the user know they're on the next level
 - [ ] Weapon mechanics: different weapons, each with their own upgrades
+    - [ ] Weapons the player has acquired can be activated with a number key
+    - [ ] Each weapon has an icon that is about the same size as the player ship
+    - [ ] Acquired weapon icons appear on the left side of the screen - there are spots reserved for each one, so if the user has weapons 1 and 3, there are gaps where 2 and 4 would go
+    - [ ] The weapon icon appears inside Gifts that are currently on the board
     - [x] Default weapon already implemented
+        - [ ] Keyboard shortcut: 1
         - [ ] Gift Upgrade: 25% faster fire rate
         - [ ] Gift Upgrade: 50% larger bullets (for more advantageous collision zone)
     - [ ] Missiles
+        - [ ] Keyboard shortcut: 2
         - [ ] They explode if an object other than the ship is within N pixels of missile
         - [ ] Slow rate of fire, 1 per 4 seconds
         - [ ] Gift Upgrade: 50% faster missile travel speed
         - [ ] Gift Upgrade: 50% faster rate of fire
         - [ ] Gift Upgrade: missiles can adjust their trajectory if they see an object in a truncated viewing cone in front of them
     - [ ] Lasers!
+        - [ ] Keyboard shortcut: 3
         - [ ] Firing emits a solid beam, like a laser sword, but it is not very long
         - [ ] It drains power (fuel) quickly
         - [ ] Gift Upgrade: 50% longer ranger
         - [ ] Gift Upgrade: 50% more efficient power usage
     - [ ] Lightning
+        - [ ] Keyboard shortcut: 4
         - [ ] An electrical arc will zap the nearest object in a circle around the ship
         - [ ] The radius is small
         - [ ] Gift Upgrade: 20% larger radius
         - [ ] Gift Upgrade: After striking an object, another arc will be emitted from the first object to another object, using the same rules
-        - [ ] The player ship can not be struck by lightning, but other things like Gifts will be targetted
+        - [ ] The player ship can not be struck by lightning, but other things like Gifts will be targeted
 - [ ] Add gift benefits system
     - [ ] Each gift's warp bubble will have a subtly different animation and color
     - [ ] Gifts have different probabilities of appearing, and those probabilities can be influenced by the game state
