@@ -1,6 +1,6 @@
 import { Shapes } from "~/render/Shapes";
 import { Vector2 } from "~/utils/Vector2";
-import { UI } from "~/config/constants";
+import { UI, type GiftType } from "~/config/constants";
 import type { WeaponState, WeaponType, UpgradeType } from "~/entities/Weapons";
 import { WeaponManager } from "~/entities/Weapons";
 
@@ -12,7 +12,9 @@ export class GameState {
     private _highScore: number = 0;
     private _fuel: number = 100;
     private _weaponState: WeaponState = WeaponManager.getDefaultWeaponState();
+    private _debugNextGift: GiftType | null = null; // Debug override for next gift type
     private readonly HIGH_SCORE_KEY = "blasteroids-highscore";
+    private readonly DEBUG_GIFT_KEY = "blasteroids-debug-gift";
 
     get score(): number {
         return this._score;
@@ -48,6 +50,10 @@ export class GameState {
 
     get currentWeapon(): WeaponType {
         return this._weaponState.currentWeapon;
+    }
+
+    get debugNextGift(): GiftType | null {
+        return this._debugNextGift;
     }
 
     get scoreStatus(): "normal" | "near-high" | "new-high" {
@@ -109,6 +115,7 @@ export class GameState {
         this._gameOver = false;
         this._fuel = 100;
         this._weaponState = WeaponManager.getDefaultWeaponState(); // Reset weapons
+        this._debugNextGift = null; // Clear debug gift override
         this.loadHighScore(); // Preserve high score across resets
         this.updateUI();
     }
@@ -136,6 +143,62 @@ export class GameState {
 
     updateLastFireTime(time: number): void {
         this._weaponState.lastFireTime = time;
+    }
+
+    setDebugNextGift(giftType: GiftType | null): void {
+        this._debugNextGift = giftType;
+        this.saveDebugGift();
+    }
+
+    consumeDebugNextGift(): GiftType | null {
+        const giftType = this._debugNextGift;
+
+        // Check if this is an upgrade for an unowned weapon and redirect to weapon gift
+        const redirectedGift = this.getRedirectedGiftType(giftType);
+        if (redirectedGift !== giftType) {
+            // Don't clear the debug gift if we're redirecting, so it persists for next spawn
+            return redirectedGift;
+        }
+
+        // Normal consumption - clear the debug gift after use
+        this._debugNextGift = null;
+        this.saveDebugGift();
+        return giftType;
+    }
+
+    private getRedirectedGiftType(giftType: GiftType | null): GiftType | null {
+        if (!giftType) return null;
+
+        // Check if this is an upgrade for an unowned weapon
+        if (
+            giftType === "upgrade_missiles_speed" ||
+            giftType === "upgrade_missiles_fire_rate" ||
+            giftType === "upgrade_missiles_homing"
+        ) {
+            if (!this.hasWeapon("missiles")) {
+                return "weapon_missiles";
+            }
+        }
+
+        if (
+            giftType === "upgrade_laser_range" ||
+            giftType === "upgrade_laser_efficiency"
+        ) {
+            if (!this.hasWeapon("laser")) {
+                return "weapon_laser";
+            }
+        }
+
+        if (
+            giftType === "upgrade_lightning_radius" ||
+            giftType === "upgrade_lightning_chain"
+        ) {
+            if (!this.hasWeapon("lightning")) {
+                return "weapon_lightning";
+            }
+        }
+
+        return giftType;
     }
 
     private updateUI(): void {
@@ -243,9 +306,33 @@ export class GameState {
         }
     }
 
-    // Initialize high score on first load
+    private loadDebugGift(): void {
+        try {
+            const saved = localStorage.getItem(this.DEBUG_GIFT_KEY);
+            if (saved && saved !== "none") {
+                this._debugNextGift = saved as GiftType;
+            } else {
+                this._debugNextGift = null;
+            }
+        } catch (_error) {
+            // localStorage might not be available
+            this._debugNextGift = null;
+        }
+    }
+
+    private saveDebugGift(): void {
+        try {
+            const value = this._debugNextGift || "none";
+            localStorage.setItem(this.DEBUG_GIFT_KEY, value);
+        } catch (_error) {
+            // localStorage might not be available
+        }
+    }
+
+    // Initialize high score and debug gift on first load
     init(): void {
         this.loadHighScore();
+        this.loadDebugGift();
         this.updateUI();
     }
 

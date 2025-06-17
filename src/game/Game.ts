@@ -141,6 +141,20 @@ export class Game {
     }
 
     /**
+     * Set debug next gift type
+     */
+    setDebugNextGift(giftType: GiftType | null): void {
+        this.gameState.setDebugNextGift(giftType);
+    }
+
+    /**
+     * Get current debug next gift type
+     */
+    getDebugNextGift(): GiftType | null {
+        return this.gameState.debugNextGift;
+    }
+
+    /**
      * Toggle pause state and menu visibility
      */
     private togglePause(): void {
@@ -286,6 +300,20 @@ export class Game {
                 // Age gifts and check for expiration
                 obj.age = (obj.age || 0) + deltaTime;
                 obj.rotation += deltaTime * 2; // Slow rotation for visual appeal
+            } else if (obj.type === "missile") {
+                // Age missiles
+                obj.age = (obj.age || 0) + deltaTime;
+
+                // Create missile trail particles
+                this.particles.createMissileTrail(obj.position, obj.velocity);
+
+                // Apply missile acceleration (realistic rocket physics)
+                this.updateMissileAcceleration(obj, deltaTime);
+
+                // Update missile homing behavior if upgrade is active
+                if (this.gameState.hasUpgrade("upgrade_missiles_homing")) {
+                    this.updateMissileHoming(obj, deltaTime);
+                }
             }
 
             // Update position
@@ -321,12 +349,37 @@ export class Game {
                     obj.position.y > this.canvas.height + 50;
                 return (obj.age || 0) < maxAge && !outOfBounds;
             } else if (obj.type === "missile") {
-                const maxAge = 5; // seconds (longer than bullets)
+                const maxAge = WEAPONS.MISSILES.MAX_AGE;
                 const outOfBounds =
                     obj.position.x < -50 ||
                     obj.position.x > this.canvas.width + 50 ||
                     obj.position.y < -50 ||
                     obj.position.y > this.canvas.height + 50;
+
+                // Check if missile should auto-explode
+                if ((obj.age || 0) >= maxAge && !outOfBounds) {
+                    // Create explosion particles
+                    this.particles.createMissileExplosion(obj.position);
+
+                    // Destroy any asteroids within explosion radius
+                    const asteroids = this.gameObjects.filter(
+                        (o) => o.type === "asteroid"
+                    );
+                    for (const asteroid of asteroids) {
+                        const distance = Math.sqrt(
+                            Math.pow(obj.position.x - asteroid.position.x, 2) +
+                                Math.pow(
+                                    obj.position.y - asteroid.position.y,
+                                    2
+                                )
+                        );
+
+                        if (distance <= WEAPONS.MISSILES.EXPLOSION_RADIUS) {
+                            this.destroyAsteroid(asteroid);
+                        }
+                    }
+                }
+
                 return (obj.age || 0) < maxAge && !outOfBounds;
             } else if (obj.type === "warpBubbleIn") {
                 // Remove when animation is complete
@@ -975,6 +1028,10 @@ export class Game {
         }
 
         if (currentTime - this.lastShotTime < fireRate) {
+            // Play cooldown sound effect
+            this.audio.playMissileCooldown().catch(() => {
+                // Ignore audio errors (user hasn't interacted yet)
+            });
             return; // Too soon to fire again
         }
 
@@ -983,12 +1040,8 @@ export class Game {
             return; // Not enough fuel
         }
 
-        // Missile speed (with upgrade consideration)
-        let missileSpeed = WEAPONS.MISSILES.SPEED;
-        if (this.gameState.hasUpgrade("upgrade_missiles_speed")) {
-            missileSpeed *= WEAPONS.MISSILES.SPEED_UPGRADE; // 50% faster
-        }
-
+        // Missile initial speed (with upgrade consideration for max speed)
+        const missileSpeed = WEAPONS.MISSILES.INITIAL_SPEED;
         const missileVelocity = Vector2.fromAngle(ship.rotation, missileSpeed);
 
         // Add ship's velocity to missile for realistic physics
@@ -1010,8 +1063,8 @@ export class Game {
 
         this.lastShotTime = currentTime;
 
-        // Play shooting sound (could be different for missiles)
-        this.audio.playShoot().catch(() => {
+        // Play missile launch sound
+        this.audio.playMissileLaunch().catch(() => {
             // Ignore audio errors (user hasn't interacted yet)
         });
     }
@@ -1280,7 +1333,121 @@ export class Game {
         this.levelCompleteAnimation.render();
     }
 
+    private updateMissileAcceleration(
+        missile: GameObject,
+        deltaTime: number
+    ): void {
+        // Calculate current speed
+        const currentSpeed = Math.sqrt(
+            missile.velocity.x * missile.velocity.x +
+                missile.velocity.y * missile.velocity.y
+        );
+
+        // Calculate max speed (with upgrade consideration)
+        let maxSpeed = WEAPONS.MISSILES.MAX_SPEED;
+        if (this.gameState.hasUpgrade("upgrade_missiles_speed")) {
+            maxSpeed *= WEAPONS.MISSILES.SPEED_UPGRADE; // 50% faster max speed
+        }
+
+        // Apply acceleration if below max speed
+        if (currentSpeed < maxSpeed) {
+            const accelerationAmount =
+                WEAPONS.MISSILES.ACCELERATION * deltaTime;
+            const direction = missile.velocity.normalize();
+            const newSpeed = Math.min(
+                currentSpeed + accelerationAmount,
+                maxSpeed
+            );
+
+            // Update velocity with new speed in same direction
+            missile.velocity = direction.multiply(newSpeed);
+        }
+    }
+
+    private updateMissileHoming(missile: GameObject, deltaTime: number): void {
+        // Find the closest asteroid within homing range
+        const asteroids = this.gameObjects.filter(
+            (obj) => obj.type === "asteroid"
+        );
+        let closestAsteroid: GameObject | null = null;
+        let closestDistance: number = WEAPONS.MISSILES.HOMING_RANGE;
+
+        for (const asteroid of asteroids) {
+            const distance = Math.sqrt(
+                Math.pow(missile.position.x - asteroid.position.x, 2) +
+                    Math.pow(missile.position.y - asteroid.position.y, 2)
+            );
+
+            if (distance < closestDistance) {
+                // Check if asteroid is in the missile's viewing cone (front 90 degrees)
+                const toAsteroid = new Vector2(
+                    asteroid.position.x - missile.position.x,
+                    asteroid.position.y - missile.position.y
+                ).normalize();
+
+                const missileDirection = Vector2.fromAngle(missile.rotation, 1);
+                const dotProduct = toAsteroid.dot(missileDirection);
+
+                // Only target asteroids in front of the missile (dot product > 0.5 = ~60 degree cone)
+                if (dotProduct > 0.5) {
+                    closestDistance = distance;
+                    closestAsteroid = asteroid;
+                }
+            }
+        }
+
+        // If we found a target, adjust missile trajectory
+        if (closestAsteroid) {
+            const targetDirection = new Vector2(
+                closestAsteroid.position.x - missile.position.x,
+                closestAsteroid.position.y - missile.position.y
+            ).normalize();
+
+            // Current missile speed
+            const currentSpeed = Math.sqrt(
+                missile.velocity.x * missile.velocity.x +
+                    missile.velocity.y * missile.velocity.y
+            );
+
+            // Gradually turn toward target (not instant lock-on)
+            const turnRate = 3.0; // radians per second
+            const maxTurnThisFrame = turnRate * deltaTime;
+
+            const currentDirection = missile.velocity.normalize();
+            const targetAngle = Math.atan2(
+                targetDirection.y,
+                targetDirection.x
+            );
+            const currentAngle = Math.atan2(
+                currentDirection.y,
+                currentDirection.x
+            );
+
+            let angleDiff = targetAngle - currentAngle;
+
+            // Normalize angle difference to [-π, π]
+            while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+            while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+
+            // Limit turn rate
+            const turnAmount =
+                Math.sign(angleDiff) *
+                Math.min(Math.abs(angleDiff), maxTurnThisFrame);
+            const newAngle = currentAngle + turnAmount;
+
+            // Update missile velocity and rotation
+            missile.velocity = Vector2.fromAngle(newAngle, currentSpeed);
+            missile.rotation = newAngle;
+        }
+    }
+
     private selectGiftType(): GiftType {
+        // Check for debug override first
+        const debugGift = this.gameState.consumeDebugNextGift();
+        if (debugGift) {
+            return debugGift;
+        }
+
         const availableGifts: { type: GiftType; weight: number }[] = [];
 
         // Always available gifts

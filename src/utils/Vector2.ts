@@ -35,6 +35,10 @@ export class Vector2 {
         return new Vector2(this.x / len, this.y / len);
     }
 
+    dot(other: Vector2): number {
+        return this.x * other.x + this.y * other.y;
+    }
+
     copy(): Vector2 {
         return new Vector2(this.x, this.y);
     }

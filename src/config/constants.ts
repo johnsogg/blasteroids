@@ -396,10 +396,13 @@ export const WEAPONS = {
     MISSILES: {
         FIRE_RATE: 4000, // milliseconds between shots (1 per 4 seconds)
         FUEL_CONSUMPTION: 5, // units per shot
-        SPEED: 200, // pixels per second (slower than bullets)
+        INITIAL_SPEED: 100, // pixels per second (initial launch speed)
+        ACCELERATION: 150, // pixels per second squared
+        MAX_SPEED: 300, // maximum speed after acceleration
         SIZE: 4, // pixels radius
         EXPLOSION_RADIUS: 30, // pixels
-        SPEED_UPGRADE: 1.5, // 50% faster travel
+        MAX_AGE: 3, // seconds before auto-explosion
+        SPEED_UPGRADE: 1.5, // 50% faster travel (affects max speed)
         FIRE_RATE_UPGRADE: 0.5, // 50% faster rate of fire
         HOMING_RANGE: 100, // pixels for homing upgrade
         COLOR: "#ff8800",

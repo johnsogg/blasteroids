@@ -151,21 +151,69 @@ export class Shapes {
         ctx.translate(position.x, position.y);
         ctx.rotate(rotation);
 
-        // Draw missile body (elongated shape)
-        ctx.fillStyle = color;
-        ctx.fillRect(-2, -6, 4, 12);
-
-        // Draw missile nose (pointed tip)
+        // Draw thrust trail (behind missile)
+        ctx.strokeStyle = "#ff6600"; // Orange
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = 0.7;
         ctx.beginPath();
-        ctx.moveTo(0, -6);
-        ctx.lineTo(-2, -4);
-        ctx.lineTo(2, -4);
+
+        // Multiple flame trails for more dynamic effect
+        const flameLength1 = 8 + Math.random() * 4;
+        const flameLength2 = 6 + Math.random() * 3;
+
+        ctx.moveTo(-6, -1);
+        ctx.lineTo(-6 - flameLength1, -1);
+        ctx.moveTo(-6, 1);
+        ctx.lineTo(-6 - flameLength2, 1);
+        ctx.moveTo(-6, 0);
+        ctx.lineTo(-6 - (flameLength1 + flameLength2) / 2, 0);
+
+        ctx.stroke();
+
+        // Reset alpha for missile body
+        ctx.globalAlpha = 1.0;
+
+        // Draw missile body (sleek pointed shape)
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+
+        // Main body - more aerodynamic shape (nose points right in 0-degree rotation)
+        ctx.beginPath();
+        ctx.moveTo(8, 0); // Sharp nose pointing right
+        ctx.lineTo(6, -1.5);
+        ctx.lineTo(2, -2);
+        ctx.lineTo(-4, -2);
+        ctx.lineTo(-6, -1);
+        ctx.lineTo(-6, 1);
+        ctx.lineTo(-4, 2);
+        ctx.lineTo(2, 2);
+        ctx.lineTo(6, 1.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw guidance fins (small triangular fins)
+        ctx.fillStyle = "#ffaa44"; // Slightly lighter color for fins
+        ctx.beginPath();
+        // Top fin
+        ctx.moveTo(-2, -2);
+        ctx.lineTo(-1, -3);
+        ctx.lineTo(-4, -2);
         ctx.closePath();
         ctx.fill();
 
-        // Draw missile fins
-        ctx.fillRect(-4, 4, 2, 4);
-        ctx.fillRect(2, 4, 2, 4);
+        // Bottom fin
+        ctx.beginPath();
+        ctx.moveTo(-2, 2);
+        ctx.lineTo(-1, 3);
+        ctx.lineTo(-4, 2);
+        ctx.closePath();
+        ctx.fill();
+
+        // Draw small engine nozzle
+        ctx.fillStyle = "#444444";
+        ctx.fillRect(-7, -1, 2, 2);
 
         ctx.restore();
     }

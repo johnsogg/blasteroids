@@ -49,7 +49,7 @@ export class InputManager {
         return this.isKeyPressed("ArrowRight") || this.isKeyPressed("KeyD");
     }
     get shoot(): boolean {
-        return this.isKeyPressed("Space");
+        return this.wasKeyPressed("Space");
     }
     get restart(): boolean {
         return this.isKeyPressed("KeyR");

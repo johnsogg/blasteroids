@@ -124,6 +124,34 @@ export class ParticleSystem {
         }
     }
 
+    createMissileTrail(position: Vector2, velocity: Vector2): void {
+        // Create small exhaust particles behind missile
+        const trailPosition = position.add(velocity.normalize().multiply(-8)); // Behind missile
+
+        for (let i = 0; i < 2; i++) {
+            // Small number of particles per frame
+            const spread = (Math.random() - 0.5) * 0.8; // Small spread
+            const backwardDirection = velocity.normalize().multiply(-1);
+            const trailVelocity = backwardDirection
+                .multiply(20 + Math.random() * 20)
+                .add(new Vector2(spread * 10, spread * 10));
+
+            this.particles.push({
+                position: trailPosition.add(
+                    new Vector2(
+                        (Math.random() - 0.5) * 3,
+                        (Math.random() - 0.5) * 3
+                    )
+                ),
+                velocity: trailVelocity,
+                life: 0.1 + Math.random() * 0.2, // Short-lived trail
+                maxLife: 0.3,
+                size: 0.5 + Math.random() * 1.0, // Small particles
+                color: Math.random() > 0.5 ? "#ff6600" : "#ffaa44", // Orange/yellow exhaust
+            });
+        }
+    }
+
     createMissileExplosion(position: Vector2): void {
         // Create large, dramatic explosion for missile
         const particleCount = 15; // Moderate number of particles

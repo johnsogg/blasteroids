@@ -538,4 +538,109 @@ export class AudioManager {
         oscillator.stop(this.audioContext.currentTime + duration);
         lfo.stop(this.audioContext.currentTime + duration);
     }
+
+    async playMissileCooldown(): Promise<void> {
+        await this.ensureAudioContext();
+
+        // Clear "can't fire" sound - three distinct error beeps
+        const createBeep = (
+            freq: number,
+            startTime: number,
+            duration: number
+        ) => {
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(this.masterGain);
+
+            oscillator.frequency.setValueAtTime(freq, startTime);
+            oscillator.type = "square"; // Harsh, digital sound
+
+            gainNode.gain.setValueAtTime(0, startTime);
+            gainNode.gain.linearRampToValueAtTime(0.2, startTime + 0.01);
+            gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+
+            oscillator.start(startTime);
+            oscillator.stop(startTime + duration);
+        };
+
+        // Three descending error beeps - clearly different from whoosh
+        const currentTime = this.audioContext.currentTime;
+        createBeep(800, currentTime, 0.08); // High beep
+        createBeep(600, currentTime + 0.1, 0.08); // Medium beep
+        createBeep(400, currentTime + 0.2, 0.08); // Low beep
+    }
+
+    async playMissileLaunch(): Promise<void> {
+        await this.ensureAudioContext();
+
+        // Dramatic WHOOSH missile launch - very distinct from error beeps
+
+        // 1. Deep launch "BOOM"
+        const launchOsc = this.audioContext.createOscillator();
+        const launchGain = this.audioContext.createGain();
+
+        launchOsc.connect(launchGain);
+        launchGain.connect(this.masterGain);
+
+        launchOsc.frequency.setValueAtTime(60, this.audioContext.currentTime);
+        launchOsc.type = "sawtooth"; // More aggressive than sine
+
+        launchGain.gain.setValueAtTime(0.6, this.audioContext.currentTime);
+        launchGain.gain.exponentialRampToValueAtTime(
+            0.01,
+            this.audioContext.currentTime + 0.3
+        );
+
+        // 2. Intense whoosh noise
+        const noiseBuffer = this.audioContext.createBuffer(
+            1,
+            this.audioContext.sampleRate * 1.5,
+            this.audioContext.sampleRate
+        );
+        const noiseData = noiseBuffer.getChannelData(0);
+
+        for (let i = 0; i < noiseData.length; i++) {
+            noiseData[i] = (Math.random() * 2 - 1) * 0.8;
+        }
+
+        const noiseSource = this.audioContext.createBufferSource();
+        const noiseGain = this.audioContext.createGain();
+        const noiseFilter = this.audioContext.createBiquadFilter();
+
+        // Band-pass for more obvious whoosh
+        noiseFilter.type = "bandpass";
+        noiseFilter.frequency.setValueAtTime(
+            1500,
+            this.audioContext.currentTime + 0.1
+        );
+        noiseFilter.frequency.exponentialRampToValueAtTime(
+            400,
+            this.audioContext.currentTime + 1.2
+        );
+        noiseFilter.Q.setValueAtTime(2, this.audioContext.currentTime);
+
+        noiseSource.buffer = noiseBuffer;
+        noiseSource.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(this.masterGain);
+
+        noiseGain.gain.setValueAtTime(0, this.audioContext.currentTime + 0.05);
+        noiseGain.gain.linearRampToValueAtTime(
+            0.7,
+            this.audioContext.currentTime + 0.2
+        );
+        noiseGain.gain.exponentialRampToValueAtTime(
+            0.01,
+            this.audioContext.currentTime + 1.5
+        );
+
+        // Start sounds
+        launchOsc.start(this.audioContext.currentTime);
+        launchOsc.stop(this.audioContext.currentTime + 0.3);
+
+        noiseSource.start(this.audioContext.currentTime + 0.05);
+        noiseSource.stop(this.audioContext.currentTime + 1.5);
+    }
 }

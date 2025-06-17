@@ -25,13 +25,25 @@
         - [x] They explode if an object other than the ship is within N pixels of missile
         - [x] Slow rate of fire, 1 per 4 seconds
         - [x] Each shot consumes some fuel
-        - [ ] Gift Upgrade: 50% faster missile travel speed
-        - [ ] Gift Upgrade: 50% faster rate of fire
-        - [ ] Gift Upgrade: missiles can adjust their trajectory if they see an object in a truncated viewing cone in front of them
-        - [ ] Polish: Missiles should automatically explode after some period of time
-        - [ ] Polish: Add sound effect when attempting to fire missile but still on cooldown
-        - [ ] Polish: Improve missile visual - thin shape pointing in travel direction with small flame thruster and trail
-        - [ ] Polish: Missile should accelerate like a real missile (not constant velocity)
+        - [x] Gift Upgrade: 50% faster missile travel speed
+        - [x] Gift Upgrade: 50% faster rate of fire
+        - [x] Gift Upgrade: missiles can adjust their trajectory if they see an object in a truncated viewing cone in front of them
+            - [x] 100-pixel homing range with 60-degree viewing cone
+            - [x] Gradual trajectory adjustment (realistic turn rate, not instant lock-on)
+            - [x] Maintains missile speed while adjusting direction
+        - [x] Polish: Missiles should automatically explode after some period of time
+            - [x] 3-second timer with explosion particles and asteroid destruction
+        - [x] Polish: Add sound effect when attempting to fire missile but still on cooldown
+            - [x] Three descending error beeps (800→600→400Hz) for cooldown attempts
+            - [x] Deep "BOOM" + intense whoosh sound for successful missile firing
+            - [x] Completely distinct audio feedback - impossible to confuse
+        - [x] Polish: Improve missile visual - thin shape pointing in travel direction with small flame thruster and trail
+            - [x] Sleek aerodynamic missile body with pointed nose and guidance fins
+            - [x] Dynamic flame trails with randomized lengths
+            - [x] Particle trail system following missile flight path
+        - [x] Polish: Missile should accelerate like a real missile (not constant velocity)
+            - [x] Starts at 100 px/s, accelerates at 150 px/s² to 300 px/s max speed
+            - [x] Speed upgrade affects maximum velocity (450 px/s with upgrade)
     - [ ] Lasers!
         - [ ] Keyboard shortcut: 3
         - [ ] Firing emits a solid beam, like a laser sword, but it is not very long
@@ -62,5 +74,13 @@
 - [ ] Add unit tests for physics and collision systems
 - [ ] Performance optimizations for large numbers of objects
 - [x] Constants should be symbols (not literals) and coded as config objects
+
+### 🛠️ Development & Testing Tools
+
+- [x] Debug gift selector in escape menu
+    - [x] Force specific gift types for testing
+    - [x] Persistent selection across browser sessions via localStorage
+    - [x] Intelligent weapon upgrade redirection (auto-gives weapon if upgrade selected for unowned weapon)
+    - [x] Dropdown with all gift types for easy access
 
 ## Known Bugs

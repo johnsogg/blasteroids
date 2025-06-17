@@ -1,5 +1,6 @@
 import { MenuItem } from "./MenuItem";
 import type { Game } from "~/game/Game";
+import { GIFT, type GiftType } from "~/config/constants";
 
 export class MenuManager {
     private game: Game;
@@ -109,6 +110,71 @@ export class MenuManager {
 
             new MenuItem({
                 id: "separator2",
+                label: "",
+                type: "separator",
+            }),
+
+            new MenuItem({
+                id: "debug_next_gift",
+                label: "Force Next Gift",
+                type: "select",
+                value: this.getInitialDebugGiftValue(),
+                options: [
+                    { label: "Random (Normal)", value: "none" },
+                    { label: "Fuel Refill", value: GIFT.TYPES.FUEL_REFILL },
+                    { label: "Extra Life", value: GIFT.TYPES.EXTRA_LIFE },
+                    {
+                        label: "Missiles Weapon",
+                        value: GIFT.TYPES.WEAPON_MISSILES,
+                    },
+                    { label: "Laser Weapon", value: GIFT.TYPES.WEAPON_LASER },
+                    {
+                        label: "Lightning Weapon",
+                        value: GIFT.TYPES.WEAPON_LIGHTNING,
+                    },
+                    {
+                        label: "Bullets: Fire Rate",
+                        value: GIFT.TYPES.UPGRADE_BULLETS_FIRE_RATE,
+                    },
+                    {
+                        label: "Bullets: Size",
+                        value: GIFT.TYPES.UPGRADE_BULLETS_SIZE,
+                    },
+                    {
+                        label: "Missiles: Speed",
+                        value: GIFT.TYPES.UPGRADE_MISSILES_SPEED,
+                    },
+                    {
+                        label: "Missiles: Fire Rate",
+                        value: GIFT.TYPES.UPGRADE_MISSILES_FIRE_RATE,
+                    },
+                    {
+                        label: "Missiles: Homing",
+                        value: GIFT.TYPES.UPGRADE_MISSILES_HOMING,
+                    },
+                    {
+                        label: "Laser: Range",
+                        value: GIFT.TYPES.UPGRADE_LASER_RANGE,
+                    },
+                    {
+                        label: "Laser: Efficiency",
+                        value: GIFT.TYPES.UPGRADE_LASER_EFFICIENCY,
+                    },
+                    {
+                        label: "Lightning: Radius",
+                        value: GIFT.TYPES.UPGRADE_LIGHTNING_RADIUS,
+                    },
+                    {
+                        label: "Lightning: Chain",
+                        value: GIFT.TYPES.UPGRADE_LIGHTNING_CHAIN,
+                    },
+                ],
+                onChange: (value) =>
+                    this.handleDebugNextGiftChange(value as string),
+            }),
+
+            new MenuItem({
+                id: "separator3",
                 label: "",
                 type: "separator",
             }),
@@ -313,6 +379,25 @@ export class MenuManager {
         this.game.setGeometry("aspectFit", {
             aspectRatio: aspectRatio,
         });
+    }
+
+    /**
+     * Handle debug next gift change
+     */
+    private handleDebugNextGiftChange(value: string): void {
+        if (value === "none") {
+            this.game.setDebugNextGift(null);
+        } else {
+            this.game.setDebugNextGift(value as GiftType);
+        }
+    }
+
+    /**
+     * Get initial debug gift value from game state
+     */
+    private getInitialDebugGiftValue(): string {
+        const debugGift = this.game.getDebugNextGift();
+        return debugGift || "none";
     }
 
     /**
