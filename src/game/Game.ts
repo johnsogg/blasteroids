@@ -199,7 +199,11 @@ export class Game {
         this.levelCompleteAnimation.update(currentTime);
 
         // Check for space key dismissal of level complete animation
-        if (this.levelCompleteAnimation.active && this.levelCompleteAnimation.canBeDismissed && this.input.shoot) {
+        if (
+            this.levelCompleteAnimation.active &&
+            this.levelCompleteAnimation.canBeDismissed &&
+            this.input.shoot
+        ) {
             this.levelCompleteAnimation.complete();
         }
 
@@ -377,6 +381,20 @@ export class Game {
                     // Create smaller asteroids if this one is large enough
                     this.destroyAsteroid(asteroid);
                     break; // Bullet can only hit one asteroid
+                }
+            }
+        }
+
+        // Check bullet-gift collisions
+        for (const bullet of bullets) {
+            for (const gift of gifts) {
+                if (Collision.checkCircleCollision(bullet, gift)) {
+                    // Mark bullet for removal
+                    bullet.age = 999;
+
+                    // Destroy the gift with penalty
+                    this.destroyGift(gift);
+                    break; // Bullet can only hit one gift
                 }
             }
         }
@@ -650,6 +668,25 @@ export class Game {
         this.gameState.addScore(SCORING.GIFT);
 
         // TODO: Add additional gift benefits here in the future (fuel refill, extra life, weapon upgrades, etc.)
+    }
+
+    private destroyGift(gift: GameObject): void {
+        // Play frustrated cat sound
+        this.audio.playGiftDestroyed().catch(() => {
+            // Ignore audio errors
+        });
+
+        // Remove the gift from the game
+        const giftIndex = this.gameObjects.indexOf(gift);
+        if (giftIndex > -1) {
+            this.gameObjects.splice(giftIndex, 1);
+        }
+
+        // Apply score penalty for destroying a gift
+        this.gameState.addScore(-SCORING.GIFT_DESTRUCTION_PENALTY);
+
+        // Create explosion particles for visual feedback
+        this.particles.createGiftExplosion(gift.position);
     }
 
     private updateShip(

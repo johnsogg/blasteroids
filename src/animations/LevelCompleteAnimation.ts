@@ -56,10 +56,13 @@ export class LevelCompleteAnimation {
         if (!this.isActive) return;
 
         const elapsed = currentTime - this.startTime;
-        
+
         // Enable dismissal when stats are fully displayed
-        const statsPhaseStart = ANIMATIONS.LEVEL_COMPLETE_PHASES.PAUSE + ANIMATIONS.LEVEL_COMPLETE_PHASES.TITLE;
-        if (elapsed >= statsPhaseStart + 500) { // 500ms after stats start appearing
+        const statsPhaseStart =
+            ANIMATIONS.LEVEL_COMPLETE_PHASES.PAUSE +
+            ANIMATIONS.LEVEL_COMPLETE_PHASES.TITLE;
+        if (elapsed >= statsPhaseStart + 500) {
+            // 500ms after stats start appearing
             this.canDismiss = true;
         }
 
@@ -137,7 +140,7 @@ export class LevelCompleteAnimation {
                 width,
                 height
             );
-            
+
             // Add dismissal hint
             this.renderDismissalHint(width, height);
         }
@@ -300,20 +303,20 @@ export class LevelCompleteAnimation {
         const centerY = height / 2;
         const borderEndY = centerY + 170; // Bottom of the dashed green border
         const hintY = borderEndY + 30; // 30px below the border
-        
+
         // Pulsing "PRESS SPACE TO CONTINUE" text (more prominent since it's the only way to proceed)
         const pulseIntensity = Math.sin(Date.now() * 0.008) * 0.3 + 0.7; // More visible pulsing
-        
+
         this.ctx.font = "18px Orbitron, monospace";
         this.ctx.textAlign = "center";
         this.ctx.fillStyle = `rgba(255, 255, 0, ${pulseIntensity})`;
-        
+
         // Add subtle glow effect
         this.ctx.shadowColor = "#ffff00";
         this.ctx.shadowBlur = 10;
-        
+
         this.ctx.fillText("PRESS SPACE TO CONTINUE", width / 2, hintY);
-        
+
         // Reset shadow
         this.ctx.shadowBlur = 0;
     }

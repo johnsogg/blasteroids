@@ -163,6 +163,9 @@ export const SCORING = {
     // Gift collection
     GIFT: 150,
 
+    // Gift destruction penalty
+    GIFT_DESTRUCTION_PENALTY: 80,
+
     // Thresholds
     EXTRA_LIFE_THRESHOLD: 10000, // Future feature
 } as const;

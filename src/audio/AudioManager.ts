@@ -482,4 +482,60 @@ export class AudioManager {
         oscillator1.stop(this.audioContext.currentTime + 0.4);
         oscillator2.stop(this.audioContext.currentTime + 0.4);
     }
+
+    async playGiftDestroyed(): Promise<void> {
+        await this.ensureAudioContext();
+
+        // Frustrated cat "Mwwrrooowwwww" sound
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        const filter = this.audioContext.createBiquadFilter();
+
+        oscillator.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(this.masterGain);
+
+        // Use sawtooth wave for more cat-like timbre
+        oscillator.type = "sawtooth";
+
+        // Low-pass filter to soften the harsh sawtooth
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(800, this.audioContext.currentTime);
+
+        // Frequency sweep from high to low for "meow" effect
+        oscillator.frequency.setValueAtTime(300, this.audioContext.currentTime); // Start high
+        oscillator.frequency.exponentialRampToValueAtTime(
+            80,
+            this.audioContext.currentTime + 1.0
+        ); // Sweep down
+
+        // Envelope: quick attack, sustained, slow decay
+        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(
+            0.25,
+            this.audioContext.currentTime + 0.05
+        ); // Quick attack
+        gainNode.gain.setValueAtTime(0.25, this.audioContext.currentTime + 0.3); // Sustain
+        gainNode.gain.exponentialRampToValueAtTime(
+            0.01,
+            this.audioContext.currentTime + 1.0
+        ); // Slow decay
+
+        // Add slight tremolo for more realistic cat sound
+        const lfo = this.audioContext.createOscillator();
+        const lfoGain = this.audioContext.createGain();
+
+        lfo.type = "sine";
+        lfo.frequency.setValueAtTime(6, this.audioContext.currentTime); // 6Hz tremolo
+        lfoGain.gain.setValueAtTime(0.1, this.audioContext.currentTime); // Subtle effect
+
+        lfo.connect(lfoGain);
+        lfoGain.connect(gainNode.gain);
+
+        const duration = 1.0;
+        oscillator.start(this.audioContext.currentTime);
+        lfo.start(this.audioContext.currentTime);
+        oscillator.stop(this.audioContext.currentTime + duration);
+        lfo.stop(this.audioContext.currentTime + duration);
+    }
 }

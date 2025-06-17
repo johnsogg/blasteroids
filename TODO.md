@@ -25,3 +25,4 @@
 ## Known Bugs
 
 - [ ] The display text has a strange line rendered on all the zeros but it should not be there
+- [ ] The Level Complete display is somewhat illegible if there are rendered objects behind it. The Level Complete display should have a mostly opaque black background. Rendered objects should only slightly be visible behind it.

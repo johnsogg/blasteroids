@@ -124,6 +124,32 @@ export class ParticleSystem {
         }
     }
 
+    createGiftExplosion(position: Vector2): void {
+        // Create orange/red explosion particles to indicate negative event
+        const particleCount = 8; // Moderate explosion size
+
+        for (let i = 0; i < particleCount; i++) {
+            const angle =
+                (Math.PI * 2 * i) / particleCount + (Math.random() - 0.5) * 0.4;
+            const speed = 60 + Math.random() * 40; // Moderate speed
+            const velocity = Vector2.fromAngle(angle, speed);
+
+            this.particles.push({
+                position: position.add(
+                    new Vector2(
+                        (Math.random() - 0.5) * 8, // Small spawn spread
+                        (Math.random() - 0.5) * 8
+                    )
+                ),
+                velocity: velocity,
+                life: 0.6 + Math.random() * 0.4, // Short-lived
+                maxLife: 1.0,
+                size: 1.5 + Math.random() * 1.5, // Small particles
+                color: Math.random() > 0.3 ? "#ff4400" : "#ffaa00", // Orange/red colors
+            });
+        }
+    }
+
     getParticleCount(): number {
         return this.particles.length;
     }
