@@ -11,7 +11,9 @@ import {
     SHIP,
     GIFT,
     BULLET,
+    WEAPONS,
     type GeometryMode,
+    type GiftType,
 } from "~/config/constants";
 import { CanvasManager } from "~/display/CanvasManager";
 import { MenuManager } from "~/menu/MenuManager";
@@ -84,7 +86,7 @@ export class Game {
         for (let i = 0; i < 4; i++) {
             this.createAsteroid();
         }
-        
+
         // Start timing the first level
         this.levelStartTime = performance.now();
     }
@@ -197,6 +199,19 @@ export class Game {
         if (this.gameState.gameOver && this.input.restart) {
             this.restart();
             return;
+        }
+
+        // Handle weapon switching (only when game is not over or paused)
+        if (!this.gameState.gameOver && !this.isPaused) {
+            if (this.input.weapon1) {
+                this.gameState.switchWeapon("bullets");
+            } else if (this.input.weapon2) {
+                this.gameState.switchWeapon("missiles");
+            } else if (this.input.weapon3) {
+                this.gameState.switchWeapon("laser");
+            } else if (this.input.weapon4) {
+                this.gameState.switchWeapon("lightning");
+            }
         }
 
         // Update level completion animation
@@ -539,7 +554,7 @@ export class Game {
     private nextLevel(): void {
         // Calculate level completion time
         const completionTime = (performance.now() - this.levelStartTime) / 1000; // Convert to seconds
-        
+
         // Start level completion animation
         this.levelCompleteAnimation.start(this.gameState.level, completionTime);
         this.levelAnimationStarted = true;
@@ -547,8 +562,10 @@ export class Game {
 
     private advanceToNextLevel(): void {
         // Clean up all objects except the ship before starting new level
-        this.gameObjects = this.gameObjects.filter(obj => obj.type === "ship");
-        
+        this.gameObjects = this.gameObjects.filter(
+            (obj) => obj.type === "ship"
+        );
+
         // Advance to next level
         this.gameState.nextLevel();
 
@@ -558,7 +575,7 @@ export class Game {
         for (let i = 0; i < asteroidCount; i++) {
             this.createAsteroid();
         }
-        
+
         // Start timing the new level
         this.levelStartTime = performance.now();
     }
@@ -680,7 +697,40 @@ export class Game {
         // Award points for gift collection
         this.gameState.addScore(SCORING.GIFT);
 
-        // TODO: Add additional gift benefits here in the future (fuel refill, extra life, weapon upgrades, etc.)
+        // Apply gift benefits based on type
+        const giftType = gift.giftType || "fuel_refill";
+
+        switch (giftType) {
+            case "fuel_refill":
+                this.gameState.refillFuel();
+                break;
+
+            case "extra_life":
+                // Add extra life (we'll need to add this method to GameState)
+                this.gameState.addLife();
+                break;
+
+            case "weapon_bullets":
+                this.gameState.unlockWeapon("bullets");
+                break;
+
+            case "weapon_missiles":
+                this.gameState.unlockWeapon("missiles");
+                break;
+
+            case "weapon_laser":
+                this.gameState.unlockWeapon("laser");
+                break;
+
+            case "weapon_lightning":
+                this.gameState.unlockWeapon("lightning");
+                break;
+
+            default:
+                // Handle upgrades
+                this.gameState.applyWeaponUpgrade(giftType);
+                break;
+        }
     }
 
     private destroyGift(gift: GameObject): void {
@@ -790,14 +840,80 @@ export class Game {
         }
 
         // Shooting
-        if (
-            this.input.shoot &&
-            currentTime - this.lastShotTime > BULLET.FIRE_RATE
-        ) {
-            // Fire rate limited by constant
-            this.shoot(ship);
-            this.lastShotTime = currentTime;
+        if (this.input.shoot) {
+            this.handleShooting(ship, currentTime);
         }
+    }
+
+    private handleShooting(ship: GameObject, currentTime: number): void {
+        const weaponState = this.gameState.weaponState;
+        
+        switch (weaponState.currentWeapon) {
+            case "bullets":
+                this.shootBullets(ship, currentTime);
+                break;
+            case "missiles":
+                // TODO: Implement missile shooting
+                break;
+            case "laser":
+                // TODO: Implement laser shooting
+                break;
+            case "lightning":
+                // TODO: Implement lightning shooting
+                break;
+        }
+    }
+
+    private shootBullets(ship: GameObject, currentTime: number): void {
+        // Check fire rate (with upgrade consideration)
+        let fireRate = BULLET.FIRE_RATE;
+        if (this.gameState.hasUpgrade("upgrade_bullets_fire_rate")) {
+            fireRate *= WEAPONS.BULLETS.FIRE_RATE_UPGRADE; // 25% faster
+        }
+        
+        if (currentTime - this.lastShotTime < fireRate) {
+            return; // Too soon to fire again
+        }
+
+        // Check and consume fuel
+        if (!this.gameState.consumeFuel(WEAPONS.BULLETS.FUEL_CONSUMPTION)) {
+            return; // Not enough fuel
+        }
+
+        const bulletSpeed = 500; // pixels per second
+        const bulletVelocity = Vector2.fromAngle(ship.rotation, bulletSpeed);
+
+        // Add ship's velocity to bullet for realistic physics
+        const finalVelocity = ship.velocity.add(bulletVelocity);
+
+        // Position bullet slightly in front of ship
+        const bulletOffset = Vector2.fromAngle(ship.rotation, ship.size.x);
+        const bulletPosition = ship.position.add(bulletOffset);
+
+        // Determine bullet size (with upgrade consideration)
+        let bulletSize = BULLET.SIZE;
+        let bulletColor = WEAPONS.BULLETS.COLOR;
+        if (this.gameState.hasUpgrade("upgrade_bullets_size")) {
+            bulletSize *= WEAPONS.BULLETS.SIZE_UPGRADE; // 50% larger
+            bulletColor = WEAPONS.BULLETS.UPGRADED_COLOR;
+        }
+
+        this.gameObjects.push({
+            position: bulletPosition,
+            velocity: finalVelocity,
+            size: new Vector2(bulletSize, bulletSize),
+            rotation: 0,
+            color: bulletColor,
+            type: "bullet",
+            age: 0,
+        });
+
+        this.lastShotTime = currentTime;
+
+        // Play shooting sound
+        this.audio.playShoot().catch(() => {
+            // Ignore audio errors (user hasn't interacted yet)
+        });
     }
 
     private shoot(ship: GameObject): void {
@@ -955,7 +1071,7 @@ export class Game {
                     disappearProgress
                 );
             } else if (obj.type === "gift") {
-                Shapes.drawGift(this.ctx, pos, obj.rotation);
+                Shapes.drawGift(this.ctx, pos, obj.rotation, obj.giftType);
             }
         });
     }
@@ -1019,6 +1135,45 @@ export class Game {
         this.ctx.restore();
     }
 
+    private renderWeaponHUD(): void {
+        const weaponState = this.gameState.weaponState;
+        const weapons = [
+            {
+                type: "bullets",
+                unlocked: weaponState.inventory.bullets,
+                selected: weaponState.currentWeapon === "bullets",
+            },
+            {
+                type: "missiles",
+                unlocked: weaponState.inventory.missiles,
+                selected: weaponState.currentWeapon === "missiles",
+            },
+            {
+                type: "laser",
+                unlocked: weaponState.inventory.laser,
+                selected: weaponState.currentWeapon === "laser",
+            },
+            {
+                type: "lightning",
+                unlocked: weaponState.inventory.lightning,
+                selected: weaponState.currentWeapon === "lightning",
+            },
+        ];
+
+        const hudPosition = new Vector2(
+            WEAPONS.HUD.X_OFFSET,
+            WEAPONS.HUD.Y_START
+        );
+
+        Shapes.drawWeaponHUD(
+            this.ctx,
+            weapons,
+            hudPosition,
+            WEAPONS.HUD.ICON_SIZE,
+            WEAPONS.HUD.ICON_SPACING
+        );
+    }
+
     private render(): void {
         // Clear canvas
         this.ctx.fillStyle = "#000000";
@@ -1035,6 +1190,9 @@ export class Game {
         // Draw fuel gauge
         this.renderFuelGauge();
 
+        // Draw weapon HUD
+        this.renderWeaponHUD();
+
         // Draw game over screen if needed
         if (this.gameState.gameOver) {
             this.showGameOver();
@@ -1047,7 +1205,131 @@ export class Game {
         this.levelCompleteAnimation.render();
     }
 
+    private selectGiftType(): GiftType {
+        const availableGifts: { type: GiftType; weight: number }[] = [];
+
+        // Always available gifts
+        availableGifts.push(
+            { type: "fuel_refill", weight: GIFT.SPAWN_WEIGHTS.FUEL_REFILL },
+            { type: "extra_life", weight: GIFT.SPAWN_WEIGHTS.EXTRA_LIFE }
+        );
+
+        // Weapon unlocks (only if not already unlocked)
+        if (!this.gameState.hasWeapon("bullets")) {
+            availableGifts.push({
+                type: "weapon_bullets",
+                weight: GIFT.SPAWN_WEIGHTS.WEAPON_BULLETS,
+            });
+        }
+        if (!this.gameState.hasWeapon("missiles")) {
+            availableGifts.push({
+                type: "weapon_missiles",
+                weight: GIFT.SPAWN_WEIGHTS.WEAPON_MISSILES,
+            });
+        }
+        if (!this.gameState.hasWeapon("laser")) {
+            availableGifts.push({
+                type: "weapon_laser",
+                weight: GIFT.SPAWN_WEIGHTS.WEAPON_LASER,
+            });
+        }
+        if (!this.gameState.hasWeapon("lightning")) {
+            availableGifts.push({
+                type: "weapon_lightning",
+                weight: GIFT.SPAWN_WEIGHTS.WEAPON_LIGHTNING,
+            });
+        }
+
+        // Weapon upgrades (only if weapon is unlocked and upgrade not already acquired)
+        if (this.gameState.hasWeapon("bullets")) {
+            if (!this.gameState.hasUpgrade("upgrade_bullets_fire_rate")) {
+                availableGifts.push({
+                    type: "upgrade_bullets_fire_rate",
+                    weight: GIFT.SPAWN_WEIGHTS.UPGRADE_BULLETS_FIRE_RATE,
+                });
+            }
+            if (!this.gameState.hasUpgrade("upgrade_bullets_size")) {
+                availableGifts.push({
+                    type: "upgrade_bullets_size",
+                    weight: GIFT.SPAWN_WEIGHTS.UPGRADE_BULLETS_SIZE,
+                });
+            }
+        }
+
+        if (this.gameState.hasWeapon("missiles")) {
+            if (!this.gameState.hasUpgrade("upgrade_missiles_speed")) {
+                availableGifts.push({
+                    type: "upgrade_missiles_speed",
+                    weight: GIFT.SPAWN_WEIGHTS.UPGRADE_MISSILES_SPEED,
+                });
+            }
+            if (!this.gameState.hasUpgrade("upgrade_missiles_fire_rate")) {
+                availableGifts.push({
+                    type: "upgrade_missiles_fire_rate",
+                    weight: GIFT.SPAWN_WEIGHTS.UPGRADE_MISSILES_FIRE_RATE,
+                });
+            }
+            if (!this.gameState.hasUpgrade("upgrade_missiles_homing")) {
+                availableGifts.push({
+                    type: "upgrade_missiles_homing",
+                    weight: GIFT.SPAWN_WEIGHTS.UPGRADE_MISSILES_HOMING,
+                });
+            }
+        }
+
+        if (this.gameState.hasWeapon("laser")) {
+            if (!this.gameState.hasUpgrade("upgrade_laser_range")) {
+                availableGifts.push({
+                    type: "upgrade_laser_range",
+                    weight: GIFT.SPAWN_WEIGHTS.UPGRADE_LASER_RANGE,
+                });
+            }
+            if (!this.gameState.hasUpgrade("upgrade_laser_efficiency")) {
+                availableGifts.push({
+                    type: "upgrade_laser_efficiency",
+                    weight: GIFT.SPAWN_WEIGHTS.UPGRADE_LASER_EFFICIENCY,
+                });
+            }
+        }
+
+        if (this.gameState.hasWeapon("lightning")) {
+            if (!this.gameState.hasUpgrade("upgrade_lightning_radius")) {
+                availableGifts.push({
+                    type: "upgrade_lightning_radius",
+                    weight: GIFT.SPAWN_WEIGHTS.UPGRADE_LIGHTNING_RADIUS,
+                });
+            }
+            if (!this.gameState.hasUpgrade("upgrade_lightning_chain")) {
+                availableGifts.push({
+                    type: "upgrade_lightning_chain",
+                    weight: GIFT.SPAWN_WEIGHTS.UPGRADE_LIGHTNING_CHAIN,
+                });
+            }
+        }
+
+        // Calculate total weight
+        const totalWeight = availableGifts.reduce(
+            (sum, gift) => sum + gift.weight,
+            0
+        );
+
+        // Select random gift based on weights
+        let random = Math.random() * totalWeight;
+        for (const gift of availableGifts) {
+            random -= gift.weight;
+            if (random <= 0) {
+                return gift.type;
+            }
+        }
+
+        // Fallback (should never happen)
+        return "fuel_refill";
+    }
+
     private spawnGift(): void {
+        // Select gift type based on current game state
+        const giftType = this.selectGiftType();
+
         // Choose a random position at the edge of the screen
         const side = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
         let x, y;
@@ -1074,16 +1356,40 @@ export class Game {
                 y = 100;
         }
 
-        // Create opening warp bubble
+        // Get warp bubble color based on gift type
+        const getWarpColor = (type: GiftType): string => {
+            switch (type) {
+                case "fuel_refill": return GIFT.WARP_COLORS.FUEL_REFILL;
+                case "extra_life": return GIFT.WARP_COLORS.EXTRA_LIFE;
+                case "weapon_bullets": return GIFT.WARP_COLORS.WEAPON_BULLETS;
+                case "weapon_missiles": return GIFT.WARP_COLORS.WEAPON_MISSILES;
+                case "weapon_laser": return GIFT.WARP_COLORS.WEAPON_LASER;
+                case "weapon_lightning": return GIFT.WARP_COLORS.WEAPON_LIGHTNING;
+                case "upgrade_bullets_fire_rate": return GIFT.WARP_COLORS.UPGRADE_BULLETS_FIRE_RATE;
+                case "upgrade_bullets_size": return GIFT.WARP_COLORS.UPGRADE_BULLETS_SIZE;
+                case "upgrade_missiles_speed": return GIFT.WARP_COLORS.UPGRADE_MISSILES_SPEED;
+                case "upgrade_missiles_fire_rate": return GIFT.WARP_COLORS.UPGRADE_MISSILES_FIRE_RATE;
+                case "upgrade_missiles_homing": return GIFT.WARP_COLORS.UPGRADE_MISSILES_HOMING;
+                case "upgrade_laser_range": return GIFT.WARP_COLORS.UPGRADE_LASER_RANGE;
+                case "upgrade_laser_efficiency": return GIFT.WARP_COLORS.UPGRADE_LASER_EFFICIENCY;
+                case "upgrade_lightning_radius": return GIFT.WARP_COLORS.UPGRADE_LIGHTNING_RADIUS;
+                case "upgrade_lightning_chain": return GIFT.WARP_COLORS.UPGRADE_LIGHTNING_CHAIN;
+                default: return GIFT.WARP_BUBBLE_COLOR;
+            }
+        };
+        const warpColor = getWarpColor(giftType);
+
+        // Create opening warp bubble with gift type stored for later
         this.gameObjects.push({
             position: new Vector2(x, y),
             velocity: Vector2.zero(),
             size: new Vector2(80, 80), // Large enough for the bubble
             rotation: 0,
-            color: "#00ffff",
+            color: warpColor,
             type: "warpBubbleIn",
             age: 0,
             warpAnimationProgress: 0,
+            giftType: giftType, // Store gift type for spawning later
         });
 
         // Play warp bubble opening sound
@@ -1109,6 +1415,9 @@ export class Game {
         const speed = 30 + Math.random() * 30; // Slower: 30-60 pixels per second
         const velocity = direction.multiply(speed);
 
+        // Get gift type from warp bubble, fallback to fuel_refill
+        const giftType = warpBubble.giftType || "fuel_refill";
+
         // Create the gift
         const gift: GameObject = {
             position: new Vector2(giftPosition.x, giftPosition.y),
@@ -1121,6 +1430,7 @@ export class Game {
             giftSpawnTime: performance.now(),
             giftCollectionDeadline: performance.now() + 8000, // 8 seconds: 5 for collection window + 3 for warp closing
             closingWarpCreated: false, // Track if we've created the exit warp bubble
+            giftType: giftType, // Store the gift type
         };
 
         this.gameObjects.push(gift);

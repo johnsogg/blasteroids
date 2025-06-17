@@ -166,7 +166,10 @@ export class CanvasManager {
         const dimensions = this.calculateDimensions();
 
         // Only update if dimensions have actually changed to prevent infinite loops
-        if (this.canvas.width === dimensions.width && this.canvas.height === dimensions.height) {
+        if (
+            this.canvas.width === dimensions.width &&
+            this.canvas.height === dimensions.height
+        ) {
             return;
         }
 

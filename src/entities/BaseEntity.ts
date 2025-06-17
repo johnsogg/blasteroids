@@ -1,4 +1,5 @@
 import { Vector2 } from "~/utils/Vector2";
+import type { GiftType } from "~/config/constants";
 
 /**
  * Base entity interface for all game objects
@@ -11,6 +12,15 @@ export interface BaseEntity {
     rotation: number;
     color: string;
     age?: number; // Time since entity was created
+
+    // Optional properties for specific entity types
+    warpAnimationProgress?: number;
+    warpDisappearing?: boolean;
+    warpDisappearStartTime?: number;
+    giftType?: GiftType;
+    giftSpawnTime?: number;
+    giftCollectionDeadline?: number;
+    closingWarpCreated?: boolean;
 }
 
 /**

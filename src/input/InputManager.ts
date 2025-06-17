@@ -85,4 +85,21 @@ export class InputManager {
     get menuSelect(): boolean {
         return this.wasKeyPressed("Enter") || this.wasKeyPressed("Space");
     }
+
+    // Weapon switching methods (single press)
+    get weapon1(): boolean {
+        return this.wasKeyPressed("Digit1");
+    }
+
+    get weapon2(): boolean {
+        return this.wasKeyPressed("Digit2");
+    }
+
+    get weapon3(): boolean {
+        return this.wasKeyPressed("Digit3");
+    }
+
+    get weapon4(): boolean {
+        return this.wasKeyPressed("Digit4");
+    }
 }

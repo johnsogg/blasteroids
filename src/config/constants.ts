@@ -207,7 +207,67 @@ export const GIFT = {
     CLOSING_ANIMATION_TIME: 1.0, // seconds
     DISAPPEAR_ANIMATION_TIME: 0.5, // seconds
     TRAJECTORY_PREDICTION_TIME: 3.0, // seconds ahead
+
+    // Gift types and their spawn probabilities
+    TYPES: {
+        FUEL_REFILL: "fuel_refill" as const,
+        EXTRA_LIFE: "extra_life" as const,
+        WEAPON_BULLETS: "weapon_bullets" as const,
+        WEAPON_MISSILES: "weapon_missiles" as const,
+        WEAPON_LASER: "weapon_laser" as const,
+        WEAPON_LIGHTNING: "weapon_lightning" as const,
+        UPGRADE_BULLETS_FIRE_RATE: "upgrade_bullets_fire_rate" as const,
+        UPGRADE_BULLETS_SIZE: "upgrade_bullets_size" as const,
+        UPGRADE_MISSILES_SPEED: "upgrade_missiles_speed" as const,
+        UPGRADE_MISSILES_FIRE_RATE: "upgrade_missiles_fire_rate" as const,
+        UPGRADE_MISSILES_HOMING: "upgrade_missiles_homing" as const,
+        UPGRADE_LASER_RANGE: "upgrade_laser_range" as const,
+        UPGRADE_LASER_EFFICIENCY: "upgrade_laser_efficiency" as const,
+        UPGRADE_LIGHTNING_RADIUS: "upgrade_lightning_radius" as const,
+        UPGRADE_LIGHTNING_CHAIN: "upgrade_lightning_chain" as const,
+    },
+
+    // Spawn probabilities (higher number = more likely)
+    SPAWN_WEIGHTS: {
+        FUEL_REFILL: 20,
+        EXTRA_LIFE: 5,
+        WEAPON_BULLETS: 15, // Default weapon unlock
+        WEAPON_MISSILES: 10,
+        WEAPON_LASER: 8,
+        WEAPON_LIGHTNING: 6,
+        UPGRADE_BULLETS_FIRE_RATE: 12,
+        UPGRADE_BULLETS_SIZE: 12,
+        UPGRADE_MISSILES_SPEED: 8,
+        UPGRADE_MISSILES_FIRE_RATE: 8,
+        UPGRADE_MISSILES_HOMING: 6,
+        UPGRADE_LASER_RANGE: 8,
+        UPGRADE_LASER_EFFICIENCY: 8,
+        UPGRADE_LIGHTNING_RADIUS: 6,
+        UPGRADE_LIGHTNING_CHAIN: 4,
+    },
+
+    // Warp bubble colors for different gift types
+    WARP_COLORS: {
+        FUEL_REFILL: "#00ff00", // Green
+        EXTRA_LIFE: "#ff00ff", // Magenta
+        WEAPON_BULLETS: "#ffff00", // Yellow
+        WEAPON_MISSILES: "#ff8800", // Orange
+        WEAPON_LASER: "#ff0088", // Pink
+        WEAPON_LIGHTNING: "#00ffff", // Cyan
+        UPGRADE_BULLETS_FIRE_RATE: "#ffff88", // Light yellow
+        UPGRADE_BULLETS_SIZE: "#ffff88", // Light yellow
+        UPGRADE_MISSILES_SPEED: "#ffaa44", // Light orange
+        UPGRADE_MISSILES_FIRE_RATE: "#ffaa44", // Light orange
+        UPGRADE_MISSILES_HOMING: "#ffaa44", // Light orange
+        UPGRADE_LASER_RANGE: "#ff44aa", // Light pink
+        UPGRADE_LASER_EFFICIENCY: "#ff44aa", // Light pink
+        UPGRADE_LIGHTNING_RADIUS: "#44ffff", // Light cyan
+        UPGRADE_LIGHTNING_CHAIN: "#44ffff", // Light cyan
+    },
 } as const;
+
+// Gift type union for TypeScript
+export type GiftType = (typeof GIFT.TYPES)[keyof typeof GIFT.TYPES];
 
 // =============================================================================
 // AUDIO
@@ -309,6 +369,74 @@ export const COLORS = {
     FUEL_GOOD: "#00ff00", // 100%
     FUEL_GAUGE_BORDER: "#888888",
 } as const;
+
+// =============================================================================
+// WEAPONS SYSTEM
+// =============================================================================
+export const WEAPONS = {
+    // Weapon types
+    TYPES: {
+        BULLETS: "bullets" as const,
+        MISSILES: "missiles" as const,
+        LASER: "laser" as const,
+        LIGHTNING: "lightning" as const,
+    },
+
+    // Default weapon (bullets) - enhanced from original
+    BULLETS: {
+        FUEL_CONSUMPTION: 0.5, // units per shot (very small amount)
+        FIRE_RATE_UPGRADE: 0.75, // 25% faster (multiply fire rate by this)
+        SIZE_UPGRADE: 1.5, // 50% larger bullets
+        COLOR: "#ffff00",
+        UPGRADED_COLOR: "#ffff88",
+    },
+
+    // Missiles
+    MISSILES: {
+        FIRE_RATE: 4000, // milliseconds between shots (1 per 4 seconds)
+        FUEL_CONSUMPTION: 5, // units per shot
+        SPEED: 200, // pixels per second (slower than bullets)
+        EXPLOSION_RADIUS: 30, // pixels
+        SPEED_UPGRADE: 1.5, // 50% faster travel
+        FIRE_RATE_UPGRADE: 0.5, // 50% faster rate of fire
+        HOMING_RANGE: 100, // pixels for homing upgrade
+        COLOR: "#ff8800",
+    },
+
+    // Laser
+    LASER: {
+        LENGTH: 80, // pixels
+        FUEL_CONSUMPTION_RATE: 10, // units per second while firing
+        LENGTH_UPGRADE: 1.5, // 50% longer range
+        EFFICIENCY_UPGRADE: 0.5, // 50% more efficient fuel usage
+        COLOR: "#ff0088",
+        WIDTH: 3,
+    },
+
+    // Lightning
+    LIGHTNING: {
+        RADIUS: 60, // pixels
+        FUEL_CONSUMPTION: 8, // units per shot
+        FIRE_RATE: 1500, // milliseconds between shots
+        RADIUS_UPGRADE: 1.2, // 20% larger radius
+        ARC_COLOR: "#00ffff",
+        ARC_WIDTH: 2,
+    },
+
+    // HUD Configuration
+    HUD: {
+        ICON_SIZE: 20, // Size of weapon icons
+        ICON_SPACING: 35, // Vertical spacing between icons
+        X_OFFSET: 20, // Distance from left edge
+        Y_START: 80, // Starting Y position (below lives display)
+        SELECTED_COLOR: "#ffffff",
+        ACQUIRED_COLOR: "#888888",
+        UNAVAILABLE_COLOR: "#444444",
+    },
+} as const;
+
+// Weapon type union for TypeScript
+export type WeaponType = (typeof WEAPONS.TYPES)[keyof typeof WEAPONS.TYPES];
 
 // =============================================================================
 // ANIMATIONS
