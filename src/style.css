@@ -116,27 +116,15 @@ body {
     z-index: -1;
 }
 
-/* Custom styling for zeros with diagonal lines */
+/* Custom styling for zeros (diagonal line removed as per bug report) */
 .score-value {
     position: relative;
 }
 
-/* Retro zero with diagonal line */
+/* Retro zero styling without diagonal line */
 .retro-zero {
     position: relative;
     display: inline-block;
-}
-
-.retro-zero::after {
-    content: "";
-    position: absolute;
-    top: 10%;
-    left: 20%;
-    width: 60%;
-    height: 80%;
-    border-left: 2px solid currentColor;
-    transform: rotate(25deg);
-    opacity: 0.8;
 }
 
 /* Animation for new high score */

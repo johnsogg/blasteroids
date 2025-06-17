@@ -6,6 +6,7 @@ export interface LevelCompleteStats {
     nextLevel: number;
     levelBonus: number;
     totalScore: number;
+    completionTime: number; // Time in seconds to complete the level
 }
 
 export class LevelCompleteAnimation {
@@ -30,7 +31,7 @@ export class LevelCompleteAnimation {
     /**
      * Start the level complete animation
      */
-    start(completedLevel: number): void {
+    start(completedLevel: number, completionTime: number): void {
         this.isActive = true;
         this.startTime = performance.now();
 
@@ -41,6 +42,7 @@ export class LevelCompleteAnimation {
             nextLevel: completedLevel + 1,
             levelBonus: levelBonus,
             totalScore: this.gameState.score + levelBonus,
+            completionTime: completionTime,
         };
 
         // Award level bonus
@@ -80,6 +82,10 @@ export class LevelCompleteAnimation {
         const height = this.canvas.height;
 
         this.ctx.save();
+
+        // Draw semi-transparent black background for better text legibility
+        this.ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+        this.ctx.fillRect(0, 0, width, height);
 
         // Phase 1: Initial pause - just subtle screen effect
         if (elapsed < ANIMATIONS.LEVEL_COMPLETE_PHASES.PAUSE) {
@@ -179,6 +185,14 @@ export class LevelCompleteAnimation {
     }
 
     /**
+     * Format time in seconds to a readable format
+     */
+    private formatTime(seconds: number): string {
+        // Round to 1 decimal place for cleaner display
+        return seconds.toFixed(1);
+    }
+
+    /**
      * Render subtle screen flash effect
      */
     private renderScreenFlash(progress: number): void {
@@ -197,7 +211,7 @@ export class LevelCompleteAnimation {
         width: number,
         height: number
     ): void {
-        const text = "LEVEL COMPLETE";
+        const text = `LEVEL ${this.stats?.completedLevel} COMPLETE`;
         const centerY = height / 2 - 50;
 
         // Typewriter effect - reveal characters over time
@@ -260,16 +274,14 @@ export class LevelCompleteAnimation {
         this.ctx.textAlign = "center";
         this.ctx.fillStyle = "#00ff00";
 
-        // Stats appear one by one
+        // Stats appear one by one - format as requested
         const statsLines = [
-            `LEVEL ${this.stats.completedLevel} COMPLETED`,
-            `LEVEL BONUS: ${this.stats.levelBonus}`,
-            `ADVANCING TO LEVEL ${this.stats.nextLevel}`,
-            `TOTAL SCORE: ${this.stats.totalScore}`,
+            `BONUS: ${this.stats.levelBonus}`,
+            `${this.formatTime(this.stats.completionTime)} SECONDS`,
         ];
 
         statsLines.forEach((line, index) => {
-            const lineProgress = Math.max(0, progress * 4 - index); // Stagger appearance
+            const lineProgress = Math.max(0, progress * 2 - index); // Stagger appearance
             if (lineProgress > 0) {
                 const alpha = Math.min(1, lineProgress);
                 this.ctx.globalAlpha = alpha;

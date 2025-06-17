@@ -34,6 +34,7 @@ export class Game {
     private menuManager: MenuManager;
     private levelCompleteAnimation: LevelCompleteAnimation;
     private levelAnimationStarted = false;
+    private levelStartTime = 0;
     private lastTime = 0;
     private isPaused = false;
     private running = false;
@@ -83,6 +84,9 @@ export class Game {
         for (let i = 0; i < 4; i++) {
             this.createAsteroid();
         }
+        
+        // Start timing the first level
+        this.levelStartTime = performance.now();
     }
 
     /**
@@ -533,12 +537,18 @@ export class Game {
     }
 
     private nextLevel(): void {
+        // Calculate level completion time
+        const completionTime = (performance.now() - this.levelStartTime) / 1000; // Convert to seconds
+        
         // Start level completion animation
-        this.levelCompleteAnimation.start(this.gameState.level);
+        this.levelCompleteAnimation.start(this.gameState.level, completionTime);
         this.levelAnimationStarted = true;
     }
 
     private advanceToNextLevel(): void {
+        // Clean up all objects except the ship before starting new level
+        this.gameObjects = this.gameObjects.filter(obj => obj.type === "ship");
+        
         // Advance to next level
         this.gameState.nextLevel();
 
@@ -548,6 +558,9 @@ export class Game {
         for (let i = 0; i < asteroidCount; i++) {
             this.createAsteroid();
         }
+        
+        // Start timing the new level
+        this.levelStartTime = performance.now();
     }
 
     private createAsteroid(basePosition?: Vector2): void {

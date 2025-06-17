@@ -17,6 +17,7 @@ export class CanvasManager {
     private config: GeometryConfig;
     private resizeObserver: ResizeObserver | null = null;
     private onResizeCallback?: (dimensions: CanvasDimensions) => void;
+    private resizeTimeout: ReturnType<typeof setTimeout> | null = null;
 
     constructor(canvas: HTMLCanvasElement, config?: Partial<GeometryConfig>) {
         this.canvas = canvas;
@@ -164,6 +165,11 @@ export class CanvasManager {
     private updateCanvasSize(): void {
         const dimensions = this.calculateDimensions();
 
+        // Only update if dimensions have actually changed to prevent infinite loops
+        if (this.canvas.width === dimensions.width && this.canvas.height === dimensions.height) {
+            return;
+        }
+
         // Update canvas element dimensions
         this.canvas.width = dimensions.width;
         this.canvas.height = dimensions.height;
@@ -199,7 +205,14 @@ export class CanvasManager {
             this.config.mode === GEOMETRY.MODES.FULL_WINDOW ||
             this.config.mode === GEOMETRY.MODES.ASPECT_FIT
         ) {
-            this.updateCanvasSize();
+            // Debounce resize to prevent infinite loops and excessive calls
+            if (this.resizeTimeout) {
+                clearTimeout(this.resizeTimeout);
+            }
+            this.resizeTimeout = setTimeout(() => {
+                this.updateCanvasSize();
+                this.resizeTimeout = null;
+            }, 10); // Short delay to debounce
         }
     }
 
@@ -240,6 +253,10 @@ export class CanvasManager {
      * Cleanup resources
      */
     destroy(): void {
+        if (this.resizeTimeout) {
+            clearTimeout(this.resizeTimeout);
+            this.resizeTimeout = null;
+        }
         this.resizeObserver?.disconnect();
         window.removeEventListener("resize", () => this.handleResize());
     }

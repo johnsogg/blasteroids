@@ -86,7 +86,7 @@ See [TODO.md](./TODO.md) for current development tasks and roadmap.
 
 ## Memories
 
-- Keep the TODO.md file up to date with the current status
+- Keep the TODO.md file up to date with the current status, but always ask the user before writing to it to avoid conflicts
 - Always run formatting and linting before commits
 - Use descriptive commit messages that explain the "why" not just the "what"
 - When committing to git, group changes into meaningful sets so their commits are logical
