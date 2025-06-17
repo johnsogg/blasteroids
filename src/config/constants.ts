@@ -7,8 +7,49 @@
 // CANVAS & DISPLAY
 // =============================================================================
 export const CANVAS = {
-    WIDTH: 800,
-    HEIGHT: 600,
+    // Default dimensions
+    DEFAULT_WIDTH: 800,
+    DEFAULT_HEIGHT: 600,
+
+    // Minimum dimensions for gameplay
+    MIN_WIDTH: 600,
+    MIN_HEIGHT: 400,
+
+    // Maximum dimensions (prevent too large)
+    MAX_WIDTH: 2560,
+    MAX_HEIGHT: 1440,
+
+    // Aspect ratios
+    CLASSIC_RATIO: 4 / 3, // 800x600, 1024x768, etc.
+    WIDESCREEN_RATIO: 16 / 9, // 1920x1080, 1280x720, etc.
+    ULTRAWIDE_RATIO: 21 / 9, // 2560x1080, etc.
+} as const;
+
+// Geometry modes for different canvas sizing
+export type GeometryMode = "fixed" | "fullWindow" | "aspectFit" | "custom";
+
+export const GEOMETRY = {
+    // Available geometry modes
+    MODES: {
+        FIXED: "fixed" as const, // Fixed 800x600 (classic)
+        FULL_WINDOW: "fullWindow" as const, // Full window dimensions
+        ASPECT_FIT: "aspectFit" as const, // Largest size that fits window maintaining aspect ratio
+        CUSTOM: "custom" as const, // Custom width/height
+    },
+
+    // Default settings
+    DEFAULT_MODE: "fixed" as const,
+    DEFAULT_ASPECT_RATIO: 4 / 3,
+
+    // Responsive breakpoints
+    BREAKPOINTS: {
+        MOBILE: 768,
+        TABLET: 1024,
+        DESKTOP: 1440,
+    },
+
+    // Padding for aspect fit mode (pixels from window edge)
+    WINDOW_PADDING: 20,
 } as const;
 
 // =============================================================================
@@ -25,9 +66,9 @@ export const SHIP = {
     WIDTH: 20,
     HEIGHT: 10,
 
-    // Spawn
-    SPAWN_X: 400,
-    SPAWN_Y: 300,
+    // Spawn (relative to canvas center)
+    SPAWN_X_RATIO: 0.5, // 50% of canvas width (center)
+    SPAWN_Y_RATIO: 0.5, // 50% of canvas height (center)
 
     // Invulnerability
     INVULNERABLE_TIME: 3.0, // seconds

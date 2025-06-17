@@ -1,5 +1,6 @@
 export class InputManager {
     private keys: Map<string, boolean> = new Map();
+    private keyPressed: Map<string, boolean> = new Map(); // For single-press detection
 
     constructor() {
         this.setupEventListeners();
@@ -7,16 +8,34 @@ export class InputManager {
 
     private setupEventListeners(): void {
         window.addEventListener("keydown", (e) => {
+            const wasPressed = this.keys.get(e.code) || false;
             this.keys.set(e.code, true);
+
+            // Track single press (key wasn't pressed before)
+            if (!wasPressed) {
+                this.keyPressed.set(e.code, true);
+            }
         });
 
         window.addEventListener("keyup", (e) => {
             this.keys.set(e.code, false);
+            this.keyPressed.set(e.code, false);
         });
     }
 
     isKeyPressed(keyCode: string): boolean {
         return this.keys.get(keyCode) || false;
+    }
+
+    /**
+     * Check if a key was just pressed (single press detection)
+     */
+    wasKeyPressed(keyCode: string): boolean {
+        const pressed = this.keyPressed.get(keyCode) || false;
+        if (pressed) {
+            this.keyPressed.set(keyCode, false); // Clear after reading
+        }
+        return pressed;
     }
 
     // Convenient helper methods for common game keys
@@ -40,5 +59,30 @@ export class InputManager {
     }
     get strafeRight(): boolean {
         return this.isKeyPressed("KeyE");
+    }
+
+    // Menu navigation methods (single press)
+    get menuToggle(): boolean {
+        return this.wasKeyPressed("Escape");
+    }
+
+    get menuUp(): boolean {
+        return this.wasKeyPressed("ArrowUp") || this.wasKeyPressed("KeyW");
+    }
+
+    get menuDown(): boolean {
+        return this.wasKeyPressed("ArrowDown") || this.wasKeyPressed("KeyS");
+    }
+
+    get menuLeft(): boolean {
+        return this.wasKeyPressed("ArrowLeft") || this.wasKeyPressed("KeyA");
+    }
+
+    get menuRight(): boolean {
+        return this.wasKeyPressed("ArrowRight") || this.wasKeyPressed("KeyD");
+    }
+
+    get menuSelect(): boolean {
+        return this.wasKeyPressed("Enter") || this.wasKeyPressed("Space");
     }
 }

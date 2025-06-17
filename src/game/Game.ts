@@ -6,7 +6,15 @@ import { Shapes } from "~/render/Shapes";
 import { Vector2 } from "~/utils/Vector2";
 import type { GameEntity, Ship } from "~/entities";
 import { isShip } from "~/entities";
-import { SCORING, SHIP, GIFT, BULLET } from "~/config/constants";
+import {
+    SCORING,
+    SHIP,
+    GIFT,
+    BULLET,
+    type GeometryMode,
+} from "~/config/constants";
+import { CanvasManager } from "~/display/CanvasManager";
+import { MenuManager } from "~/menu/MenuManager";
 
 import { GameState } from "./GameState";
 
@@ -21,7 +29,10 @@ export class Game {
     private gameState: GameState;
     private audio: AudioManager;
     private particles: ParticleSystem;
+    private canvasManager: CanvasManager;
+    private menuManager: MenuManager;
     private lastTime = 0;
+    private isPaused = false;
     private running = false;
     private lastShotTime = 0;
     private lastThrustTime = 0;
@@ -38,6 +49,12 @@ export class Game {
         this.gameState = new GameState();
         this.audio = new AudioManager();
         this.particles = new ParticleSystem();
+        this.canvasManager = new CanvasManager(canvas);
+        this.menuManager = new MenuManager(this, canvas, ctx);
+
+        // Listen for canvas resize events
+        this.canvasManager.onResize(() => this.handleCanvasResize());
+
         this.gameState.init(); // Initialize high score
         this.init();
     }
@@ -45,7 +62,7 @@ export class Game {
     private init(): void {
         // Create a simple ship rectangle
         const ship: Ship = {
-            position: new Vector2(SHIP.SPAWN_X, SHIP.SPAWN_Y),
+            position: this.getShipSpawnPosition(),
             velocity: Vector2.zero(),
             size: new Vector2(SHIP.WIDTH, SHIP.HEIGHT),
             rotation: 0,
@@ -58,6 +75,63 @@ export class Game {
         for (let i = 0; i < 4; i++) {
             this.createAsteroid();
         }
+    }
+
+    /**
+     * Get current canvas dimensions
+     */
+    private getCanvasDimensions() {
+        return {
+            width: this.canvas.width,
+            height: this.canvas.height,
+        };
+    }
+
+    /**
+     * Get ship spawn position based on current canvas size
+     */
+    private getShipSpawnPosition(): Vector2 {
+        const dimensions = this.getCanvasDimensions();
+        return new Vector2(
+            dimensions.width * SHIP.SPAWN_X_RATIO,
+            dimensions.height * SHIP.SPAWN_Y_RATIO
+        );
+    }
+
+    /**
+     * Handle canvas resize events
+     */
+    private handleCanvasResize(): void {
+        // Note: Game objects will automatically adapt to new canvas dimensions
+        // through the existing screen wrapping logic
+        // Canvas dimensions updated automatically
+    }
+
+    /**
+     * Set geometry mode for the canvas
+     */
+    setGeometry(
+        mode: string,
+        options?: {
+            aspectRatio?: number;
+            customWidth?: number;
+            customHeight?: number;
+        }
+    ): void {
+        this.canvasManager.setGeometry({
+            mode: mode as GeometryMode,
+            aspectRatio: options?.aspectRatio,
+            customWidth: options?.customWidth,
+            customHeight: options?.customHeight,
+        });
+    }
+
+    /**
+     * Toggle pause state and menu visibility
+     */
+    private togglePause(): void {
+        this.isPaused = !this.isPaused;
+        this.menuManager.toggle();
     }
 
     start(): void {
@@ -91,14 +165,30 @@ export class Game {
     private update(deltaTime: number): void {
         const currentTime = performance.now();
 
+        // Handle menu toggle
+        if (this.input.menuToggle) {
+            this.togglePause();
+            return;
+        }
+
+        // Handle menu input when menu is visible
+        if (this.menuManager.visible) {
+            if (this.input.menuUp) this.menuManager.handleInput("up");
+            if (this.input.menuDown) this.menuManager.handleInput("down");
+            if (this.input.menuLeft) this.menuManager.handleInput("left");
+            if (this.input.menuRight) this.menuManager.handleInput("right");
+            if (this.input.menuSelect) this.menuManager.handleInput("select");
+            return; // Don't update game while menu is open
+        }
+
         // Check for restart if game is over
         if (this.gameState.gameOver && this.input.restart) {
             this.restart();
             return;
         }
 
-        // Skip updates if game is over
-        if (this.gameState.gameOver) {
+        // Skip updates if game is over or paused
+        if (this.gameState.gameOver || this.isPaused) {
             return;
         }
 
@@ -328,7 +418,7 @@ export class Game {
             this.showGameOver();
         } else {
             // Reset ship position and velocity
-            ship.position = new Vector2(SHIP.SPAWN_X, SHIP.SPAWN_Y);
+            ship.position = this.getShipSpawnPosition();
             ship.velocity = Vector2.zero();
             ship.rotation = 0;
 
@@ -374,7 +464,7 @@ export class Game {
         this.ctx.restore();
     }
 
-    private restart(): void {
+    restart(): void {
         // Reset game state
         this.gameState.reset();
 
@@ -387,6 +477,10 @@ export class Game {
         this.lastThrustTime = 0;
         this.gameOverSoundPlayed = false;
         this.lastGiftSpawnTime = 0;
+
+        // Reset pause state and hide menu
+        this.isPaused = false;
+        this.menuManager.hide();
 
         // Play game start fanfare
         this.audio.playGameStart().catch(() => {
@@ -863,6 +957,9 @@ export class Game {
         if (this.gameState.gameOver) {
             this.showGameOver();
         }
+
+        // Draw menu overlay if visible
+        this.menuManager.render();
     }
 
     private spawnGift(): void {
