@@ -15,6 +15,7 @@ import {
 } from "~/config/constants";
 import { CanvasManager } from "~/display/CanvasManager";
 import { MenuManager } from "~/menu/MenuManager";
+import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
 
 import { GameState } from "./GameState";
 
@@ -31,6 +32,8 @@ export class Game {
     private particles: ParticleSystem;
     private canvasManager: CanvasManager;
     private menuManager: MenuManager;
+    private levelCompleteAnimation: LevelCompleteAnimation;
+    private levelAnimationStarted = false;
     private lastTime = 0;
     private isPaused = false;
     private running = false;
@@ -51,6 +54,11 @@ export class Game {
         this.particles = new ParticleSystem();
         this.canvasManager = new CanvasManager(canvas);
         this.menuManager = new MenuManager(this, canvas, ctx);
+        this.levelCompleteAnimation = new LevelCompleteAnimation(
+            canvas,
+            ctx,
+            this.gameState
+        );
 
         // Listen for canvas resize events
         this.canvasManager.onResize(() => this.handleCanvasResize());
@@ -187,8 +195,26 @@ export class Game {
             return;
         }
 
-        // Skip updates if game is over or paused
-        if (this.gameState.gameOver || this.isPaused) {
+        // Update level completion animation
+        this.levelCompleteAnimation.update(currentTime);
+
+        // Check for space key dismissal of level complete animation
+        if (this.levelCompleteAnimation.active && this.levelCompleteAnimation.canBeDismissed && this.input.shoot) {
+            this.levelCompleteAnimation.complete();
+        }
+
+        // Check if animation completed and advance to next level
+        if (!this.levelCompleteAnimation.active && this.levelAnimationStarted) {
+            this.advanceToNextLevel();
+            this.levelAnimationStarted = false;
+        }
+
+        // Skip updates if game is over, paused, or level animation is playing
+        if (
+            this.gameState.gameOver ||
+            this.isPaused ||
+            this.levelCompleteAnimation.active
+        ) {
             return;
         }
 
@@ -489,6 +515,12 @@ export class Game {
     }
 
     private nextLevel(): void {
+        // Start level completion animation
+        this.levelCompleteAnimation.start(this.gameState.level);
+        this.levelAnimationStarted = true;
+    }
+
+    private advanceToNextLevel(): void {
         // Advance to next level
         this.gameState.nextLevel();
 
@@ -960,6 +992,9 @@ export class Game {
 
         // Draw menu overlay if visible
         this.menuManager.render();
+
+        // Draw level completion animation if active
+        this.levelCompleteAnimation.render();
     }
 
     private spawnGift(): void {

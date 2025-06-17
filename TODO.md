@@ -24,4 +24,4 @@
 
 ## Known Bugs
 
-(none at this time)
+- [ ] The display text has a strange line rendered on all the zeros but it should not be there

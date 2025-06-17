@@ -203,7 +203,7 @@ export class Shapes {
                     (isDisappearing
                         ? 1 - disappearProgress
                         : isClosing
-                          ? 1 - animationProgress
+                            ? 1 - animationProgress
                           : animationProgress);
                 ctx.beginPath();
                 ctx.arc(sparkleX, sparkleY, 1, 0, Math.PI * 2);

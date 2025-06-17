@@ -308,6 +308,26 @@ export const COLORS = {
 } as const;
 
 // =============================================================================
+// ANIMATIONS
+// =============================================================================
+export const ANIMATIONS = {
+    // Level complete animation (manual dismissal only)
+    LEVEL_COMPLETE_PHASES: {
+        PAUSE: 500, // Initial pause after last asteroid destroyed
+        TITLE: 1500, // "LEVEL COMPLETE" title display
+        STATS: 1500, // Statistics display (then persists until space key)
+    },
+
+    // Level bonus calculation
+    LEVEL_BONUS_MULTIPLIER: 100, // Points per level (100 * level)
+
+    // Visual effects
+    TYPEWRITER_SPEED_RATIO: 0.6, // 60% of phase for typing effect
+    PULSE_FREQUENCY: 200, // ms per pulse cycle
+    BORDER_APPEAR_DELAY: 0.5, // Relative progress when border appears
+} as const;
+
+// =============================================================================
 // PERFORMANCE
 // =============================================================================
 export const PERFORMANCE = {
