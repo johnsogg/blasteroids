@@ -6,6 +6,7 @@ export type { BaseEntity, EntityType } from "./BaseEntity";
 export type { Ship } from "./Ship";
 export type { Asteroid } from "./Asteroid";
 export type { Bullet } from "./Bullet";
+export type { Missile } from "./Missile";
 export type { Gift } from "./Gift";
 export type { WarpBubbleIn, WarpBubbleOut } from "./WarpBubble";
 
@@ -13,6 +14,7 @@ export type { WarpBubbleIn, WarpBubbleOut } from "./WarpBubble";
 import type { Ship } from "./Ship";
 import type { Asteroid } from "./Asteroid";
 import type { Bullet } from "./Bullet";
+import type { Missile } from "./Missile";
 import type { Gift } from "./Gift";
 import type { WarpBubbleIn, WarpBubbleOut } from "./WarpBubble";
 
@@ -23,6 +25,7 @@ export type GameEntity =
     | Ship
     | Asteroid
     | Bullet
+    | Missile
     | Gift
     | WarpBubbleIn
     | WarpBubbleOut;
@@ -38,6 +41,9 @@ export const isAsteroid = (entity: GameEntity): entity is Asteroid =>
 
 export const isBullet = (entity: GameEntity): entity is Bullet =>
     entity.type === "bullet";
+
+export const isMissile = (entity: GameEntity): entity is Missile =>
+    entity.type === "missile";
 
 export const isGift = (entity: GameEntity): entity is Gift =>
     entity.type === "gift";

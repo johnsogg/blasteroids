@@ -32,7 +32,8 @@ export default tseslint.config(
                     caughtErrorsIgnorePattern: "^_",
                 },
             ],
-            indent: ["error", 4, { "SwitchCase": 1 }],
+            // indent rule disabled - handled by Prettier
+            // indent: ["error", 4, { "SwitchCase": 1 }],
         },
     },
     ...tseslint.configs.recommended

@@ -45,7 +45,7 @@ export class Game {
     private gameOverSoundPlayed = false;
     private lastGiftSpawnTime = 0;
     private giftSpawnInterval = GIFT.SPAWN_INTERVAL; // Time between gifts
-    private pendingGiftSpawn: Vector2 | null = null; // Deferred gift creation
+    private pendingGiftSpawn: GameObject | null = null; // Deferred gift creation
     private pendingWarpBubbleCreation: GameObject | null = null; // Deferred warp bubble creation
 
     constructor(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
@@ -320,11 +320,19 @@ export class Game {
                     obj.position.y < -50 ||
                     obj.position.y > this.canvas.height + 50;
                 return (obj.age || 0) < maxAge && !outOfBounds;
+            } else if (obj.type === "missile") {
+                const maxAge = 5; // seconds (longer than bullets)
+                const outOfBounds =
+                    obj.position.x < -50 ||
+                    obj.position.x > this.canvas.width + 50 ||
+                    obj.position.y < -50 ||
+                    obj.position.y > this.canvas.height + 50;
+                return (obj.age || 0) < maxAge && !outOfBounds;
             } else if (obj.type === "warpBubbleIn") {
                 // Remove when animation is complete
                 if ((obj.age || 0) >= GIFT.OPENING_ANIMATION_TIME) {
                     // Schedule gift spawn for after filter operation
-                    this.pendingGiftSpawn = obj.position.copy();
+                    this.pendingGiftSpawn = obj;
                     return false;
                 }
                 return true;
@@ -357,9 +365,7 @@ export class Game {
 
         // Handle pending gift spawn after filter operation
         if (this.pendingGiftSpawn) {
-            this.spawnGiftFromWarp({
-                position: this.pendingGiftSpawn,
-            } as GameObject);
+            this.spawnGiftFromWarp(this.pendingGiftSpawn);
             this.pendingGiftSpawn = null;
         }
 
@@ -380,6 +386,9 @@ export class Game {
 
     private checkCollisions(): void {
         const bullets = this.gameObjects.filter((obj) => obj.type === "bullet");
+        const missiles = this.gameObjects.filter(
+            (obj) => obj.type === "missile"
+        );
         const asteroids = this.gameObjects.filter(
             (obj) => obj.type === "asteroid"
         );
@@ -400,6 +409,48 @@ export class Game {
                     // Create smaller asteroids if this one is large enough
                     this.destroyAsteroid(asteroid);
                     break; // Bullet can only hit one asteroid
+                }
+            }
+        }
+
+        // Check missile-asteroid collisions (with explosion)
+        for (const missile of missiles) {
+            for (const asteroid of asteroids) {
+                const distance = Math.sqrt(
+                    Math.pow(missile.position.x - asteroid.position.x, 2) +
+                        Math.pow(missile.position.y - asteroid.position.y, 2)
+                );
+
+                // Missiles explode when within explosion radius
+                if (distance <= WEAPONS.MISSILES.EXPLOSION_RADIUS) {
+                    // Mark missile for removal
+                    missile.age = 999;
+
+                    // Create explosion particles
+                    this.particles.createMissileExplosion(missile.position);
+
+                    // Destroy all asteroids within explosion radius
+                    for (const explosionTarget of asteroids) {
+                        const explosionDistance = Math.sqrt(
+                            Math.pow(
+                                missile.position.x - explosionTarget.position.x,
+                                2
+                            ) +
+                                Math.pow(
+                                    missile.position.y -
+                                        explosionTarget.position.y,
+                                    2
+                                )
+                        );
+
+                        if (
+                            explosionDistance <=
+                            WEAPONS.MISSILES.EXPLOSION_RADIUS
+                        ) {
+                            this.destroyAsteroid(explosionTarget);
+                        }
+                    }
+                    break; // Missile can only explode once
                 }
             }
         }
@@ -847,13 +898,13 @@ export class Game {
 
     private handleShooting(ship: GameObject, currentTime: number): void {
         const weaponState = this.gameState.weaponState;
-        
+
         switch (weaponState.currentWeapon) {
             case "bullets":
                 this.shootBullets(ship, currentTime);
                 break;
             case "missiles":
-                // TODO: Implement missile shooting
+                this.shootMissiles(ship, currentTime);
                 break;
             case "laser":
                 // TODO: Implement laser shooting
@@ -870,7 +921,7 @@ export class Game {
         if (this.gameState.hasUpgrade("upgrade_bullets_fire_rate")) {
             fireRate *= WEAPONS.BULLETS.FIRE_RATE_UPGRADE; // 25% faster
         }
-        
+
         if (currentTime - this.lastShotTime < fireRate) {
             return; // Too soon to fire again
         }
@@ -892,7 +943,7 @@ export class Game {
 
         // Determine bullet size (with upgrade consideration)
         let bulletSize = BULLET.SIZE;
-        let bulletColor = WEAPONS.BULLETS.COLOR;
+        let bulletColor: string = WEAPONS.BULLETS.COLOR;
         if (this.gameState.hasUpgrade("upgrade_bullets_size")) {
             bulletSize *= WEAPONS.BULLETS.SIZE_UPGRADE; // 50% larger
             bulletColor = WEAPONS.BULLETS.UPGRADED_COLOR;
@@ -916,28 +967,50 @@ export class Game {
         });
     }
 
-    private shoot(ship: GameObject): void {
-        const bulletSpeed = 500; // pixels per second
-        const bulletVelocity = Vector2.fromAngle(ship.rotation, bulletSpeed);
+    private shootMissiles(ship: GameObject, currentTime: number): void {
+        // Check fire rate (with upgrade consideration)
+        let fireRate = WEAPONS.MISSILES.FIRE_RATE;
+        if (this.gameState.hasUpgrade("upgrade_missiles_fire_rate")) {
+            fireRate *= WEAPONS.MISSILES.FIRE_RATE_UPGRADE; // 50% faster
+        }
 
-        // Add ship's velocity to bullet for realistic physics
-        const finalVelocity = ship.velocity.add(bulletVelocity);
+        if (currentTime - this.lastShotTime < fireRate) {
+            return; // Too soon to fire again
+        }
 
-        // Position bullet slightly in front of ship
-        const bulletOffset = Vector2.fromAngle(ship.rotation, ship.size.x);
-        const bulletPosition = ship.position.add(bulletOffset);
+        // Check and consume fuel
+        if (!this.gameState.consumeFuel(WEAPONS.MISSILES.FUEL_CONSUMPTION)) {
+            return; // Not enough fuel
+        }
+
+        // Missile speed (with upgrade consideration)
+        let missileSpeed = WEAPONS.MISSILES.SPEED;
+        if (this.gameState.hasUpgrade("upgrade_missiles_speed")) {
+            missileSpeed *= WEAPONS.MISSILES.SPEED_UPGRADE; // 50% faster
+        }
+
+        const missileVelocity = Vector2.fromAngle(ship.rotation, missileSpeed);
+
+        // Add ship's velocity to missile for realistic physics
+        const finalVelocity = ship.velocity.add(missileVelocity);
+
+        // Position missile slightly in front of ship
+        const missileOffset = Vector2.fromAngle(ship.rotation, ship.size.x);
+        const missilePosition = ship.position.add(missileOffset);
 
         this.gameObjects.push({
-            position: bulletPosition,
+            position: missilePosition,
             velocity: finalVelocity,
-            size: new Vector2(3, 3),
-            rotation: 0,
-            color: "#ffff00",
-            type: "bullet",
+            size: new Vector2(WEAPONS.MISSILES.SIZE, WEAPONS.MISSILES.SIZE),
+            rotation: ship.rotation, // Missiles have rotation for visual
+            color: WEAPONS.MISSILES.COLOR,
+            type: "missile",
             age: 0,
         });
 
-        // Play shooting sound
+        this.lastShotTime = currentTime;
+
+        // Play shooting sound (could be different for missiles)
         this.audio.playShoot().catch(() => {
             // Ignore audio errors (user hasn't interacted yet)
         });
@@ -1048,6 +1121,8 @@ export class Game {
                 );
             } else if (obj.type === "bullet") {
                 Shapes.drawBullet(this.ctx, pos, obj.color);
+            } else if (obj.type === "missile") {
+                Shapes.drawMissile(this.ctx, pos, obj.rotation, obj.color);
             } else if (obj.type === "warpBubbleIn") {
                 Shapes.drawWarpBubble(
                     this.ctx,
@@ -1140,22 +1215,22 @@ export class Game {
         const weapons = [
             {
                 type: "bullets",
-                unlocked: weaponState.inventory.bullets,
+                unlocked: weaponState.unlockedWeapons.has("bullets"),
                 selected: weaponState.currentWeapon === "bullets",
             },
             {
                 type: "missiles",
-                unlocked: weaponState.inventory.missiles,
+                unlocked: weaponState.unlockedWeapons.has("missiles"),
                 selected: weaponState.currentWeapon === "missiles",
             },
             {
                 type: "laser",
-                unlocked: weaponState.inventory.laser,
+                unlocked: weaponState.unlockedWeapons.has("laser"),
                 selected: weaponState.currentWeapon === "laser",
             },
             {
                 type: "lightning",
-                unlocked: weaponState.inventory.lightning,
+                unlocked: weaponState.unlockedWeapons.has("lightning"),
                 selected: weaponState.currentWeapon === "lightning",
             },
         ];
@@ -1359,22 +1434,38 @@ export class Game {
         // Get warp bubble color based on gift type
         const getWarpColor = (type: GiftType): string => {
             switch (type) {
-                case "fuel_refill": return GIFT.WARP_COLORS.FUEL_REFILL;
-                case "extra_life": return GIFT.WARP_COLORS.EXTRA_LIFE;
-                case "weapon_bullets": return GIFT.WARP_COLORS.WEAPON_BULLETS;
-                case "weapon_missiles": return GIFT.WARP_COLORS.WEAPON_MISSILES;
-                case "weapon_laser": return GIFT.WARP_COLORS.WEAPON_LASER;
-                case "weapon_lightning": return GIFT.WARP_COLORS.WEAPON_LIGHTNING;
-                case "upgrade_bullets_fire_rate": return GIFT.WARP_COLORS.UPGRADE_BULLETS_FIRE_RATE;
-                case "upgrade_bullets_size": return GIFT.WARP_COLORS.UPGRADE_BULLETS_SIZE;
-                case "upgrade_missiles_speed": return GIFT.WARP_COLORS.UPGRADE_MISSILES_SPEED;
-                case "upgrade_missiles_fire_rate": return GIFT.WARP_COLORS.UPGRADE_MISSILES_FIRE_RATE;
-                case "upgrade_missiles_homing": return GIFT.WARP_COLORS.UPGRADE_MISSILES_HOMING;
-                case "upgrade_laser_range": return GIFT.WARP_COLORS.UPGRADE_LASER_RANGE;
-                case "upgrade_laser_efficiency": return GIFT.WARP_COLORS.UPGRADE_LASER_EFFICIENCY;
-                case "upgrade_lightning_radius": return GIFT.WARP_COLORS.UPGRADE_LIGHTNING_RADIUS;
-                case "upgrade_lightning_chain": return GIFT.WARP_COLORS.UPGRADE_LIGHTNING_CHAIN;
-                default: return GIFT.WARP_BUBBLE_COLOR;
+                case "fuel_refill":
+                    return GIFT.WARP_COLORS.FUEL_REFILL;
+                case "extra_life":
+                    return GIFT.WARP_COLORS.EXTRA_LIFE;
+                case "weapon_bullets":
+                    return GIFT.WARP_COLORS.WEAPON_BULLETS;
+                case "weapon_missiles":
+                    return GIFT.WARP_COLORS.WEAPON_MISSILES;
+                case "weapon_laser":
+                    return GIFT.WARP_COLORS.WEAPON_LASER;
+                case "weapon_lightning":
+                    return GIFT.WARP_COLORS.WEAPON_LIGHTNING;
+                case "upgrade_bullets_fire_rate":
+                    return GIFT.WARP_COLORS.UPGRADE_BULLETS_FIRE_RATE;
+                case "upgrade_bullets_size":
+                    return GIFT.WARP_COLORS.UPGRADE_BULLETS_SIZE;
+                case "upgrade_missiles_speed":
+                    return GIFT.WARP_COLORS.UPGRADE_MISSILES_SPEED;
+                case "upgrade_missiles_fire_rate":
+                    return GIFT.WARP_COLORS.UPGRADE_MISSILES_FIRE_RATE;
+                case "upgrade_missiles_homing":
+                    return GIFT.WARP_COLORS.UPGRADE_MISSILES_HOMING;
+                case "upgrade_laser_range":
+                    return GIFT.WARP_COLORS.UPGRADE_LASER_RANGE;
+                case "upgrade_laser_efficiency":
+                    return GIFT.WARP_COLORS.UPGRADE_LASER_EFFICIENCY;
+                case "upgrade_lightning_radius":
+                    return GIFT.WARP_COLORS.UPGRADE_LIGHTNING_RADIUS;
+                case "upgrade_lightning_chain":
+                    return GIFT.WARP_COLORS.UPGRADE_LIGHTNING_CHAIN;
+                default:
+                    return GIFT.WARP_BUBBLE_COLOR;
             }
         };
         const warpColor = getWarpColor(giftType);

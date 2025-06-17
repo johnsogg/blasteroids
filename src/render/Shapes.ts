@@ -141,6 +141,35 @@ export class Shapes {
         ctx.restore();
     }
 
+    static drawMissile(
+        ctx: CanvasRenderingContext2D,
+        position: Vector2,
+        rotation: number,
+        color: string
+    ): void {
+        ctx.save();
+        ctx.translate(position.x, position.y);
+        ctx.rotate(rotation);
+
+        // Draw missile body (elongated shape)
+        ctx.fillStyle = color;
+        ctx.fillRect(-2, -6, 4, 12);
+
+        // Draw missile nose (pointed tip)
+        ctx.beginPath();
+        ctx.moveTo(0, -6);
+        ctx.lineTo(-2, -4);
+        ctx.lineTo(2, -4);
+        ctx.closePath();
+        ctx.fill();
+
+        // Draw missile fins
+        ctx.fillRect(-4, 4, 2, 4);
+        ctx.fillRect(2, 4, 2, 4);
+
+        ctx.restore();
+    }
+
     static drawWarpBubble(
         ctx: CanvasRenderingContext2D,
         position: Vector2,
@@ -203,8 +232,8 @@ export class Shapes {
                     (isDisappearing
                         ? 1 - disappearProgress
                         : isClosing
-                            ? 1 - animationProgress
-                            : animationProgress);
+                          ? 1 - animationProgress
+                          : animationProgress);
                 ctx.beginPath();
                 ctx.arc(sparkleX, sparkleY, 1, 0, Math.PI * 2);
                 ctx.fill();

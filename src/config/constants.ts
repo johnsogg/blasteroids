@@ -106,6 +106,7 @@ export const BULLET = {
     FIRE_RATE: 150, // milliseconds between shots
     COLOR: "#ffff00",
     OUT_OF_BOUNDS_MARGIN: 50, // pixels beyond screen edge
+    FUEL_COST: 0.5, // fuel consumed per shot
 } as const;
 
 // =============================================================================
@@ -229,21 +230,21 @@ export const GIFT = {
 
     // Spawn probabilities (higher number = more likely)
     SPAWN_WEIGHTS: {
-        FUEL_REFILL: 20,
-        EXTRA_LIFE: 5,
-        WEAPON_BULLETS: 15, // Default weapon unlock
-        WEAPON_MISSILES: 10,
-        WEAPON_LASER: 8,
-        WEAPON_LIGHTNING: 6,
-        UPGRADE_BULLETS_FIRE_RATE: 12,
-        UPGRADE_BULLETS_SIZE: 12,
-        UPGRADE_MISSILES_SPEED: 8,
-        UPGRADE_MISSILES_FIRE_RATE: 8,
-        UPGRADE_MISSILES_HOMING: 6,
-        UPGRADE_LASER_RANGE: 8,
-        UPGRADE_LASER_EFFICIENCY: 8,
-        UPGRADE_LIGHTNING_RADIUS: 6,
-        UPGRADE_LIGHTNING_CHAIN: 4,
+        FUEL_REFILL: 5, // Reduced significantly
+        EXTRA_LIFE: 8,
+        WEAPON_BULLETS: 0, // Start with bullets unlocked, no need to spawn
+        WEAPON_MISSILES: 25, // Much higher chance for new weapons
+        WEAPON_LASER: 20,
+        WEAPON_LIGHTNING: 15,
+        UPGRADE_BULLETS_FIRE_RATE: 18,
+        UPGRADE_BULLETS_SIZE: 18,
+        UPGRADE_MISSILES_SPEED: 12,
+        UPGRADE_MISSILES_FIRE_RATE: 12,
+        UPGRADE_MISSILES_HOMING: 10,
+        UPGRADE_LASER_RANGE: 12,
+        UPGRADE_LASER_EFFICIENCY: 12,
+        UPGRADE_LIGHTNING_RADIUS: 10,
+        UPGRADE_LIGHTNING_CHAIN: 8,
     },
 
     // Warp bubble colors for different gift types
@@ -396,6 +397,7 @@ export const WEAPONS = {
         FIRE_RATE: 4000, // milliseconds between shots (1 per 4 seconds)
         FUEL_CONSUMPTION: 5, // units per shot
         SPEED: 200, // pixels per second (slower than bullets)
+        SIZE: 4, // pixels radius
         EXPLOSION_RADIUS: 30, // pixels
         SPEED_UPGRADE: 1.5, // 50% faster travel
         FIRE_RATE_UPGRADE: 0.5, // 50% faster rate of fire

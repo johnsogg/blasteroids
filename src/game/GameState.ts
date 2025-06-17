@@ -1,9 +1,8 @@
 import { Shapes } from "~/render/Shapes";
 import { Vector2 } from "~/utils/Vector2";
 import { UI } from "~/config/constants";
-import type { WeaponState } from "~/entities/Weapons";
-import { createInitialWeaponState } from "~/entities/Weapons";
-import type { WeaponType } from "~/config/constants";
+import type { WeaponState, WeaponType, UpgradeType } from "~/entities/Weapons";
+import { WeaponManager } from "~/entities/Weapons";
 
 export class GameState {
     private _score: number = 0;
@@ -12,7 +11,7 @@ export class GameState {
     private _gameOver: boolean = false;
     private _highScore: number = 0;
     private _fuel: number = 100;
-    private _weaponState: WeaponState = createInitialWeaponState();
+    private _weaponState: WeaponState = WeaponManager.getDefaultWeaponState();
     private readonly HIGH_SCORE_KEY = "blasteroids-highscore";
 
     get score(): number {
@@ -109,85 +108,34 @@ export class GameState {
         this._level = 1;
         this._gameOver = false;
         this._fuel = 100;
-        this._weaponState = createInitialWeaponState(); // Reset weapons
+        this._weaponState = WeaponManager.getDefaultWeaponState(); // Reset weapons
         this.loadHighScore(); // Preserve high score across resets
         this.updateUI();
     }
 
     switchWeapon(weaponType: WeaponType): boolean {
-        // Check if weapon is unlocked
-        if (!this._weaponState.inventory[weaponType]) {
-            return false;
-        }
-        this._weaponState.currentWeapon = weaponType;
-        return true;
+        return WeaponManager.switchWeapon(this._weaponState, weaponType);
     }
 
     unlockWeapon(weaponType: WeaponType): void {
-        this._weaponState.inventory[weaponType] = true;
+        WeaponManager.unlockWeapon(this._weaponState, weaponType);
     }
 
-    applyWeaponUpgrade(upgradeType: string): boolean {
-        switch (upgradeType) {
-            case "upgrade_bullets_fire_rate":
-                this._weaponState.upgrades.bulletsFireRate = true;
-                return true;
-            case "upgrade_bullets_size":
-                this._weaponState.upgrades.bulletsSize = true;
-                return true;
-            case "upgrade_missiles_speed":
-                this._weaponState.upgrades.missilesSpeed = true;
-                return true;
-            case "upgrade_missiles_fire_rate":
-                this._weaponState.upgrades.missilesFireRate = true;
-                return true;
-            case "upgrade_missiles_homing":
-                this._weaponState.upgrades.missilesHoming = true;
-                return true;
-            case "upgrade_laser_range":
-                this._weaponState.upgrades.laserRange = true;
-                return true;
-            case "upgrade_laser_efficiency":
-                this._weaponState.upgrades.laserEfficiency = true;
-                return true;
-            case "upgrade_lightning_radius":
-                this._weaponState.upgrades.lightningRadius = true;
-                return true;
-            case "upgrade_lightning_chain":
-                this._weaponState.upgrades.lightningChain = true;
-                return true;
-            default:
-                return false;
-        }
+    applyWeaponUpgrade(upgradeType: UpgradeType): boolean {
+        WeaponManager.addUpgrade(this._weaponState, upgradeType);
+        return true;
     }
 
     hasWeapon(weaponType: WeaponType): boolean {
-        return this._weaponState.inventory[weaponType];
+        return WeaponManager.isWeaponUnlocked(this._weaponState, weaponType);
     }
 
-    hasUpgrade(upgradeType: string): boolean {
-        switch (upgradeType) {
-            case "upgrade_bullets_fire_rate":
-                return this._weaponState.upgrades.bulletsFireRate;
-            case "upgrade_bullets_size":
-                return this._weaponState.upgrades.bulletsSize;
-            case "upgrade_missiles_speed":
-                return this._weaponState.upgrades.missilesSpeed;
-            case "upgrade_missiles_fire_rate":
-                return this._weaponState.upgrades.missilesFireRate;
-            case "upgrade_missiles_homing":
-                return this._weaponState.upgrades.missilesHoming;
-            case "upgrade_laser_range":
-                return this._weaponState.upgrades.laserRange;
-            case "upgrade_laser_efficiency":
-                return this._weaponState.upgrades.laserEfficiency;
-            case "upgrade_lightning_radius":
-                return this._weaponState.upgrades.lightningRadius;
-            case "upgrade_lightning_chain":
-                return this._weaponState.upgrades.lightningChain;
-            default:
-                return false;
-        }
+    hasUpgrade(upgradeType: UpgradeType): boolean {
+        return WeaponManager.hasUpgrade(this._weaponState, upgradeType);
+    }
+
+    updateLastFireTime(time: number): void {
+        this._weaponState.lastFireTime = time;
     }
 
     private updateUI(): void {

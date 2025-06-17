@@ -30,6 +30,7 @@ export type EntityType =
     | "ship"
     | "asteroid"
     | "bullet"
+    | "missile"
     | "gift"
     | "warpBubbleIn"
     | "warpBubbleOut";
