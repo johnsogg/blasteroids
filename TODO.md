@@ -2,7 +2,13 @@
 
 ### 🎨 Visual & Audio Polish
 
-- [ ] Implement ship trails/afterimage effect
+- [x] Implement ship trails/afterimage effect
+    - [x] Particle-based trail system with 8 trail points
+    - [x] Dim orange color variations using HSL (25-45° hue range)
+    - [x] Size variation (0.9 to 2.7 pixel radius range)
+    - [x] Opacity variation with 2.5 second fade time
+    - [x] Subtle glow effects for larger particles
+    - [x] Performance optimized with automatic cleanup
 
 ### 🎮 Gameplay Features
 

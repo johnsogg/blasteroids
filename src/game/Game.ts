@@ -86,6 +86,7 @@ export class Game {
             rotation: 0,
             color: SHIP.COLOR,
             type: "ship",
+            trail: [],
         };
         this.gameObjects.push(ship);
 
@@ -288,6 +289,11 @@ export class Game {
 
             // Update position
             obj.position = obj.position.add(obj.velocity.multiply(deltaTime));
+
+            // Update ship trail
+            if (obj.type === "ship" && isShip(obj)) {
+                this.updateShipTrail(obj, currentTime);
+            }
 
             // Wrap around screen edges (except bullets and warp bubbles)
             if (
@@ -678,6 +684,9 @@ export class Game {
             ship.velocity = Vector2.zero();
             ship.rotation = 0;
 
+            // Clear trail on respawn
+            ship.trail = [];
+
             // Make ship invulnerable for designated time
             ship.invulnerable = true;
             ship.invulnerableTime = SHIP.INVULNERABLE_TIME;
@@ -714,6 +723,9 @@ export class Game {
             ship.position = this.getShipSpawnPosition();
             ship.velocity = Vector2.zero();
             ship.rotation = 0;
+
+            // Clear trail on respawn
+            ship.trail = [];
 
             // Make ship invulnerable for designated time
             ship.invulnerable = true;
@@ -1633,7 +1645,8 @@ export class Game {
                     obj.thrusting,
                     1.0,
                     obj.strafingLeft,
-                    obj.strafingRight
+                    obj.strafingRight,
+                    obj.trail
                 );
 
                 // Draw laser beam if active
@@ -2219,6 +2232,57 @@ export class Game {
         // Play warp bubble closing sound
         this.audio.playWarpBubbleClosing().catch(() => {
             // Ignore audio errors
+        });
+    }
+
+    private updateShipTrail(ship: Ship, currentTime: number): void {
+        // Initialize trail if it doesn't exist
+        if (!ship.trail) {
+            ship.trail = [];
+        }
+
+        // Trail configuration
+        const TRAIL_MAX_POINTS = 8; // Maximum number of trail points (80% fewer particles)
+        const TRAIL_POINT_INTERVAL = 150; // Milliseconds between trail points (slower for fewer particles)
+        const TRAIL_DECAY_TIME = 2500; // Trail fades over 2.5 seconds (much longer)
+        const MIN_MOVEMENT_THRESHOLD = 5; // Minimum distance to add new trail point (less sensitive for spacing)
+
+        // Add new trail point if enough time has passed and ship has moved
+        const lastTrailPoint = ship.trail[ship.trail.length - 1];
+        const shouldAddPoint =
+            !lastTrailPoint ||
+            (currentTime - lastTrailPoint.timestamp >= TRAIL_POINT_INTERVAL &&
+                ship.position.subtract(lastTrailPoint.position).magnitude() >=
+                    MIN_MOVEMENT_THRESHOLD);
+
+        if (shouldAddPoint) {
+            // Generate random variations for this trail point
+            const baseSize = 1.8; // 40% smaller than previous (was 3.0, now 3.0 * 0.6 = 1.8)
+            const sizeVariation = 0.5 + Math.random() * 1.0; // Range: 0.5 to 1.5
+            const hueVariation = 25 + Math.random() * 20; // Orange hues: 25-45 degrees
+            const opacityVariation = (0.7 + Math.random() * 0.3) * 0.6; // Range: 0.42 to 0.6 (40% dimmer)
+
+            ship.trail.push({
+                position: ship.position,
+                timestamp: currentTime,
+                opacity: opacityVariation,
+                size: baseSize * sizeVariation,
+                hue: hueVariation,
+                baseOpacity: opacityVariation,
+            });
+
+            // Limit trail length
+            if (ship.trail.length > TRAIL_MAX_POINTS) {
+                ship.trail.shift(); // Remove oldest point
+            }
+        }
+
+        // Update opacity of existing trail points
+        ship.trail = ship.trail.filter((point) => {
+            const age = currentTime - point.timestamp;
+            const ageFactor = Math.max(0, 1 - age / TRAIL_DECAY_TIME);
+            point.opacity = point.baseOpacity * ageFactor;
+            return point.opacity > 0.01; // Remove fully faded points
         });
     }
 }
