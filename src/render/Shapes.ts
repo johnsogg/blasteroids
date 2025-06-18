@@ -643,4 +643,59 @@ export class Shapes {
             ctx.restore();
         });
     }
+
+    /**
+     * Draw a laser beam from ship position
+     */
+    static drawLaser(
+        ctx: CanvasRenderingContext2D,
+        startPosition: Vector2,
+        rotation: number,
+        length: number,
+        color: string = "#ff0088",
+        width: number = 3
+    ): void {
+        ctx.save();
+
+        // Calculate end position
+        const endPosition = startPosition.add(
+            Vector2.fromAngle(rotation, length)
+        );
+
+        // Draw main laser beam with glow effect
+        ctx.lineCap = "round";
+
+        // Draw outer glow
+        ctx.globalAlpha = 0.3;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width * 3;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.moveTo(startPosition.x, startPosition.y);
+        ctx.lineTo(endPosition.x, endPosition.y);
+        ctx.stroke();
+
+        // Draw main beam
+        ctx.globalAlpha = 0.8;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.shadowBlur = 5;
+        ctx.beginPath();
+        ctx.moveTo(startPosition.x, startPosition.y);
+        ctx.lineTo(endPosition.x, endPosition.y);
+        ctx.stroke();
+
+        // Draw bright core
+        ctx.globalAlpha = 1.0;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = width * 0.3;
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.moveTo(startPosition.x, startPosition.y);
+        ctx.lineTo(endPosition.x, endPosition.y);
+        ctx.stroke();
+
+        ctx.restore();
+    }
 }

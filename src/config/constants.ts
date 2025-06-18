@@ -413,7 +413,7 @@ export const WEAPONS = {
     // Laser
     LASER: {
         LENGTH: 80, // pixels
-        FUEL_CONSUMPTION_RATE: 10, // units per second while firing
+        FUEL_CONSUMPTION_RATE: 7, // units per second while firing (reduced by 30%)
         LENGTH_UPGRADE: 1.5, // 50% longer range
         EFFICIENCY_UPGRADE: 0.5, // 50% more efficient fuel usage
         COLOR: "#ff0088",

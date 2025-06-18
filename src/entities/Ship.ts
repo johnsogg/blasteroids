@@ -10,4 +10,6 @@ export interface Ship extends BaseEntity {
     thrusting?: boolean;
     strafingLeft?: boolean;
     strafingRight?: boolean;
+    isLaserActive?: boolean;
+    laserStartTime?: number;
 }

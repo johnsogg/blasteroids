@@ -43,6 +43,7 @@ export class Game {
     private running = false;
     private lastShotTime = 0;
     private lastThrustTime = 0;
+    private lastLaserSoundTime = 0;
     private bulletsInCurrentActivation = 0;
     private lastShootKeyState = false;
     private gameOverSoundPlayed = false;
@@ -240,7 +241,8 @@ export class Game {
                     }
                 }
             } else if (obj.type === "asteroid") {
-                // Rotate asteroids
+                // Age asteroids and rotate them
+                obj.age = (obj.age || 0) + deltaTime;
                 obj.rotation += deltaTime;
             } else if (obj.type === "bullet") {
                 // Age bullets
@@ -802,6 +804,7 @@ export class Game {
             rotation: Math.random() * Math.PI * 2,
             color: "#ffffff",
             type: "asteroid",
+            age: 0, // Mark as newly created
         });
     }
 
@@ -849,6 +852,7 @@ export class Game {
                     rotation: Math.random() * Math.PI * 2,
                     color: "#ffffff",
                     type: "asteroid",
+                    age: 0, // Mark as newly created
                 });
             }
         } else {
@@ -889,18 +893,22 @@ export class Game {
 
             case "weapon_bullets":
                 this.gameState.unlockWeapon("bullets");
+                this.gameState.switchWeapon("bullets");
                 break;
 
             case "weapon_missiles":
                 this.gameState.unlockWeapon("missiles");
+                this.gameState.switchWeapon("missiles");
                 break;
 
             case "weapon_laser":
                 this.gameState.unlockWeapon("laser");
+                this.gameState.switchWeapon("laser");
                 break;
 
             case "weapon_lightning":
                 this.gameState.unlockWeapon("lightning");
+                this.gameState.switchWeapon("lightning");
                 break;
 
             default:
@@ -1036,6 +1044,15 @@ export class Game {
                 if (currentShootKeyState) {
                     this.handleShooting(ship, currentTime);
                 }
+            } else if (weaponState.currentWeapon === "laser") {
+                // Laser: use continuous input (hold key to fire)
+                if (currentShootKeyState) {
+                    this.handleShooting(ship, currentTime);
+                } else if (ship.isLaserActive) {
+                    // Stop laser when key is released
+                    ship.isLaserActive = false;
+                    ship.laserStartTime = undefined;
+                }
             } else {
                 // Other weapons: use single press input
                 if (this.input.shootPressed) {
@@ -1056,7 +1073,7 @@ export class Game {
                 this.shootMissiles(ship, currentTime);
                 break;
             case "laser":
-                // TODO: Implement laser shooting
+                this.shootLaser(ship as Ship, currentTime);
                 break;
             case "lightning":
                 // TODO: Implement lightning shooting
@@ -1183,6 +1200,127 @@ export class Game {
         });
     }
 
+    private shootLaser(ship: Ship, currentTime: number): void {
+        // Calculate laser length with upgrades
+        let laserLength = WEAPONS.LASER.LENGTH;
+        if (this.gameState.hasUpgrade("upgrade_laser_range")) {
+            laserLength *= WEAPONS.LASER.LENGTH_UPGRADE; // 50% longer
+        }
+
+        // Calculate fuel consumption rate with upgrades
+        let fuelConsumptionRate = WEAPONS.LASER.FUEL_CONSUMPTION_RATE;
+        if (this.gameState.hasUpgrade("upgrade_laser_efficiency")) {
+            fuelConsumptionRate *= WEAPONS.LASER.EFFICIENCY_UPGRADE; // 50% more efficient
+        }
+
+        // Check if we're starting to fire the laser
+        if (!ship.isLaserActive) {
+            ship.isLaserActive = true;
+            ship.laserStartTime = currentTime;
+        }
+
+        // Calculate fuel consumption for this frame (assuming 60fps)
+        const deltaTime = 1 / 60; // Approximate frame time in seconds
+        const fuelNeeded = fuelConsumptionRate * deltaTime;
+
+        // Check if we have enough fuel to continue firing
+        if (!this.gameState.consumeFuel(fuelNeeded)) {
+            // Not enough fuel, stop the laser
+            ship.isLaserActive = false;
+            ship.laserStartTime = undefined;
+            return;
+        }
+
+        // Perform laser collision detection
+        this.handleLaserCollisions(ship, laserLength);
+
+        // Play laser sound effect periodically while firing
+        if (currentTime - this.lastLaserSoundTime > 150) {
+            // Every 150ms
+            this.audio.playLaserFire().catch(() => {
+                // Ignore audio errors
+            });
+            this.lastLaserSoundTime = currentTime;
+        }
+    }
+
+    private handleLaserCollisions(ship: Ship, laserLength: number): void {
+        // Calculate laser beam end point
+        const laserStart = ship.position;
+        const laserEnd = laserStart.add(
+            Vector2.fromAngle(ship.rotation, laserLength)
+        );
+
+        // Get all asteroids for collision testing - snapshot at start of frame
+        const asteroids = this.gameObjects.filter(
+            (obj) => obj.type === "asteroid"
+        );
+
+        // Track asteroids to destroy to avoid modifying array during iteration
+        const asteroidsToDestroy: typeof asteroids = [];
+
+        // Check collision with each asteroid using line-circle intersection
+        for (const asteroid of asteroids) {
+            // Skip newly created asteroids to prevent infinite fragmentation
+            if (asteroid.age !== undefined && asteroid.age < 0.1) {
+                continue; // Skip asteroids created less than 0.1 seconds ago
+            }
+
+            if (
+                this.isLineCircleIntersection(
+                    laserStart,
+                    laserEnd,
+                    asteroid.position,
+                    asteroid.size.x / 2
+                )
+            ) {
+                // Laser hit this asteroid - mark for destruction
+                asteroidsToDestroy.push(asteroid);
+            }
+        }
+
+        // Destroy all hit asteroids (this will create fragments, but they won't be hit this frame)
+        for (const asteroid of asteroidsToDestroy) {
+            this.destroyAsteroid(asteroid);
+        }
+    }
+
+    private isLineCircleIntersection(
+        lineStart: Vector2,
+        lineEnd: Vector2,
+        circleCenter: Vector2,
+        circleRadius: number
+    ): boolean {
+        // Vector from line start to circle center
+        const toCircle = circleCenter.subtract(lineStart);
+
+        // Vector representing the line direction
+        const lineDirection = lineEnd.subtract(lineStart);
+        const lineLength = lineDirection.magnitude();
+
+        if (lineLength === 0) return false; // Degenerate line
+
+        // Normalize line direction
+        const lineUnit = lineDirection.multiply(1 / lineLength);
+
+        // Project circle center onto line
+        const projection = toCircle.dot(lineUnit);
+
+        // Clamp projection to line segment
+        const clampedProjection = Math.max(0, Math.min(lineLength, projection));
+
+        // Find closest point on line segment to circle center
+        const closestPoint = lineStart.add(
+            lineUnit.multiply(clampedProjection)
+        );
+
+        // Check if closest point is within circle radius
+        const distanceToClosest = circleCenter
+            .subtract(closestPoint)
+            .magnitude();
+        return distanceToClosest <= circleRadius;
+    }
+
     private drawObjectWithWrapAround(obj: GameObject): void {
         // Get object radius for wrap-around detection
         const radius =
@@ -1278,6 +1416,23 @@ export class Game {
                     obj.strafingLeft,
                     obj.strafingRight
                 );
+
+                // Draw laser beam if active
+                if (obj.isLaserActive) {
+                    let laserLength = WEAPONS.LASER.LENGTH;
+                    if (this.gameState.hasUpgrade("upgrade_laser_range")) {
+                        laserLength *= WEAPONS.LASER.LENGTH_UPGRADE;
+                    }
+
+                    Shapes.drawLaser(
+                        this.ctx,
+                        pos,
+                        obj.rotation,
+                        laserLength,
+                        WEAPONS.LASER.COLOR,
+                        WEAPONS.LASER.WIDTH
+                    );
+                }
             } else if (obj.type === "asteroid") {
                 Shapes.drawAsteroid(
                     this.ctx,

@@ -643,4 +643,66 @@ export class AudioManager {
         noiseSource.start(this.audioContext.currentTime + 0.05);
         noiseSource.stop(this.audioContext.currentTime + 1.5);
     }
+
+    async playLaserFire(): Promise<void> {
+        await this.ensureAudioContext();
+
+        // Continuous sci-fi laser beam sound
+        const oscillator1 = this.audioContext.createOscillator();
+        const oscillator2 = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        const filter = this.audioContext.createBiquadFilter();
+
+        // Create a continuous beam sound with modulation
+        oscillator1.type = "sawtooth";
+        oscillator1.frequency.setValueAtTime(
+            220,
+            this.audioContext.currentTime
+        ); // Base frequency
+
+        oscillator2.type = "sine";
+        oscillator2.frequency.setValueAtTime(
+            440,
+            this.audioContext.currentTime
+        ); // Harmony
+
+        // Add slight frequency modulation for that sci-fi effect
+        const lfo = this.audioContext.createOscillator();
+        const lfoGain = this.audioContext.createGain();
+        lfo.type = "sine";
+        lfo.frequency.setValueAtTime(8, this.audioContext.currentTime); // 8Hz modulation
+        lfoGain.gain.setValueAtTime(20, this.audioContext.currentTime); // Modulation depth
+
+        lfo.connect(lfoGain);
+        lfoGain.connect(oscillator1.frequency);
+
+        // High-pass filter for that crisp laser sound
+        filter.type = "highpass";
+        filter.frequency.setValueAtTime(150, this.audioContext.currentTime);
+        filter.Q.setValueAtTime(2, this.audioContext.currentTime);
+
+        oscillator1.connect(filter);
+        oscillator2.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(this.masterGain);
+
+        // Volume envelope - quick attack, sustain while firing
+        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(
+            0.15,
+            this.audioContext.currentTime + 0.02
+        ); // Quick attack
+        gainNode.gain.setValueAtTime(0.15, this.audioContext.currentTime + 0.1); // Sustain
+
+        // Start all oscillators
+        const duration = 0.2; // Short duration, will be called repeatedly while firing
+        oscillator1.start(this.audioContext.currentTime);
+        oscillator2.start(this.audioContext.currentTime);
+        lfo.start(this.audioContext.currentTime);
+
+        // Stop after short duration
+        oscillator1.stop(this.audioContext.currentTime + duration);
+        oscillator2.stop(this.audioContext.currentTime + duration);
+        lfo.stop(this.audioContext.currentTime + duration);
+    }
 }

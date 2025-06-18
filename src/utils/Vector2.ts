@@ -35,6 +35,14 @@ export class Vector2 {
         return new Vector2(this.x / len, this.y / len);
     }
 
+    subtract(other: Vector2): Vector2 {
+        return new Vector2(this.x - other.x, this.y - other.y);
+    }
+
+    magnitude(): number {
+        return this.length();
+    }
+
     dot(other: Vector2): number {
         return this.x * other.x + this.y * other.y;
     }
