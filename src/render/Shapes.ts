@@ -698,4 +698,126 @@ export class Shapes {
 
         ctx.restore();
     }
+
+    static drawLightning(
+        ctx: CanvasRenderingContext2D,
+        lightningTargets: { start: Vector2; end: Vector2 }[],
+        lightningTime: number,
+        currentTime: number,
+        color: string = "#00ffff",
+        width: number = 2
+    ): void {
+        // Only show lightning for a brief moment (200ms)
+        const lightningDuration = 200;
+        if (currentTime - lightningTime > lightningDuration) {
+            return;
+        }
+
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        // Draw each lightning arc
+        for (let i = 0; i < lightningTargets.length; i++) {
+            const { start, end } = lightningTargets[i];
+
+            // Reduce intensity for chain lightning
+            const intensity = i === 0 ? 1.0 : 0.7 - i * 0.1;
+            const arcColor = i === 0 ? color : this.dimColor(color, intensity);
+
+            this.drawLightningArc(ctx, start, end, arcColor, width * intensity);
+        }
+
+        ctx.restore();
+    }
+
+    private static drawLightningArc(
+        ctx: CanvasRenderingContext2D,
+        start: Vector2,
+        end: Vector2,
+        color: string,
+        width: number
+    ): void {
+        // Generate jagged lightning path
+        const points = this.generateLightningPath(start, end);
+
+        // Draw outer glow
+        ctx.globalAlpha = 0.4;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width * 4;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 10;
+        this.drawPath(ctx, points);
+
+        // Draw main arc
+        ctx.globalAlpha = 0.8;
+        ctx.lineWidth = width * 2;
+        ctx.shadowBlur = 5;
+        this.drawPath(ctx, points);
+
+        // Draw bright core
+        ctx.globalAlpha = 1.0;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = width * 0.5;
+        ctx.shadowBlur = 0;
+        this.drawPath(ctx, points);
+    }
+
+    private static generateLightningPath(
+        start: Vector2,
+        end: Vector2
+    ): Vector2[] {
+        const points: Vector2[] = [start];
+
+        // Calculate the direction and distance
+        const direction = end.subtract(start);
+        const distance = direction.magnitude();
+        const segments = Math.max(3, Math.floor(distance / 15)); // One segment per 15 pixels
+
+        const unitDirection = direction.multiply(1 / distance);
+        const perpendicular = new Vector2(-unitDirection.y, unitDirection.x);
+
+        // Generate intermediate points with random offsets
+        for (let i = 1; i < segments; i++) {
+            const progress = i / segments;
+            const basePoint = start.add(direction.multiply(progress));
+
+            // Random offset perpendicular to the line
+            const maxOffset = 15 * Math.sin(progress * Math.PI); // Arc shape
+            const offset = (Math.random() - 0.5) * maxOffset;
+            const jaggedPoint = basePoint.add(perpendicular.multiply(offset));
+
+            points.push(jaggedPoint);
+        }
+
+        points.push(end);
+        return points;
+    }
+
+    private static drawPath(
+        ctx: CanvasRenderingContext2D,
+        points: Vector2[]
+    ): void {
+        if (points.length < 2) return;
+
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+        }
+
+        ctx.stroke();
+    }
+
+    private static dimColor(color: string, intensity: number): string {
+        // Simple color dimming for chain lightning
+        if (color === "#00ffff") {
+            const alpha = Math.floor(255 * intensity)
+                .toString(16)
+                .padStart(2, "0");
+            return `#00ffff${alpha}`;
+        }
+        return color;
+    }
 }

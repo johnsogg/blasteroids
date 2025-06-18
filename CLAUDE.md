@@ -86,6 +86,7 @@ See [TODO.md](./TODO.md) for current development tasks and roadmap.
 
 ## Memories
 
+- When the user says "update the TODOs" they mean update the TODO.md file to reflect completed work, not the internal TodoWrite system
 - Keep the TODO.md file up to date with the current status, but always ask the user before writing to it to avoid conflicts
 - Always run formatting and linting before commits
 - Use descriptive commit messages that explain the "why" not just the "what"

@@ -705,4 +705,156 @@ export class AudioManager {
         oscillator2.stop(this.audioContext.currentTime + duration);
         lfo.stop(this.audioContext.currentTime + duration);
     }
+
+    async playLightningStrike(): Promise<void> {
+        await this.ensureAudioContext();
+
+        // Create multiple oscillators for complex electrical crackling sound
+        const oscillator1 = this.audioContext.createOscillator();
+        const oscillator2 = this.audioContext.createOscillator();
+        const oscillator3 = this.audioContext.createOscillator();
+        const noiseBuffer = this.createWhiteNoise(0.15); // 150ms of noise
+        const noiseSource = this.audioContext.createBufferSource();
+
+        const gainNode = this.audioContext.createGain();
+        const filter = this.audioContext.createBiquadFilter();
+
+        // Connect the audio graph
+        oscillator1.connect(gainNode);
+        oscillator2.connect(gainNode);
+        oscillator3.connect(gainNode);
+        noiseSource.buffer = noiseBuffer;
+        noiseSource.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(this.masterGain);
+
+        // Configure oscillators for electrical crackling
+        oscillator1.type = "sawtooth";
+        oscillator2.type = "square";
+        oscillator3.type = "triangle";
+
+        // High frequency base with rapid modulation for electrical effect
+        const baseFreq = 2000;
+        oscillator1.frequency.setValueAtTime(
+            baseFreq,
+            this.audioContext.currentTime
+        );
+        oscillator2.frequency.setValueAtTime(
+            baseFreq * 1.5,
+            this.audioContext.currentTime
+        );
+        oscillator3.frequency.setValueAtTime(
+            baseFreq * 0.7,
+            this.audioContext.currentTime
+        );
+
+        // Rapid frequency modulation to simulate electrical arcing
+        const lfo = this.audioContext.createOscillator();
+        const lfoGain = this.audioContext.createGain();
+        lfo.type = "square";
+        lfo.frequency.setValueAtTime(150, this.audioContext.currentTime); // Fast modulation
+        lfoGain.gain.setValueAtTime(400, this.audioContext.currentTime); // Deep modulation
+        lfo.connect(lfoGain);
+        lfoGain.connect(oscillator1.frequency);
+        lfoGain.connect(oscillator2.frequency);
+
+        // High-pass filter for the white noise to add crackling
+        filter.type = "highpass";
+        filter.frequency.setValueAtTime(3000, this.audioContext.currentTime);
+        filter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
+
+        // Sharp attack and quick decay for electrical "zap"
+        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(
+            0.2,
+            this.audioContext.currentTime + 0.005
+        ); // Very fast attack
+        gainNode.gain.exponentialRampToValueAtTime(
+            0.01,
+            this.audioContext.currentTime + 0.08
+        ); // Quick decay
+        gainNode.gain.linearRampToValueAtTime(
+            0,
+            this.audioContext.currentTime + 0.15
+        ); // Fade out
+
+        const duration = 0.15;
+
+        // Start all oscillators
+        oscillator1.start(this.audioContext.currentTime);
+        oscillator2.start(this.audioContext.currentTime);
+        oscillator3.start(this.audioContext.currentTime);
+        noiseSource.start(this.audioContext.currentTime);
+        lfo.start(this.audioContext.currentTime);
+
+        // Stop all oscillators
+        oscillator1.stop(this.audioContext.currentTime + duration);
+        oscillator2.stop(this.audioContext.currentTime + duration);
+        oscillator3.stop(this.audioContext.currentTime + duration);
+        noiseSource.stop(this.audioContext.currentTime + duration);
+        lfo.stop(this.audioContext.currentTime + duration);
+    }
+
+    private createWhiteNoise(duration: number): AudioBuffer {
+        const sampleRate = this.audioContext.sampleRate;
+        const bufferSize = sampleRate * duration;
+        const buffer = this.audioContext.createBuffer(
+            1,
+            bufferSize,
+            sampleRate
+        );
+        const data = buffer.getChannelData(0);
+
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * 0.3; // Reduced amplitude
+        }
+
+        return buffer;
+    }
+
+    async playLightningMiss(): Promise<void> {
+        await this.ensureAudioContext();
+
+        // Create a muffled electric "urk" sound for when lightning has no target
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        const filter = this.audioContext.createBiquadFilter();
+
+        // Connect audio graph
+        oscillator.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(this.masterGain);
+
+        // Low frequency electric hum that quickly dies
+        oscillator.type = "sawtooth";
+        oscillator.frequency.setValueAtTime(120, this.audioContext.currentTime); // Low rumble
+        oscillator.frequency.exponentialRampToValueAtTime(
+            80,
+            this.audioContext.currentTime + 0.15
+        ); // Drop frequency
+
+        // Low-pass filter for muffled effect
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(400, this.audioContext.currentTime); // Very muffled
+        filter.Q.setValueAtTime(2, this.audioContext.currentTime); // Resonant for electric character
+
+        // Quick attack, sustain briefly, then fade out
+        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(
+            0.08,
+            this.audioContext.currentTime + 0.02
+        ); // Quick attack
+        gainNode.gain.setValueAtTime(
+            0.08,
+            this.audioContext.currentTime + 0.05
+        ); // Brief sustain
+        gainNode.gain.exponentialRampToValueAtTime(
+            0.01,
+            this.audioContext.currentTime + 0.15
+        ); // Fade out
+
+        const duration = 0.15;
+        oscillator.start(this.audioContext.currentTime);
+        oscillator.stop(this.audioContext.currentTime + duration);
+    }
 }

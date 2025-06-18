@@ -86,6 +86,7 @@ export const FUEL = {
     MAIN_THRUST_CONSUMPTION: 2, // units per second
     STRAFE_THRUST_CONSUMPTION: 1, // units per second per thruster
     STRAFE_POWER_MULTIPLIER: 0.5, // 50% of main thrust power
+    LIFE_SUPPORT_CONSUMPTION: 0.1, // units per second for basic life support
 
     // Gauge visual settings
     GAUGE_WIDTH: 200,
@@ -151,6 +152,9 @@ export const ASTEROID = {
 
     // Spawn safe zone (distance from ship center)
     SPAWN_SAFE_ZONE: 150,
+
+    // Repulsor beam effect for fragments
+    REPULSOR_STRENGTH: 0.4, // 40% bias away from ship, 30% random
 } as const;
 
 // =============================================================================

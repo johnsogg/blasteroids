@@ -13,6 +13,8 @@ import {
     GIFT,
     BULLET,
     WEAPONS,
+    ASTEROID,
+    FUEL,
     type GeometryMode,
     type GiftType,
 } from "~/config/constants";
@@ -44,6 +46,7 @@ export class Game {
     private lastShotTime = 0;
     private lastThrustTime = 0;
     private lastLaserSoundTime = 0;
+    private lastLightningTime = 0;
     private bulletsInCurrentActivation = 0;
     private lastShootKeyState = false;
     private gameOverSoundPlayed = false;
@@ -343,7 +346,14 @@ export class Game {
                         );
 
                         if (distance <= WEAPONS.MISSILES.EXPLOSION_RADIUS) {
-                            this.destroyAsteroid(asteroid);
+                            // Get ship position for repulsor effect
+                            const shipEntity = this.gameObjects.find(
+                                (obj) => obj.type === "ship"
+                            );
+                            this.destroyAsteroid(
+                                asteroid,
+                                shipEntity?.position
+                            );
                         }
                     }
                 }
@@ -428,7 +438,7 @@ export class Game {
                     bullet.age = 999;
 
                     // Create smaller asteroids if this one is large enough
-                    this.destroyAsteroid(asteroid);
+                    this.destroyAsteroid(asteroid, shipEntity?.position);
                     break; // Bullet can only hit one asteroid
                 }
             }
@@ -468,7 +478,14 @@ export class Game {
                             explosionDistance <=
                             WEAPONS.MISSILES.EXPLOSION_RADIUS
                         ) {
-                            this.destroyAsteroid(explosionTarget);
+                            // Get ship position for repulsor effect
+                            const shipEntity = this.gameObjects.find(
+                                (obj) => obj.type === "ship"
+                            );
+                            this.destroyAsteroid(
+                                explosionTarget,
+                                shipEntity?.position
+                            );
                         }
                     }
                     break; // Missile can only explode once
@@ -673,6 +690,43 @@ export class Game {
         }
     }
 
+    private handleFuelDepletion(ship: Ship): void {
+        // Create ship explosion particles (life support failure)
+        this.particles.createShipExplosion(ship.position);
+
+        // Play ship death sound
+        this.audio.playShipHit().catch(() => {
+            // Ignore audio errors
+        });
+
+        // Lose a life due to fuel depletion
+        this.gameState.loseLife();
+
+        // If game over, remove the ship from the game
+        if (this.gameState.gameOver) {
+            const shipIndex = this.gameObjects.indexOf(ship);
+            if (shipIndex > -1) {
+                this.gameObjects.splice(shipIndex, 1);
+            }
+            this.showGameOver();
+        } else {
+            // Reset ship position and velocity
+            ship.position = this.getShipSpawnPosition();
+            ship.velocity = Vector2.zero();
+            ship.rotation = 0;
+
+            // Make ship invulnerable for designated time
+            ship.invulnerable = true;
+            ship.invulnerableTime = SHIP.INVULNERABLE_TIME;
+
+            // Refill fuel to maximum when using an extra life
+            this.gameState.refillFuel();
+
+            // Reset game over sound flag when not game over
+            this.gameOverSoundPlayed = false;
+        }
+    }
+
     private showGameOver(): void {
         // Play sad trombone sound (only once)
         if (!this.gameOverSoundPlayed) {
@@ -808,7 +862,10 @@ export class Game {
         });
     }
 
-    private destroyAsteroid(asteroid: GameObject): void {
+    private destroyAsteroid(
+        asteroid: GameObject,
+        repulsorSource?: Vector2
+    ): void {
         // Create asteroid explosion particles
         this.particles.createAsteroidExplosion(
             asteroid.position,
@@ -838,7 +895,31 @@ export class Game {
                 const fragmentSize =
                     asteroid.size.x * (0.4 + Math.random() * 0.3); // 40-70% of original
                 const speed = 80 + Math.random() * 60; // Faster fragments
-                const angle = Math.random() * Math.PI * 2;
+
+                // Calculate fragment velocity with repulsor effect
+                let angle: number;
+                if (repulsorSource) {
+                    // Bias fragments away from the repulsor source (usually the ship)
+                    const awayFromSource =
+                        asteroid.position.subtract(repulsorSource);
+                    if (awayFromSource.magnitude() > 0) {
+                        const baseAngle = Math.atan2(
+                            awayFromSource.y,
+                            awayFromSource.x
+                        );
+                        const randomOffset =
+                            (Math.random() - 0.5) *
+                            Math.PI *
+                            (1 - ASTEROID.REPULSOR_STRENGTH);
+                        angle = baseAngle + randomOffset;
+                    } else {
+                        // Fallback to random if positions are identical
+                        angle = Math.random() * Math.PI * 2;
+                    }
+                } else {
+                    // No repulsor source - use completely random angle
+                    angle = Math.random() * Math.PI * 2;
+                }
 
                 this.gameObjects.push({
                     position: asteroid.position.add(
@@ -1012,6 +1093,14 @@ export class Game {
             }
         }
 
+        // Life support fuel consumption (continuous)
+        const lifeSupportFuelNeeded = FUEL.LIFE_SUPPORT_CONSUMPTION * deltaTime;
+        if (!this.gameState.consumeFuel(lifeSupportFuelNeeded)) {
+            // Out of fuel - life support failure!
+            this.handleFuelDepletion(ship);
+            return; // Don't continue processing this frame
+        }
+
         // Apply friction
         ship.velocity = ship.velocity.multiply(friction);
 
@@ -1076,7 +1165,7 @@ export class Game {
                 this.shootLaser(ship as Ship, currentTime);
                 break;
             case "lightning":
-                // TODO: Implement lightning shooting
+                this.shootLightning(ship as Ship, currentTime);
                 break;
         }
     }
@@ -1281,7 +1370,7 @@ export class Game {
 
         // Destroy all hit asteroids (this will create fragments, but they won't be hit this frame)
         for (const asteroid of asteroidsToDestroy) {
-            this.destroyAsteroid(asteroid);
+            this.destroyAsteroid(asteroid, ship.position);
         }
     }
 
@@ -1319,6 +1408,136 @@ export class Game {
             .subtract(closestPoint)
             .magnitude();
         return distanceToClosest <= circleRadius;
+    }
+
+    private shootLightning(ship: Ship, currentTime: number): void {
+        // Check cooldown
+        if (
+            currentTime - this.lastLightningTime <
+            WEAPONS.LIGHTNING.FIRE_RATE
+        ) {
+            return; // Too soon to fire again
+        }
+
+        // Calculate lightning radius with upgrades
+        let lightningRadius = WEAPONS.LIGHTNING.RADIUS;
+        if (this.gameState.hasUpgrade("upgrade_lightning_radius")) {
+            lightningRadius *= WEAPONS.LIGHTNING.RADIUS_UPGRADE; // 20% larger
+        }
+
+        // Find nearest target within range FIRST
+        const target = this.findNearestTarget(ship.position, lightningRadius);
+
+        if (!target) {
+            // No target found - play muffled electric "urk" sound but don't consume fuel or cooldown
+            this.audio.playLightningMiss().catch(() => {
+                // Ignore audio errors
+            });
+            return;
+        }
+
+        // Only now check and consume fuel (since we have a valid target)
+        if (!this.gameState.consumeFuel(WEAPONS.LIGHTNING.FUEL_CONSUMPTION)) {
+            return; // Not enough fuel
+        }
+
+        // Handle lightning collisions
+        this.handleLightningCollisions(
+            ship,
+            target,
+            lightningRadius,
+            currentTime
+        );
+
+        // Update cooldown
+        this.lastLightningTime = currentTime;
+
+        // Play lightning sound effect
+        this.audio.playLightningStrike().catch(() => {
+            // Ignore audio errors
+        });
+    }
+
+    private findNearestTarget(
+        sourcePosition: Vector2,
+        radius: number
+    ): GameEntity | null {
+        let nearestTarget: GameEntity | null = null;
+        let nearestDistance = Infinity;
+
+        // Get all potential targets (asteroids and gifts)
+        for (const obj of this.gameObjects) {
+            if (obj.type !== "asteroid" && obj.type !== "gift") {
+                continue;
+            }
+
+            const distance = sourcePosition.subtract(obj.position).magnitude();
+            if (distance <= radius && distance < nearestDistance) {
+                nearestTarget = obj;
+                nearestDistance = distance;
+            }
+        }
+
+        return nearestTarget;
+    }
+
+    private handleLightningCollisions(
+        ship: Ship,
+        primaryTarget: GameEntity,
+        radius: number,
+        currentTime: number
+    ): void {
+        // Store lightning targets for rendering
+        const lightningTargets: { start: Vector2; end: Vector2 }[] = [];
+
+        // Primary arc from ship to target
+        lightningTargets.push({
+            start: ship.position,
+            end: primaryTarget.position,
+        });
+
+        // Destroy primary target
+        if (primaryTarget.type === "asteroid") {
+            this.destroyAsteroid(primaryTarget, ship.position);
+        } else if (primaryTarget.type === "gift") {
+            this.destroyGift(primaryTarget);
+        }
+
+        // Chain lightning upgrade - find secondary targets
+        if (this.gameState.hasUpgrade("upgrade_lightning_chain")) {
+            let chainSource = primaryTarget.position;
+            let chainsRemaining = 2; // Maximum 2 additional jumps
+
+            while (chainsRemaining > 0) {
+                const secondaryTarget = this.findNearestTarget(
+                    chainSource,
+                    radius * 0.8
+                ); // Slightly reduced range for chains
+                if (!secondaryTarget || secondaryTarget === primaryTarget) {
+                    break; // No more valid targets
+                }
+
+                // Add chain lightning arc
+                lightningTargets.push({
+                    start: chainSource,
+                    end: secondaryTarget.position,
+                });
+
+                // Destroy secondary target
+                if (secondaryTarget.type === "asteroid") {
+                    this.destroyAsteroid(secondaryTarget, ship.position);
+                } else if (secondaryTarget.type === "gift") {
+                    this.destroyGift(secondaryTarget);
+                }
+
+                chainSource = secondaryTarget.position;
+                chainsRemaining--;
+            }
+        }
+
+        // Store lightning data for rendering
+        ship.lightningTargets = lightningTargets;
+        ship.lightningTime = currentTime;
     }
 
     private drawObjectWithWrapAround(obj: GameObject): void {
@@ -1431,6 +1650,18 @@ export class Game {
                         laserLength,
                         WEAPONS.LASER.COLOR,
                         WEAPONS.LASER.WIDTH
+                    );
+                }
+
+                // Draw lightning arcs if active
+                if (obj.lightningTargets && obj.lightningTime !== undefined) {
+                    Shapes.drawLightning(
+                        this.ctx,
+                        obj.lightningTargets,
+                        obj.lightningTime,
+                        this.lastTime,
+                        WEAPONS.LIGHTNING.ARC_COLOR,
+                        WEAPONS.LIGHTNING.ARC_WIDTH
                     );
                 }
             } else if (obj.type === "asteroid") {
