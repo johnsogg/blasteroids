@@ -6,10 +6,6 @@
 
 ### 🎮 Gameplay Features
 
-- [x] Allow the game area to take on different geometries:
-    - [x] Arbitrary width/height
-    - [x] Full window width or height
-    - [x] Largest size that fits in window to match some aspect ratio
 - [x] Weapon mechanics: different weapons, each with their own upgrades
     - [x] Weapons the player has acquired can be activated with a number key
     - [x] Each weapon has an icon that is about the same size as the player ship, the details will be designed later. For now use simple shapes to differentiate them.
@@ -18,8 +14,12 @@
     - [x] Default weapon (Bullets)
         - [x] Keyboard shortcut: 1
         - [x] Modify this to consume a very small amount of fuel - I will tweak the value in the constants file
-        - [x] Gift Upgrade: 25% faster fire rate
-        - [x] Gift Upgrade: 50% larger bullets (for more advantageous collision zone)
+        - [x] Gift Upgrade: 25% faster fire rate + 40% longer range
+        - [x] Gift Upgrade: 50% larger bullets + 40% longer range
+        - [x] Rebalanced for early game challenge:
+            - [x] 25% slower initial fire rate (150ms → 187ms)
+            - [x] 50% shorter initial range (3s → 1.5s lifespan)
+            - [x] 3-bullet burst limit per key activation
     - [x] Missiles
         - [x] Keyboard shortcut: 2
         - [x] They explode if an object other than the ship is within N pixels of missile
@@ -65,6 +65,7 @@
         - [x] Fuel refill
         - [x] Extra life
         - [x] Weapon upgrades
+- [x] Fuel refill on ship respawn (when using extra life)
 - [ ] Add extra life bonus at certain score thresholds
 - [ ] Implement UFO enemy ships (original Asteroids feature)
 - [ ] Add power-ups or weapon variants
@@ -74,6 +75,11 @@
 - [ ] Add unit tests for physics and collision systems
 - [ ] Performance optimizations for large numbers of objects
 - [x] Constants should be symbols (not literals) and coded as config objects
+- [x] Robust input context system
+    - [x] Input context enum for different game states (GAMEPLAY, MENU, LEVEL_COMPLETE, etc.)
+    - [x] Context-aware input handling with permission matrix
+    - [x] Input consumption system to prevent input bleeding between contexts
+    - [x] Type-safe InputName union type for compile-time validation
 
 ### 🛠️ Development & Testing Tools
 
@@ -84,3 +90,5 @@
     - [x] Dropdown with all gift types for easy access
 
 ## Known Bugs
+
+- [x] ~~On the Level Complete screen, pressing the space key currently causes the ship to fire immediately. We should suppress that behavior so the ship does not fire its weapon when clearing the Level Complete screen.~~ **FIXED** - Implemented robust input context system
