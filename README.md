@@ -2,9 +2,12 @@
 
 A web-based Asteroids-style game built with TypeScript and HTML5 Canvas.
 
+![alt text](img/blasteroids.png)
+
 ## Development
 
 ### Prerequisites
+
 - Node.js (v16 or higher)
 - npm
 
