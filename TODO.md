@@ -1,5 +1,24 @@
 # Blasteroids Development TODO
 
+### Misc Thinklist
+
+These are not TODOs - they are simply ideas as a foil for where the game might
+go, and what is needed to make them happen.
+
+- [ ] Would like the ability to tweak a parameter to make individual object
+      types larger or smaller
+- [ ] Would like for dimensions to be reckoned in terms of a board size (e.g.
+      "ship is 1/40th of the screen width") - this will take some thinking
+- [ ] Possibilities about additional game mechanics and systems:
+    - Level types with different rules or conditions
+    - Ship types
+    - Shields
+    - Level objectives or goals
+    - Plot or storyline (why are we out there blasting asteroids anyway?)
+    - Planet/star: gravity has an effect items with mass
+    - Asteroid types that yield items and have different hit points
+    - Multiplayer (cooperative, combative)
+
 ### 🎨 Visual & Audio Polish
 
 - [x] Implement ship trails/afterimage effect
@@ -37,12 +56,14 @@
         - [x] Only consumes fuel and cooldown when valid target found
 
 - [x] **Repulsor Beam**: Asteroid fragments now fly away from ship instead of toward it
+
     - [x] 40% bias away from ship position with 60% randomness
     - [x] Applied to all weapon destructions (bullets, missiles, laser, lightning)
     - [x] Prevents cheap deaths from debris created by successful attacks
     - [x] Configurable repulsor strength in constants
 
 - [x] **Life Support Fuel System**: Running out of fuel now kills you
+
     - [x] Continuous fuel drain: 0.1 units per second for life support
     - [x] Fuel depletion triggers immediate death with explosion effects
     - [x] Automatic fuel refill on respawn (if lives remaining)
@@ -55,7 +76,24 @@
 
 ### 🔧 Technical Improvements
 
-- [ ] Add unit tests for physics and collision systems
+#### Physics Testing Foundation (for future gravity system)
+
+- [ ] Add physics unit tests as foundation for future gravity system refactor
+- [ ] Create baseline physics behavior tests (ship movement, bullet inheritance, collision)
+- [ ] Add performance benchmarks for physics calculations with many entities
+
+#### Game.ts Refactoring (2,312 lines → focused systems)
+
+- [ ] Split Game.ts into smaller collaborating systems for better maintainability and testing
+- [ ] Extract EntityManager system from Game.ts (~300 lines) - entity lifecycle, filtering, queries
+- [ ] Extract WeaponSystem from Game.ts (~400 lines) - weapon firing, switching, fuel management
+- [ ] Extract CollisionSystem from Game.ts (~200 lines) - collision detection and response
+- [ ] Extract GiftSystem from Game.ts (~300 lines) - gift spawning, warp bubbles, type selection
+- [ ] Extract InputHandler from Game.ts (~200 lines) - context-based input processing
+- [ ] Reduce core Game.ts to orchestration only (~200 lines) - game loop, system coordination
+
+#### General
+
 - [ ] Performance optimizations for large numbers of objects
 
 ### 🛠️ Development & Testing Tools
