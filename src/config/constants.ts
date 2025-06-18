@@ -102,11 +102,12 @@ export const FUEL = {
 export const BULLET = {
     SPEED: 500, // pixels per second
     SIZE: 3,
-    MAX_AGE: 3, // seconds
-    FIRE_RATE: 150, // milliseconds between shots
+    MAX_AGE: 1.5, // seconds (reduced by 50% for shorter range)
+    FIRE_RATE: 187, // milliseconds between shots (25% slower: 150 / 0.75 = 200, but using 187 for precise 25% reduction)
     COLOR: "#ffff00",
     OUT_OF_BOUNDS_MARGIN: 50, // pixels beyond screen edge
     FUEL_COST: 0.5, // fuel consumed per shot
+    BULLETS_PER_ACTIVATION: 3, // maximum bullets per key press
 } as const;
 
 // =============================================================================
@@ -388,6 +389,7 @@ export const WEAPONS = {
         FUEL_CONSUMPTION: 0.5, // units per shot (very small amount)
         FIRE_RATE_UPGRADE: 0.75, // 25% faster (multiply fire rate by this)
         SIZE_UPGRADE: 1.5, // 50% larger bullets
+        RANGE_UPGRADE: 1.4, // 40% longer range per upgrade (stacks)
         COLOR: "#ffff00",
         UPGRADED_COLOR: "#ffff88",
     },

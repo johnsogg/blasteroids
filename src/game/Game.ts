@@ -42,6 +42,8 @@ export class Game {
     private running = false;
     private lastShotTime = 0;
     private lastThrustTime = 0;
+    private bulletsInCurrentActivation = 0;
+    private lastShootKeyState = false;
     private gameOverSoundPlayed = false;
     private lastGiftSpawnTime = 0;
     private giftSpawnInterval = GIFT.SPAWN_INTERVAL; // Time between gifts
@@ -341,7 +343,8 @@ export class Game {
         // Remove old objects and handle gift lifecycle
         this.gameObjects = this.gameObjects.filter((obj) => {
             if (obj.type === "bullet") {
-                const maxAge = 3; // seconds
+                // Use custom maxAge if available, otherwise use default
+                const maxAge = obj.maxAge || BULLET.MAX_AGE;
                 const outOfBounds =
                     obj.position.x < -50 ||
                     obj.position.x > this.canvas.width + 50 ||
@@ -592,6 +595,9 @@ export class Game {
             // Make ship invulnerable for designated time
             ship.invulnerable = true;
             ship.invulnerableTime = SHIP.INVULNERABLE_TIME;
+
+            // Refill fuel to maximum when using an extra life
+            this.gameState.refillFuel();
 
             // Reset game over sound flag when not game over
             this.gameOverSoundPlayed = false;
@@ -943,8 +949,15 @@ export class Game {
             ship.velocity = ship.velocity.multiply(maxSpeed / speed);
         }
 
-        // Shooting
-        if (this.input.shoot) {
+        // Shooting - handle activation tracking for bullet limits
+        const currentShootKeyState = this.input.shoot;
+        if (!this.lastShootKeyState && currentShootKeyState) {
+            // Key was just pressed - reset bullet count for new activation
+            this.bulletsInCurrentActivation = 0;
+        }
+        this.lastShootKeyState = currentShootKeyState;
+
+        if (currentShootKeyState) {
             this.handleShooting(ship, currentTime);
         }
     }
@@ -969,6 +982,11 @@ export class Game {
     }
 
     private shootBullets(ship: GameObject, currentTime: number): void {
+        // Check bullet limit per activation
+        if (this.bulletsInCurrentActivation >= BULLET.BULLETS_PER_ACTIVATION) {
+            return; // Already fired maximum bullets for this activation
+        }
+
         // Check fire rate (with upgrade consideration)
         let fireRate = BULLET.FIRE_RATE;
         if (this.gameState.hasUpgrade("upgrade_bullets_fire_rate")) {
@@ -994,13 +1012,24 @@ export class Game {
         const bulletOffset = Vector2.fromAngle(ship.rotation, ship.size.x);
         const bulletPosition = ship.position.add(bulletOffset);
 
-        // Determine bullet size (with upgrade consideration)
+        // Determine bullet size and range (with upgrade consideration)
         let bulletSize = BULLET.SIZE;
         let bulletColor: string = WEAPONS.BULLETS.COLOR;
+        let bulletMaxAge = BULLET.MAX_AGE;
+
+        // Apply upgrades (each upgrade also increases range by 40%)
+        let rangeMultiplier = 1.0;
+        if (this.gameState.hasUpgrade("upgrade_bullets_fire_rate")) {
+            rangeMultiplier *= WEAPONS.BULLETS.RANGE_UPGRADE; // 40% increase
+        }
         if (this.gameState.hasUpgrade("upgrade_bullets_size")) {
             bulletSize *= WEAPONS.BULLETS.SIZE_UPGRADE; // 50% larger
             bulletColor = WEAPONS.BULLETS.UPGRADED_COLOR;
+            rangeMultiplier *= WEAPONS.BULLETS.RANGE_UPGRADE; // 40% increase
         }
+
+        // Apply range multiplier
+        bulletMaxAge *= rangeMultiplier;
 
         this.gameObjects.push({
             position: bulletPosition,
@@ -1010,9 +1039,11 @@ export class Game {
             color: bulletColor,
             type: "bullet",
             age: 0,
+            maxAge: bulletMaxAge, // Custom max age for this bullet
         });
 
         this.lastShotTime = currentTime;
+        this.bulletsInCurrentActivation++; // Increment bullet count for this activation
 
         // Play shooting sound
         this.audio.playShoot().catch(() => {

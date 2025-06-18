@@ -12,6 +12,7 @@ export interface BaseEntity {
     rotation: number;
     color: string;
     age?: number; // Time since entity was created
+    maxAge?: number; // Custom maximum age for this entity (overrides type defaults)
 
     // Optional properties for specific entity types
     warpAnimationProgress?: number;
