@@ -1357,8 +1357,12 @@ export class Game {
             (obj) => obj.type === "asteroid"
         );
 
+        // Get all gifts for collision testing
+        const gifts = this.gameObjects.filter((obj) => obj.type === "gift");
+
         // Track asteroids to destroy to avoid modifying array during iteration
         const asteroidsToDestroy: typeof asteroids = [];
+        const giftsToDestroy: typeof gifts = [];
 
         // Check collision with each asteroid using line-circle intersection
         for (const asteroid of asteroids) {
@@ -1380,9 +1384,29 @@ export class Game {
             }
         }
 
+        // Check collision with each gift using line-circle intersection
+        for (const gift of gifts) {
+            if (
+                this.isLineCircleIntersection(
+                    laserStart,
+                    laserEnd,
+                    gift.position,
+                    gift.size.x / 2
+                )
+            ) {
+                // Laser hit this gift - mark for destruction
+                giftsToDestroy.push(gift);
+            }
+        }
+
         // Destroy all hit asteroids (this will create fragments, but they won't be hit this frame)
         for (const asteroid of asteroidsToDestroy) {
             this.destroyAsteroid(asteroid, ship.position);
+        }
+
+        // Destroy all hit gifts
+        for (const gift of giftsToDestroy) {
+            this.destroyGift(gift);
         }
     }
 
