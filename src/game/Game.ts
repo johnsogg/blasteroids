@@ -1,5 +1,6 @@
 import { AudioManager } from "~/audio/AudioManager";
 import { InputManager } from "~/input/InputManager";
+import { InputContext } from "~/input/InputContext";
 import { Collision } from "~/physics/Collision";
 import { ParticleSystem } from "~/render/ParticleSystem";
 import { Shapes } from "~/render/Shapes";
@@ -195,52 +196,14 @@ export class Game {
     private update(deltaTime: number): void {
         const currentTime = performance.now();
 
-        // Handle menu toggle
-        if (this.input.menuToggle) {
-            this.togglePause();
-            return;
-        }
+        // Set input context based on current game state
+        this.updateInputContext();
 
-        // Handle menu input when menu is visible
-        if (this.menuManager.visible) {
-            if (this.input.menuUp) this.menuManager.handleInput("up");
-            if (this.input.menuDown) this.menuManager.handleInput("down");
-            if (this.input.menuLeft) this.menuManager.handleInput("left");
-            if (this.input.menuRight) this.menuManager.handleInput("right");
-            if (this.input.menuSelect) this.menuManager.handleInput("select");
-            return; // Don't update game while menu is open
-        }
-
-        // Check for restart if game is over
-        if (this.gameState.gameOver && this.input.restart) {
-            this.restart();
-            return;
-        }
-
-        // Handle weapon switching (only when game is not over or paused)
-        if (!this.gameState.gameOver && !this.isPaused) {
-            if (this.input.weapon1) {
-                this.gameState.switchWeapon("bullets");
-            } else if (this.input.weapon2) {
-                this.gameState.switchWeapon("missiles");
-            } else if (this.input.weapon3) {
-                this.gameState.switchWeapon("laser");
-            } else if (this.input.weapon4) {
-                this.gameState.switchWeapon("lightning");
-            }
-        }
+        // Handle context-specific input
+        this.handleContextInput(currentTime);
 
         // Update level completion animation
         this.levelCompleteAnimation.update(currentTime);
-
-        // Check for space key dismissal of level complete animation
-        if (
-            this.levelCompleteAnimation.active &&
-            this.levelCompleteAnimation.canBeDismissed &&
-            this.input.shoot
-        ) {
-            this.levelCompleteAnimation.complete();
-        }
 
         // Check if animation completed and advance to next level
         if (!this.levelCompleteAnimation.active && this.levelAnimationStarted) {
@@ -565,6 +528,110 @@ export class Game {
                 }
             }
         }
+    }
+
+    /**
+     * Update the input context based on current game state
+     */
+    private updateInputContext(): void {
+        if (this.levelCompleteAnimation.active) {
+            this.input.setContext(InputContext.LEVEL_COMPLETE);
+        } else if (this.gameState.gameOver) {
+            this.input.setContext(InputContext.GAME_OVER);
+        } else if (this.menuManager.visible) {
+            this.input.setContext(InputContext.MENU);
+        } else if (this.isPaused) {
+            this.input.setContext(InputContext.PAUSED);
+        } else {
+            this.input.setContext(InputContext.GAMEPLAY);
+        }
+    }
+
+    /**
+     * Handle input based on current context
+     */
+    private handleContextInput(currentTime: number): void {
+        const context = this.input.getContext();
+
+        switch (context) {
+            case InputContext.GAMEPLAY:
+                this.handleGameplayInput(currentTime);
+                break;
+            case InputContext.MENU:
+                this.handleMenuInput();
+                break;
+            case InputContext.LEVEL_COMPLETE:
+                this.handleLevelCompleteInput();
+                break;
+            case InputContext.GAME_OVER:
+                this.handleGameOverInput();
+                break;
+            case InputContext.PAUSED:
+                this.handlePausedInput();
+                break;
+        }
+
+        // Menu toggle is handled globally since it can be used in multiple contexts
+        if (this.input.menuToggle) {
+            this.togglePause();
+        }
+    }
+
+    /**
+     * Handle gameplay input (normal game state)
+     */
+    private handleGameplayInput(_currentTime: number): void {
+        // Handle weapon switching
+        if (this.input.weapon1) {
+            this.gameState.switchWeapon("bullets");
+        } else if (this.input.weapon2) {
+            this.gameState.switchWeapon("missiles");
+        } else if (this.input.weapon3) {
+            this.gameState.switchWeapon("laser");
+        } else if (this.input.weapon4) {
+            this.gameState.switchWeapon("lightning");
+        }
+
+        // Ship input is handled in updateShip method when context is GAMEPLAY
+    }
+
+    /**
+     * Handle menu input
+     */
+    private handleMenuInput(): void {
+        if (this.input.menuUp) this.menuManager.handleInput("up");
+        if (this.input.menuDown) this.menuManager.handleInput("down");
+        if (this.input.menuLeft) this.menuManager.handleInput("left");
+        if (this.input.menuRight) this.menuManager.handleInput("right");
+        if (this.input.menuSelect) this.menuManager.handleInput("select");
+    }
+
+    /**
+     * Handle level complete screen input
+     */
+    private handleLevelCompleteInput(): void {
+        if (
+            this.levelCompleteAnimation.canBeDismissed &&
+            this.input.shootPressed
+        ) {
+            this.levelCompleteAnimation.complete();
+        }
+    }
+
+    /**
+     * Handle game over input
+     */
+    private handleGameOverInput(): void {
+        if (this.input.restart) {
+            this.restart();
+        }
+    }
+
+    /**
+     * Handle paused input
+     */
+    private handlePausedInput(): void {
+        // Only menu toggle (escape) is allowed, handled globally
     }
 
     private destroyShip(ship: Ship): void {
@@ -949,16 +1016,32 @@ export class Game {
             ship.velocity = ship.velocity.multiply(maxSpeed / speed);
         }
 
-        // Shooting - handle activation tracking for bullet limits
-        const currentShootKeyState = this.input.shoot;
-        if (!this.lastShootKeyState && currentShootKeyState) {
-            // Key was just pressed - reset bullet count for new activation
-            this.bulletsInCurrentActivation = 0;
-        }
-        this.lastShootKeyState = currentShootKeyState;
+        // Handle shooting only in GAMEPLAY context
+        if (this.input.getContext() === InputContext.GAMEPLAY) {
+            // Handle activation tracking for bullet limits
+            const currentShootKeyState = this.input.shoot;
+            if (!this.lastShootKeyState && currentShootKeyState) {
+                // Key was just pressed - reset bullet count for new activation
+                this.bulletsInCurrentActivation = 0;
+            } else if (this.lastShootKeyState && !currentShootKeyState) {
+                // Key was just released - reset bullet count for next activation
+                this.bulletsInCurrentActivation = 0;
+            }
+            this.lastShootKeyState = currentShootKeyState;
 
-        if (currentShootKeyState) {
-            this.handleShooting(ship, currentTime);
+            // Handle shooting based on weapon type
+            const weaponState = this.gameState.weaponState;
+            if (weaponState.currentWeapon === "bullets") {
+                // Bullets: use continuous input (can hold key for burst)
+                if (currentShootKeyState) {
+                    this.handleShooting(ship, currentTime);
+                }
+            } else {
+                // Other weapons: use single press input
+                if (this.input.shootPressed) {
+                    this.handleShooting(ship, currentTime);
+                }
+            }
         }
     }
 
