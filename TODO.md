@@ -7,7 +7,7 @@
 - [x] When gifts appear out of warp bubbles, their movement vector seems to be
       away from the center of the board. Instead, they should have a completely
       random heading.
-- [ ] If the player has all lives left, do not gift extra lives
+- [x] If the player has all lives left, do not gift extra lives
 - [ ] When the ship stops thrusting, there seems to be friction. Changing the
       constant for FRICTION does not seem to have any effect.
 - [ ] Add an audio effect for gifts: wubwubwubwubwubwubwub in a soft, low

@@ -257,10 +257,18 @@ export class GiftSystem {
         const availableGifts: { type: GiftType; weight: number }[] = [];
 
         // Always available gifts
-        availableGifts.push(
-            { type: "fuel_refill", weight: GIFT.SPAWN_WEIGHTS.FUEL_REFILL },
-            { type: "extra_life", weight: GIFT.SPAWN_WEIGHTS.EXTRA_LIFE }
-        );
+        availableGifts.push({
+            type: "fuel_refill",
+            weight: GIFT.SPAWN_WEIGHTS.FUEL_REFILL,
+        });
+
+        // Extra life gift (only if player doesn't have maximum lives)
+        if (this.gameState.lives < 99) {
+            availableGifts.push({
+                type: "extra_life",
+                weight: GIFT.SPAWN_WEIGHTS.EXTRA_LIFE,
+            });
+        }
 
         // Weapon unlocks (only if not already unlocked)
         if (!this.gameState.hasWeapon("bullets")) {
