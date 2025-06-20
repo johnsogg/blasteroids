@@ -1,5 +1,6 @@
 import { Vector2 } from "~/utils/Vector2";
 import type { GameEntity, Ship } from "~/entities";
+import { isGift } from "~/entities";
 import { isShip } from "~/entities";
 import { GIFT, BULLET, WEAPONS } from "~/config/constants";
 
@@ -9,7 +10,6 @@ import { GIFT, BULLET, WEAPONS } from "~/config/constants";
 export class EntityManager {
     private entities: GameEntity[] = [];
     private canvas: HTMLCanvasElement;
-
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -203,11 +203,17 @@ export class EntityManager {
             return (entity.age || 0) < GIFT.WARP_BUBBLE_CREATION_DELAY;
         } else if (entity.type === "gift") {
             // Gift lifecycle is managed by GiftSystem
-            return (entity.age || 0) < GIFT.LIFESPAN;
+            const isExpired = (entity.age || 0) >= GIFT.LIFESPAN;
+            
+            // Stop wubwub sound if gift is expiring
+            if (isExpired && isGift(entity) && entity.wubwubAudioControl) {
+                entity.wubwubAudioControl.stop();
+            }
+            
+            return !isExpired;
         }
         return true;
     }
-
 
     /**
      * Clear all entities

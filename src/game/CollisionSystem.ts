@@ -1,5 +1,6 @@
 import { Vector2 } from "~/utils/Vector2";
 import type { GameEntity, Ship } from "~/entities";
+import { isGift } from "~/entities";
 import { Collision } from "~/physics/Collision";
 import { AudioManager } from "~/audio/AudioManager";
 import { ParticleSystem } from "~/render/ParticleSystem";
@@ -411,6 +412,11 @@ export class CollisionSystem {
      * Collect a gift and apply its benefits
      */
     private collectGift(gift: GameEntity): void {
+        // Stop the wubwub ambient sound if it's playing
+        if (isGift(gift) && gift.wubwubAudioControl) {
+            gift.wubwubAudioControl.stop();
+        }
+
         // Play gift collection sound
         this.audio.playGiftCollected().catch(() => {
             // Ignore audio errors
@@ -465,6 +471,11 @@ export class CollisionSystem {
      * Destroy a gift with penalty
      */
     private destroyGift(gift: GameEntity): void {
+        // Stop the wubwub ambient sound if it's playing
+        if (isGift(gift) && gift.wubwubAudioControl) {
+            gift.wubwubAudioControl.stop();
+        }
+
         // Play frustrated cat sound
         this.audio.playGiftDestroyed().catch(() => {
             // Ignore audio errors

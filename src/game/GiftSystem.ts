@@ -218,7 +218,10 @@ export class GiftSystem {
         this.entityManager.addEntity(gift);
 
         // Play ambient wubwub sound for gift presence
-        this.audio.playGiftAmbientWubwub().catch(() => {
+        this.audio.playGiftAmbientWubwub().then((audioControl) => {
+            // Store the audio control on the gift entity so it can be stopped later
+            gift.wubwubAudioControl = audioControl;
+        }).catch(() => {
             // Ignore audio errors
         });
     }

@@ -858,7 +858,7 @@ export class AudioManager {
         oscillator.stop(this.audioContext.currentTime + duration);
     }
 
-    async playGiftAmbientWubwub(): Promise<void> {
+    async playGiftAmbientWubwub(): Promise<{ stop: () => void }> {
         await this.ensureAudioContext();
 
         // Low frequency oscillating "wubwub" sound for gift presence
@@ -886,22 +886,29 @@ export class AudioManager {
         ); // 3 Hz oscillation for more pronounced wubwub
         lfoGain.gain.setValueAtTime(40, this.audioContext.currentTime); // Higher modulation depth
 
-        // More audible volume with gentle fade in/out
+        // Gentle fade in, then sustain at constant volume
         gainNode.gain.setValueAtTime(0.0, this.audioContext.currentTime);
         gainNode.gain.linearRampToValueAtTime(
-            0.15,
+            0.12,
             this.audioContext.currentTime + 0.3
-        ); // Fade in - higher volume
-        gainNode.gain.setValueAtTime(0.15, this.audioContext.currentTime + 1.7); // Sustain
-        gainNode.gain.linearRampToValueAtTime(
-            0.0,
-            this.audioContext.currentTime + 2.0
-        ); // Fade out
+        ); // Fade in to sustain level
 
-        const duration = 2.0; // 2 second wubwub sound
+        // Start the oscillators - they will run until manually stopped
         oscillator.start(this.audioContext.currentTime);
         lfoOscillator.start(this.audioContext.currentTime);
-        oscillator.stop(this.audioContext.currentTime + duration);
-        lfoOscillator.stop(this.audioContext.currentTime + duration);
+
+        // Return a control object to stop the sound
+        return {
+            stop: () => {
+                // Fade out quickly when stopped
+                gainNode.gain.linearRampToValueAtTime(
+                    0.0,
+                    this.audioContext.currentTime + 0.2
+                );
+                // Stop oscillators after fade out
+                oscillator.stop(this.audioContext.currentTime + 0.2);
+                lfoOscillator.stop(this.audioContext.currentTime + 0.2);
+            }
+        };
     }
 }

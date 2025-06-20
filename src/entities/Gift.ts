@@ -10,4 +10,5 @@ export interface Gift extends BaseEntity {
     giftCollectionDeadline?: number;
     closingWarpCreated?: boolean;
     giftType: GiftType;
+    wubwubAudioControl?: { stop: () => void };
 }
