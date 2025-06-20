@@ -3,7 +3,7 @@ import type { GameEntity } from "~/entities";
 import { AudioManager } from "~/audio/AudioManager";
 import { GameState } from "./GameState";
 import { EntityManager } from "./EntityManager";
-import { GIFT, type GiftType } from "~/config/constants";
+import { GIFT, WARP_BUBBLE, type GiftType } from "~/config/constants";
 import type { UpgradeType } from "~/entities/Weapons";
 
 /**
@@ -176,7 +176,7 @@ export class GiftSystem {
             case "upgrade_lightning_chain":
                 return GIFT.WARP_COLORS.UPGRADE_LIGHTNING_CHAIN;
             default:
-                return GIFT.WARP_BUBBLE_COLOR;
+                return WARP_BUBBLE.COLOR;
         }
     }
 

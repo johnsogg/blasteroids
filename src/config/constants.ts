@@ -65,7 +65,7 @@ export const SHIP = {
     // Dimensions
     WIDTH: 20,
     HEIGHT: 10,
-    SCALE: 0.5, // scale factor for size adjustments
+    SCALE: 1.5, // scale factor for size adjustments
 
     // Spawn (relative to canvas center)
     SPAWN_X_RATIO: 0.5, // 50% of canvas width (center)
@@ -102,6 +102,7 @@ export const FUEL = {
 // WEAPONS & PROJECTILES
 // =============================================================================
 export const BULLET = {
+    SCALE: 1.3, // scale factor for size adjustments
     SPEED: 500, // pixels per second
     SIZE: 3,
     MAX_AGE: 1.5, // seconds (reduced by 50% for shorter range)
@@ -193,6 +194,7 @@ export const LEVEL = {
 // GIFT SYSTEM
 // =============================================================================
 export const GIFT = {
+    SCALE: 3.0, // scale factor for size adjustments
     // Timing
     SPAWN_INTERVAL: 15000, // milliseconds between gifts
     LIFESPAN: 10.0, // seconds before timeout removal
@@ -210,9 +212,7 @@ export const GIFT = {
     SIZE: 20,
     COLOR: "#ffff00",
 
-    // Warp bubbles
-    WARP_BUBBLE_SIZE: 80,
-    WARP_BUBBLE_COLOR: "#00ffff",
+    // Warp bubble timing (moved size/color to WARP_BUBBLE section)
     OPENING_ANIMATION_TIME: 3.0, // seconds
     CLOSING_ANIMATION_TIME: 1.0, // seconds
     DISAPPEAR_ANIMATION_TIME: 0.5, // seconds
@@ -280,6 +280,19 @@ export const GIFT = {
 export type GiftType = (typeof GIFT.TYPES)[keyof typeof GIFT.TYPES];
 
 // =============================================================================
+// WARP BUBBLES
+// =============================================================================
+export const WARP_BUBBLE = {
+    SCALE: 3.0, // scale factor for size adjustments
+    RADIUS: 40, // base radius in pixels
+    COLOR: "#00ffff",
+    OPENING_ANIMATION_TIME: 3.0, // seconds
+    CLOSING_ANIMATION_TIME: 1.0, // seconds
+    SPARKLE_COUNT: 8,
+    COLLAPSE_LINES: 6,
+} as const;
+
+// =============================================================================
 // AUDIO
 // =============================================================================
 export const AUDIO = {
@@ -301,9 +314,7 @@ export const VFX = {
     // Invulnerability blinking
     INVULNERABLE_BLINK_RATE: 5, // Hz (times per second)
 
-    // Warp bubble effects
-    WARP_SPARKLE_COUNT: 8,
-    WARP_COLLAPSE_LINES: 6,
+    // Warp bubble effects (moved to WARP_BUBBLE section)
 
     // Particle system
     PARTICLE_FRICTION: 0.98,
@@ -360,7 +371,7 @@ export const INPUT = {
 export const COLORS = {
     BACKGROUND: "#000000",
     SHIP: "#00ff00",
-    SHIP_INVULNERABLE: "#ffff00",
+    SHIP_INVULNERABLE: "hsl(60, 83%, 9%)",
     ASTEROID: "#ffffff",
     BULLET: "#ffff00",
     GIFT: "#ffff00",
@@ -404,6 +415,7 @@ export const WEAPONS = {
 
     // Missiles
     MISSILES: {
+        SCALE: 3.0, // scale factor for size adjustments
         FIRE_RATE: 4000, // milliseconds between shots (1 per 4 seconds)
         FUEL_CONSUMPTION: 5, // units per shot
         INITIAL_SPEED: 100, // pixels per second (initial launch speed)

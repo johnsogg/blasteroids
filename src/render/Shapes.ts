@@ -1,6 +1,7 @@
 import { Vector2 } from "~/utils/Vector2";
 import { ScaleManager } from "~/utils/ScaleManager";
 import { TrailPoint } from "~/entities/Ship";
+import { WARP_BUBBLE } from "~/config/constants";
 
 // Base ship coordinates (reference dimensions)
 const SHIP_BASE_COORDS = {
@@ -259,32 +260,59 @@ export class Shapes {
         ctx.restore();
     }
 
-    static drawBullet(
-        ctx: CanvasRenderingContext2D,
-        position: Vector2,
-        color: string
-    ): void {
+    static drawBullet({
+        ctx,
+        position,
+        color,
+        scale = 1.0,
+        scaleManager,
+    }: {
+        ctx: CanvasRenderingContext2D;
+        position: Vector2;
+        color: string;
+        scale?: number;
+        scaleManager?: ScaleManager;
+    }): void {
+        // Get scaling factor
+        const displayScale = scaleManager ? scaleManager.getScale() : 1.0;
+        const combinedScale = scale * displayScale;
+        const radius = scaleManager ? scaleManager.scaleValue(2) : 2;
+
         ctx.save();
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(position.x, position.y, 2, 0, Math.PI * 2);
+        ctx.arc(position.x, position.y, radius * combinedScale, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
     }
 
-    static drawMissile(
-        ctx: CanvasRenderingContext2D,
-        position: Vector2,
-        rotation: number,
-        color: string
-    ): void {
+    static drawMissile({
+        ctx,
+        position,
+        rotation,
+        color,
+        scale = 1.0,
+        scaleManager,
+    }: {
+        ctx: CanvasRenderingContext2D;
+        position: Vector2;
+        rotation: number;
+        color: string;
+        scale?: number;
+        scaleManager?: ScaleManager;
+    }): void {
+        // Get scaling factor
+        const displayScale = scaleManager ? scaleManager.getScale() : 1.0;
+        const combinedScale = scale * displayScale;
+
         ctx.save();
         ctx.translate(position.x, position.y);
         ctx.rotate(rotation);
+        ctx.scale(combinedScale, combinedScale);
 
         // Draw thrust trail (behind missile)
         ctx.strokeStyle = "#ff6600"; // Orange
-        ctx.lineWidth = 3;
+        ctx.lineWidth = scaleManager ? scaleManager.scaleValue(3) : 3;
         ctx.globalAlpha = 0.7;
         ctx.beginPath();
 
@@ -307,7 +335,7 @@ export class Shapes {
         // Draw missile body (sleek pointed shape)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = scaleManager ? scaleManager.scaleValue(1) : 1;
 
         // Main body - more aerodynamic shape (nose points right in 0-degree rotation)
         ctx.beginPath();
@@ -349,19 +377,37 @@ export class Shapes {
         ctx.restore();
     }
 
-    static drawWarpBubble(
-        ctx: CanvasRenderingContext2D,
-        position: Vector2,
-        animationProgress: number,
-        isClosing: boolean = false,
-        isDisappearing: boolean = false,
-        disappearProgress: number = 0
-    ): void {
+    static drawWarpBubble({
+        ctx,
+        position,
+        animationProgress,
+        isClosing = false,
+        isDisappearing = false,
+        disappearProgress = 0,
+        scale = 1.0,
+        scaleManager,
+    }: {
+        ctx: CanvasRenderingContext2D;
+        position: Vector2;
+        animationProgress: number;
+        isClosing?: boolean;
+        isDisappearing?: boolean;
+        disappearProgress?: number;
+        scale?: number;
+        scaleManager?: ScaleManager;
+    }): void {
+        // Get scaling factor
+        const displayScale = scaleManager ? scaleManager.getScale() : 1.0;
+        const combinedScale = scale * displayScale;
+
         ctx.save();
         ctx.translate(position.x, position.y);
+        ctx.scale(combinedScale, combinedScale);
 
         // Calculate bubble size based on animation progress
-        const maxRadius = 40;
+        const maxRadius = scaleManager
+            ? scaleManager.scaleValue(WARP_BUBBLE.RADIUS)
+            : WARP_BUBBLE.RADIUS;
         let radius;
 
         if (isDisappearing) {
@@ -399,8 +445,10 @@ export class Shapes {
             ctx.fill();
 
             // Energy sparkles around the ring
-            for (let i = 0; i < 8; i++) {
-                const angle = (i / 8) * Math.PI * 2 + Date.now() * 0.005;
+            for (let i = 0; i < WARP_BUBBLE.SPARKLE_COUNT; i++) {
+                const angle =
+                    (i / WARP_BUBBLE.SPARKLE_COUNT) * Math.PI * 2 +
+                    Date.now() * 0.005;
                 const sparkleX = Math.cos(angle) * radius * 0.9;
                 const sparkleY = Math.sin(angle) * radius * 0.9;
 
@@ -421,12 +469,13 @@ export class Shapes {
             // Blinky collapse lines for disappearing animation
             if (isDisappearing) {
                 ctx.strokeStyle = "#ffffff";
-                ctx.lineWidth = 2;
+                ctx.lineWidth = scaleManager ? scaleManager.scaleValue(2) : 2;
                 ctx.globalAlpha = 0.8 * (1 - disappearProgress);
 
-                // Draw 6 lines collapsing toward the center
-                for (let i = 0; i < 6; i++) {
-                    const angle = (i / 6) * Math.PI * 2;
+                // Draw collapse lines toward the center
+                for (let i = 0; i < WARP_BUBBLE.COLLAPSE_LINES; i++) {
+                    const angle =
+                        (i / WARP_BUBBLE.COLLAPSE_LINES) * Math.PI * 2;
                     const lineLength = radius * (1 - disappearProgress * 0.5);
                     const startX = Math.cos(angle) * radius;
                     const startY = Math.sin(angle) * radius;
@@ -447,24 +496,39 @@ export class Shapes {
         ctx.restore();
     }
 
-    static drawGift(
-        ctx: CanvasRenderingContext2D,
-        position: Vector2,
-        _rotation: number,
-        giftType?: string
-    ): void {
+    static drawGift({
+        ctx,
+        position,
+        giftType,
+        scale = 1.0,
+        scaleManager,
+    }: {
+        ctx: CanvasRenderingContext2D;
+        position: Vector2;
+        giftType?: string;
+        scale?: number;
+        scaleManager?: ScaleManager;
+    }): void {
+        // Get scaling factor
+        const displayScale = scaleManager ? scaleManager.getScale() : 1.0;
+        const combinedScale = scale * displayScale;
+
         ctx.save();
         ctx.translate(position.x, position.y);
+        ctx.scale(combinedScale, combinedScale);
 
         // Gift appears as a bright yellow pulsing circle
         const pulseIntensity = 0.7 + 0.3 * Math.sin(Date.now() * 0.01);
-        const radius = 10 * pulseIntensity;
+        const baseRadius = scaleManager ? scaleManager.scaleValue(10) : 10;
+        const radius = baseRadius * pulseIntensity;
 
         // Outer glow
         ctx.fillStyle = "#ffff00";
         ctx.globalAlpha = 0.3;
         ctx.beginPath();
-        ctx.arc(0, 0, radius + 5, 0, Math.PI * 2);
+        const glowRadius =
+            radius + (scaleManager ? scaleManager.scaleValue(5) : 5);
+        ctx.arc(0, 0, glowRadius, 0, Math.PI * 2);
         ctx.fill();
 
         // Main bright circle
@@ -484,7 +548,7 @@ export class Shapes {
         // Draw gift type icon if specified
         if (giftType) {
             ctx.globalAlpha = 1.0;
-            const iconSize = 12;
+            const iconSize = scaleManager ? scaleManager.scaleValue(12) : 12;
 
             switch (giftType) {
                 case "fuel_refill":

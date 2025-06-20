@@ -20,6 +20,11 @@
 
 ### 🔧 Technical Improvements
 
+- [ ] Game.ts is still gigantic, even after the refactor (See section on that
+      below). Perhaps the parts that were extracted left dead code behind?
+- [ ] We have Game.ts, Game.refactored.ts, and Game.backup.ts - something must
+      be wrong here.
+
 #### Physics Testing Foundation (for future gravity system)
 
 - [ ] Add physics unit tests as foundation for future gravity system refactor
@@ -41,15 +46,18 @@
 
 **Result**: Successfully transformed monolithic 2,312-line Game.ts into 6 focused, testable systems with clear separation of concerns. The codebase is now significantly more maintainable and ready for future development.
 
-#### Visual Scaling System ✅ IN PROGRESS
+#### Visual Scaling System ✅ COMPLETED
 
 - [x] **Ship Scaling Implemented**: Added ScaleManager system for canvas-relative scaling
 - [x] **Ship Visual & Collision**: Ship renders at 3x scale with properly scaled collision detection
 - [x] **Asteroid Scaling Implemented**: Asteroids render at 3x scale with scaled collision detection
 - [x] **Object Parameter Refactoring**: Converted Shapes.drawShip and drawAsteroid to use destructured object parameters for better readability
-- [ ] **Remaining Elements**: Refactor other Shapes.drawFoo functions (bullets, missiles, etc.) to use object parameters and implement scaling
+- [x] **All Drawing Functions Refactored**: Converted drawBullet, drawMissile, drawWarpBubble, and drawGift to use object parameters with scaling support
+- [x] **SCALE Constants Added**: Added SCALE constants for all game objects (BULLET, WEAPONS.MISSILES, GIFT, WARP_BUBBLE) for easy adjustment
+- [x] **Deprecated Constants Removed**: Cleaned up duplicate and deprecated warp bubble constants, consolidated into organized WARP_BUBBLE section
+- [x] **Magic Numbers Eliminated**: Replaced hardcoded values in Shapes.ts with named constants (radius, sparkle count, collapse lines)
 
-**Progress**: Core scaling infrastructure complete. Ship and asteroids successfully scaled 3x with visual-collision consistency. Framework ready for remaining game elements.
+**Result**: Complete visual scaling system with consistent object parameter APIs across all drawing functions. All game elements can now be independently scaled via constants, and the ScaleManager provides responsive canvas-relative scaling. Code is more maintainable with eliminated magic numbers and organized constant structure.
 
 #### General
 

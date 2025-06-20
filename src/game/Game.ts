@@ -16,6 +16,7 @@ import {
     WEAPONS,
     ASTEROID,
     FUEL,
+    WARP_BUBBLE,
     type GeometryMode,
     type GiftType,
 } from "~/config/constants";
@@ -1785,16 +1786,31 @@ export class Game {
                     scaleManager: this.scaleManager,
                 });
             } else if (obj.type === "bullet") {
-                Shapes.drawBullet(this.ctx, pos, obj.color);
+                Shapes.drawBullet({
+                    ctx: this.ctx,
+                    position: pos,
+                    color: obj.color,
+                    scale: BULLET.SCALE,
+                    scaleManager: this.scaleManager,
+                });
             } else if (obj.type === "missile") {
-                Shapes.drawMissile(this.ctx, pos, obj.rotation, obj.color);
+                Shapes.drawMissile({
+                    ctx: this.ctx,
+                    position: pos,
+                    rotation: obj.rotation,
+                    color: obj.color,
+                    scale: WEAPONS.MISSILES.SCALE,
+                    scaleManager: this.scaleManager,
+                });
             } else if (obj.type === "warpBubbleIn") {
-                Shapes.drawWarpBubble(
-                    this.ctx,
-                    pos,
-                    obj.warpAnimationProgress || 0,
-                    false
-                );
+                Shapes.drawWarpBubble({
+                    ctx: this.ctx,
+                    position: pos,
+                    animationProgress: obj.warpAnimationProgress || 0,
+                    isClosing: false,
+                    scale: WARP_BUBBLE.SCALE,
+                    scaleManager: this.scaleManager,
+                });
             } else if (obj.type === "warpBubbleOut") {
                 let disappearProgress = 0;
                 if (obj.warpDisappearing && obj.warpDisappearStartTime) {
@@ -1802,16 +1818,24 @@ export class Game {
                         performance.now() - obj.warpDisappearStartTime;
                     disappearProgress = Math.min(1, disappearElapsed / 500); // 0.5 second animation
                 }
-                Shapes.drawWarpBubble(
-                    this.ctx,
-                    pos,
-                    obj.warpAnimationProgress || 0,
-                    false, // Exit warp should grow open, not shrink closed
-                    obj.warpDisappearing || false,
-                    disappearProgress
-                );
+                Shapes.drawWarpBubble({
+                    ctx: this.ctx,
+                    position: pos,
+                    animationProgress: obj.warpAnimationProgress || 0,
+                    isClosing: false, // Exit warp should grow open, not shrink closed
+                    isDisappearing: obj.warpDisappearing || false,
+                    disappearProgress: disappearProgress,
+                    scale: WARP_BUBBLE.SCALE,
+                    scaleManager: this.scaleManager,
+                });
             } else if (obj.type === "gift") {
-                Shapes.drawGift(this.ctx, pos, obj.rotation, obj.giftType);
+                Shapes.drawGift({
+                    ctx: this.ctx,
+                    position: pos,
+                    giftType: obj.giftType,
+                    scale: GIFT.SCALE,
+                    scaleManager: this.scaleManager,
+                });
             }
         });
     }
@@ -2244,7 +2268,7 @@ export class Game {
                 case "upgrade_lightning_chain":
                     return GIFT.WARP_COLORS.UPGRADE_LIGHTNING_CHAIN;
                 default:
-                    return GIFT.WARP_BUBBLE_COLOR;
+                    return WARP_BUBBLE.COLOR;
             }
         };
         const warpColor = getWarpColor(giftType);
