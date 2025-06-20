@@ -857,4 +857,51 @@ export class AudioManager {
         oscillator.start(this.audioContext.currentTime);
         oscillator.stop(this.audioContext.currentTime + duration);
     }
+
+    async playGiftAmbientWubwub(): Promise<void> {
+        await this.ensureAudioContext();
+
+        // Low frequency oscillating "wubwub" sound for gift presence
+        const oscillator = this.audioContext.createOscillator();
+        const lfoOscillator = this.audioContext.createOscillator(); // Low frequency oscillator for modulation
+        const gainNode = this.audioContext.createGain();
+        const lfoGain = this.audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(this.masterGain);
+
+        // Setup LFO for frequency modulation (creates the "wubwub" effect)
+        lfoOscillator.connect(lfoGain);
+        lfoGain.connect(oscillator.frequency);
+
+        // Base carrier frequency - low but audible
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(120, this.audioContext.currentTime); // Higher frequency for audibility
+
+        // LFO settings for the wubwub oscillation
+        lfoOscillator.type = "sine";
+        lfoOscillator.frequency.setValueAtTime(
+            3.0,
+            this.audioContext.currentTime
+        ); // 3 Hz oscillation for more pronounced wubwub
+        lfoGain.gain.setValueAtTime(40, this.audioContext.currentTime); // Higher modulation depth
+
+        // More audible volume with gentle fade in/out
+        gainNode.gain.setValueAtTime(0.0, this.audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(
+            0.15,
+            this.audioContext.currentTime + 0.3
+        ); // Fade in - higher volume
+        gainNode.gain.setValueAtTime(0.15, this.audioContext.currentTime + 1.7); // Sustain
+        gainNode.gain.linearRampToValueAtTime(
+            0.0,
+            this.audioContext.currentTime + 2.0
+        ); // Fade out
+
+        const duration = 2.0; // 2 second wubwub sound
+        oscillator.start(this.audioContext.currentTime);
+        lfoOscillator.start(this.audioContext.currentTime);
+        oscillator.stop(this.audioContext.currentTime + duration);
+        lfoOscillator.stop(this.audioContext.currentTime + duration);
+    }
 }

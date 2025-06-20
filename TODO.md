@@ -11,7 +11,7 @@
 - [x] Create a constant that determines the maximum number of extra lives, and set it to 5. Then, use that constant wherever this idea is used, instead of the number literal (which is currently 99).
 - [x] When the ship stops thrusting, there seems to be friction. Changing the
       constant for FRICTION does not seem to have any effect.
-- [ ] Add an audio effect for gifts: wubwubwubwubwubwubwub in a soft, low
+- [x] Add an audio effect for gifts: wubwubwubwubwubwubwub in a soft, low
       frequency that oscillates a bit
 - [x] Add a timer for each level that starts at 60 seconds. Player gets N points
       per second left when they beat the level. The timer stops at zero and

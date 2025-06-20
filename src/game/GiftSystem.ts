@@ -216,6 +216,11 @@ export class GiftSystem {
         };
 
         this.entityManager.addEntity(gift);
+
+        // Play ambient wubwub sound for gift presence
+        this.audio.playGiftAmbientWubwub().catch(() => {
+            // Ignore audio errors
+        });
     }
 
     /**
