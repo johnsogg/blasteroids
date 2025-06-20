@@ -509,7 +509,7 @@ export class CollisionSystem {
      */
     private respawnShip(ship: Ship): void {
         // Reset ship position and velocity
-        const dimensions = { width: 800, height: 600 }; // TODO: Get from canvas manager
+        const dimensions = { width: 800, height: 600 }; // TODO(claude): Get dimensions from canvas manager instead of hardcoded values
         ship.position = new Vector2(
             dimensions.width * 0.5,
             dimensions.height * 0.5

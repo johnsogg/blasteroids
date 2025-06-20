@@ -92,9 +92,9 @@ export class MenuManager {
                 id: "audio_settings",
                 label: "Audio Settings",
                 type: "action",
-                enabled: false, // Placeholder for future implementation
+                enabled: false, // TODO(claude): Implement audio settings menu
                 action: () => {
-                    /* TODO: Audio settings */
+                    // TODO(claude): Implement audio settings functionality
                 },
             }),
 
@@ -102,9 +102,9 @@ export class MenuManager {
                 id: "controls",
                 label: "Controls",
                 type: "action",
-                enabled: false, // Placeholder for future implementation
+                enabled: false, // TODO(claude): Implement controls menu
                 action: () => {
-                    /* TODO: Controls */
+                    // TODO(claude): Implement controls configuration functionality
                 },
             }),
 

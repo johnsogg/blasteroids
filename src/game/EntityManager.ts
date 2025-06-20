@@ -10,9 +10,6 @@ export class EntityManager {
     private entities: GameEntity[] = [];
     private canvas: HTMLCanvasElement;
 
-    // Pending operations to avoid modifying arrays during iteration
-    private pendingGiftSpawn: GameEntity | null = null;
-    private pendingWarpBubbleCreation: GameEntity | null = null;
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -166,15 +163,12 @@ export class EntityManager {
     }
 
     /**
-     * Remove expired entities and handle pending operations
+     * Remove expired entities
      */
     filterExpiredEntities(currentTime: number): void {
         this.entities = this.entities.filter((entity) => {
             return this.shouldKeepEntity(entity, currentTime);
         });
-
-        // Handle pending operations after filter
-        this.handlePendingOperations();
     }
 
     /**
@@ -198,10 +192,7 @@ export class EntityManager {
                 entity.position.y > this.canvas.height + 50;
             return (entity.age || 0) < maxAge && !outOfBounds;
         } else if (entity.type === "warpBubbleIn") {
-            if ((entity.age || 0) >= GIFT.OPENING_ANIMATION_TIME) {
-                this.pendingGiftSpawn = entity;
-                return false;
-            }
+            // Warp bubbles in are managed by GiftSystem
             return true;
         } else if (entity.type === "warpBubbleOut") {
             if (entity.warpDisappearing && entity.warpDisappearStartTime) {
@@ -211,50 +202,12 @@ export class EntityManager {
             }
             return (entity.age || 0) < GIFT.WARP_BUBBLE_CREATION_DELAY;
         } else if (entity.type === "gift") {
-            if (
-                (entity.age || 0) >= GIFT.WARP_BUBBLE_CREATION_DELAY &&
-                !entity.closingWarpCreated
-            ) {
-                this.pendingWarpBubbleCreation = entity;
-                entity.closingWarpCreated = true;
-            }
+            // Gift lifecycle is managed by GiftSystem
             return (entity.age || 0) < GIFT.LIFESPAN;
         }
         return true;
     }
 
-    /**
-     * Handle pending operations after entity filtering
-     */
-    private handlePendingOperations(): void {
-        if (this.pendingGiftSpawn) {
-            this.schedulePendingGiftSpawn(this.pendingGiftSpawn);
-            this.pendingGiftSpawn = null;
-        }
-
-        if (this.pendingWarpBubbleCreation) {
-            this.schedulePendingWarpBubbleCreation(
-                this.pendingWarpBubbleCreation
-            );
-            this.pendingWarpBubbleCreation = null;
-        }
-    }
-
-    /**
-     * Schedule a pending gift spawn (callback to external system)
-     */
-    private schedulePendingGiftSpawn(_warpBubble: GameEntity): void {
-        // This will be handled by the GiftSystem when extracted
-        // For now, we'll emit an event or use a callback
-    }
-
-    /**
-     * Schedule a pending warp bubble creation (callback to external system)
-     */
-    private schedulePendingWarpBubbleCreation(_gift: GameEntity): void {
-        // This will be handled by the GiftSystem when extracted
-        // For now, we'll emit an event or use a callback
-    }
 
     /**
      * Clear all entities

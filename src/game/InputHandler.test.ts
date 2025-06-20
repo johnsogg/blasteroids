@@ -42,10 +42,15 @@ describe("InputHandler", () => {
             gameState
         );
 
+        const entityManager = new (class {
+            getShip() { return null; }
+        })();
+
         inputHandler = new InputHandler(
             inputManager,
             gameState,
             weaponSystem,
+            entityManager as any,
             menuManager,
             levelCompleteAnimation
         );

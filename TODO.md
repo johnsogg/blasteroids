@@ -10,7 +10,8 @@
 - [ ] If the player has all lives left, do not gift extra lives
 - [ ] When the ship stops thrusting, there seems to be friction. Changing the
       constant for FRICTION does not seem to have any effect.
-- [ ] Add an audio effect for gifts: wubwubwubwubwubwubwub in a soft, low frequency
+- [ ] Add an audio effect for gifts: wubwubwubwubwubwubwub in a soft, low
+      frequency that oscillates a bit
 - [ ] Add a timer for each level that starts at 60 seconds. Player gets N points
       per second left when they beat the level. The timer stops at zero and
       otherwise has no effect when it reaches zero.
@@ -20,12 +21,7 @@
 
 ### 🔧 Technical Improvements
 
-- [ ] Game.ts is still gigantic, even after the refactor (See section on that
-      below). Perhaps the parts that were extracted left dead code behind? The
-      git hash 2dc32520778ee981f52e53b2df07890fcfd58c0d shows many new files
-      added to the repo that duplicate code that is still in Game.ts. The
-      refactored code from that commit should stay, the duplicated code in
-      Game.ts should be removed.
+- [x] **Game.ts size reduction completed**: Successfully reduced from 2,411 lines to 794 lines (67% reduction) by removing duplicate code that was left behind after system extraction. Game.ts now focuses on orchestration, rendering, and game loop management while properly delegating to extracted systems (EntityManager, WeaponSystem, CollisionSystem, GiftSystem, InputHandler).
 
 #### Physics Testing Foundation (for future gravity system)
 

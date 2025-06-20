@@ -3,6 +3,7 @@ import { InputManager } from "~/input/InputManager";
 import { InputContext } from "~/input/InputContext";
 import { GameState } from "./GameState";
 import { WeaponSystem } from "./WeaponSystem";
+import { EntityManager } from "./EntityManager";
 import { MenuManager } from "~/menu/MenuManager";
 import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
 import { Vector2 } from "~/utils/Vector2";
@@ -15,6 +16,7 @@ export class InputHandler {
     private input: InputManager;
     private gameState: GameState;
     private weaponSystem: WeaponSystem;
+    private entityManager: EntityManager;
     private menuManager: MenuManager;
     private levelCompleteAnimation: LevelCompleteAnimation;
 
@@ -25,12 +27,14 @@ export class InputHandler {
         input: InputManager,
         gameState: GameState,
         weaponSystem: WeaponSystem,
+        entityManager: EntityManager,
         menuManager: MenuManager,
         levelCompleteAnimation: LevelCompleteAnimation
     ) {
         this.input = input;
         this.gameState = gameState;
         this.weaponSystem = weaponSystem;
+        this.entityManager = entityManager;
         this.menuManager = menuManager;
         this.levelCompleteAnimation = levelCompleteAnimation;
     }
@@ -273,12 +277,10 @@ export class InputHandler {
     }
 
     /**
-     * Get the ship from entity manager (would need to be injected or accessed differently)
+     * Get the ship from entity manager
      */
     private getShip(): Ship | null {
-        // This is a placeholder - in the full refactor, this would come from EntityManager
-        // For now, return null to prevent errors
-        return null;
+        return this.entityManager.getShip();
     }
 
     /**
