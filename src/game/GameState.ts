@@ -29,6 +29,8 @@ export class GameState {
     private _debugNextGift: GiftType | null = null; // Debug override for next gift type
     private _levelTimeRemaining: number = LEVEL_TIMER.INITIAL_TIME; // seconds remaining in current level
     private _extraLifeThresholdsReached: Set<number> = new Set(); // Track which score thresholds have been reached
+    private _activeCompanions: Set<string> = new Set(); // Track active AI companion IDs
+    private readonly MAX_COMPANIONS = 2; // Maximum number of AI companions
     private readonly HIGH_SCORE_KEY = "blasteroids-highscore";
     private readonly DEBUG_GIFT_KEY = "blasteroids-debug-gift";
 
@@ -435,6 +437,44 @@ export class GameState {
                 scale: UI.LIVES_ICON_SIZE,
             });
         }
+    }
+
+    /**
+     * Add an AI companion to the active companions list
+     */
+    addAICompanion(companionId: string): void {
+        this._activeCompanions.add(companionId);
+        // Initialize player state for the companion
+        this.initializePlayer(companionId);
+    }
+
+    /**
+     * Remove an AI companion from the active companions list
+     */
+    removeAICompanion(companionId: string): void {
+        this._activeCompanions.delete(companionId);
+        this._players.delete(companionId);
+    }
+
+    /**
+     * Check if we can spawn more AI companions
+     */
+    canSpawnAICompanion(): boolean {
+        return this._activeCompanions.size < this.MAX_COMPANIONS;
+    }
+
+    /**
+     * Get the number of active AI companions
+     */
+    getActiveCompanionCount(): number {
+        return this._activeCompanions.size;
+    }
+
+    /**
+     * Get all active AI companion IDs
+     */
+    getActiveCompanionIds(): string[] {
+        return Array.from(this._activeCompanions);
     }
 
     private formatRetroNumber(numStr: string): string {

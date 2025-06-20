@@ -180,6 +180,8 @@ export class GiftSystem {
                 return GIFT.WARP_COLORS.UPGRADE_LIGHTNING_RADIUS;
             case "upgrade_lightning_chain":
                 return GIFT.WARP_COLORS.UPGRADE_LIGHTNING_CHAIN;
+            case "ai_companion":
+                return GIFT.WARP_COLORS.AI_COMPANION;
             default:
                 return WARP_BUBBLE.COLOR;
         }
@@ -309,6 +311,14 @@ export class GiftSystem {
             availableGifts.push({
                 type: "weapon_lightning",
                 weight: GIFT.SPAWN_WEIGHTS.WEAPON_LIGHTNING,
+            });
+        }
+
+        // AI Companion (only if we can spawn more companions)
+        if (this.gameState.canSpawnAICompanion()) {
+            availableGifts.push({
+                type: "ai_companion",
+                weight: GIFT.SPAWN_WEIGHTS.AI_COMPANION,
             });
         }
 

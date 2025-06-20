@@ -40,7 +40,35 @@ export class AISystem {
     }
 
     /**
-     * Update AI for computer ship
+     * Update AI for all AI ships and return a map of inputs
+     */
+    updateAllAI(currentTime: number): Map<string, AIInput> {
+        const aiInputs = new Map<string, AIInput>();
+        const aiShips = this.entityManager
+            .getShips()
+            .filter((ship) => ship.isAI);
+
+        for (const aiShip of aiShips) {
+            // Make decisions at regular intervals
+            if (
+                !aiShip.aiLastDecisionTime ||
+                currentTime - aiShip.aiLastDecisionTime >=
+                    this.DECISION_INTERVAL
+            ) {
+                this.makeDecisions(aiShip, currentTime);
+                aiShip.aiLastDecisionTime = currentTime;
+            }
+
+            // Generate input based on current AI state
+            const input = this.generateInput(aiShip, currentTime);
+            aiInputs.set(aiShip.playerId, input);
+        }
+
+        return aiInputs;
+    }
+
+    /**
+     * Update AI for computer ship (backward compatibility)
      */
     updateAI(currentTime: number): AIInput {
         const computerShip = this.entityManager.getComputerShip();
@@ -70,20 +98,41 @@ export class AISystem {
         const asteroids = this.entityManager.getAsteroids();
         const gifts = this.entityManager.getGifts();
 
+        // Check if this is an AI companion (not the original computer player)
+        const isCompanion = ship.playerId !== "computer";
+
         // Determine AI state based on situation
         if (this.isInDanger(ship)) {
             ship.aiState = "avoiding" as AIState;
             ship.aiTarget = this.getNearestThreat(ship);
-        } else if (gifts.length > 0 && this.shouldCollectGifts(ship)) {
+        } else if (
+            isCompanion &&
+            playerShip &&
+            this.isPlayerInDanger(playerShip)
+        ) {
+            // Companions prioritize helping the player when they're in danger
+            ship.aiState = "assisting" as AIState;
+            ship.aiTarget = this.getNearestThreat(playerShip) || playerShip;
+        } else if (
+            gifts.length > 0 &&
+            this.shouldCollectGifts(ship, isCompanion)
+        ) {
             ship.aiState = "collecting" as AIState;
             ship.aiTarget = this.getNearestGift(ship);
         } else if (asteroids.length > 0) {
             ship.aiState = "hunting" as AIState;
             // Keep current target if it's still valid, otherwise pick new one
             if (!ship.aiTarget || !this.isValidTarget(ship.aiTarget)) {
-                ship.aiTarget = this.selectBestAsteroidTarget(ship, playerShip);
+                ship.aiTarget = this.selectBestAsteroidTarget(
+                    ship,
+                    playerShip,
+                    isCompanion
+                );
             }
-        } else if (playerShip && this.shouldAssistPlayer(ship, playerShip)) {
+        } else if (
+            playerShip &&
+            this.shouldAssistPlayer(ship, playerShip, isCompanion)
+        ) {
             ship.aiState = "assisting" as AIState;
             ship.aiTarget = playerShip;
         } else {
@@ -436,7 +485,8 @@ export class AISystem {
 
     private selectBestAsteroidTarget(
         ship: Ship,
-        playerShip: Ship | null
+        playerShip: Ship | null,
+        isCompanion: boolean = false
     ): GameEntity | null {
         const asteroids = this.entityManager.getAsteroids();
         if (asteroids.length === 0) return null;
@@ -447,10 +497,20 @@ export class AISystem {
         // 3. Medium-sized (good balance of points and difficulty)
 
         let bestTarget = asteroids[0];
-        let bestScore = this.scoreAsteroidTarget(ship, bestTarget, playerShip);
+        let bestScore = this.scoreAsteroidTarget(
+            ship,
+            bestTarget,
+            playerShip,
+            isCompanion
+        );
 
         for (const asteroid of asteroids) {
-            const score = this.scoreAsteroidTarget(ship, asteroid, playerShip);
+            const score = this.scoreAsteroidTarget(
+                ship,
+                asteroid,
+                playerShip,
+                isCompanion
+            );
             if (score > bestScore) {
                 bestTarget = asteroid;
                 bestScore = score;
@@ -463,7 +523,8 @@ export class AISystem {
     private scoreAsteroidTarget(
         ship: Ship,
         asteroid: GameEntity,
-        playerShip: Ship | null
+        playerShip: Ship | null,
+        isCompanion: boolean = false
     ): number {
         const distance = ship.position.subtract(asteroid.position).magnitude();
         let score = 1000 / (distance + 1); // Closer is better
@@ -476,34 +537,73 @@ export class AISystem {
             score *= 1.2; // Small asteroids are okay
         }
 
-        // Avoid targets too close to player
+        // Adjust behavior based on companion status
         if (playerShip) {
             const distanceToPlayer = playerShip.position
                 .subtract(asteroid.position)
                 .magnitude();
-            if (distanceToPlayer < 100) {
-                score *= 0.5; // Reduce score for asteroids near player
+
+            if (isCompanion) {
+                // Companions prefer targets near the player (to help protect them)
+                if (distanceToPlayer < 150) {
+                    score *= 1.3; // Bonus for asteroids near player
+                }
+            } else {
+                // Original computer player avoids interference
+                if (distanceToPlayer < 100) {
+                    score *= 0.5; // Reduce score for asteroids near player
+                }
             }
         }
 
         return score;
     }
 
-    private shouldCollectGifts(ship: Ship): boolean {
+    private isPlayerInDanger(playerShip: Ship): boolean {
+        // Check if player has asteroids nearby
+        const nearbyAsteroids = this.entityManager.findEntitiesInRadius(
+            playerShip.position,
+            this.SAFE_DISTANCE * 1.5, // Slightly larger danger zone for companions
+            ["asteroid"]
+        );
+        return nearbyAsteroids.length > 0;
+    }
+
+    private shouldCollectGifts(
+        ship: Ship,
+        isCompanion: boolean = false
+    ): boolean {
         // Get AI player's state
         const aiPlayerState = this.gameState.getPlayerState(ship.playerId);
         if (!aiPlayerState) return false;
 
-        // Collect gifts if fuel is low or we don't have many weapons
+        // Companions are less aggressive about collecting gifts (let player have them)
+        if (isCompanion) {
+            const weaponCount = aiPlayerState.weaponState.unlockedWeapons.size;
+            return aiPlayerState.fuel < 30 || weaponCount < 2; // More conservative
+        }
+
+        // Original computer player behavior
         const weaponCount = aiPlayerState.weaponState.unlockedWeapons.size;
         return aiPlayerState.fuel < 50 || weaponCount < 3;
     }
 
-    private shouldAssistPlayer(ship: Ship, playerShip: Ship): boolean {
+    private shouldAssistPlayer(
+        ship: Ship,
+        playerShip: Ship,
+        isCompanion: boolean = false
+    ): boolean {
         const distance = ship.position
             .subtract(playerShip.position)
             .magnitude();
-        return distance > this.ASSIST_DISTANCE * 2; // If too far from player
+
+        if (isCompanion) {
+            // Companions stay closer to the player
+            return distance > this.ASSIST_DISTANCE * 1.5;
+        }
+
+        // Original computer player behavior
+        return distance > this.ASSIST_DISTANCE * 2;
     }
 
     private isValidTarget(target: GameEntity | null): boolean {

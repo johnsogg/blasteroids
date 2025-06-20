@@ -305,11 +305,15 @@ export class Game {
         // Update weapon-specific physics (missile acceleration, homing)
         this.weaponSystem.updateMissilePhysics(deltaTime);
 
-        // Update AI system for computer ship
-        const aiInput = this.aiSystem.updateAI(currentTime);
-        const computerShip = this.entityManager.getComputerShip();
-        if (computerShip && computerShip.isAI) {
-            this.updateAIShipMovement(computerShip, aiInput, currentTime);
+        // Update AI system for all AI ships
+        const aiInputs = this.aiSystem.updateAllAI(currentTime);
+        for (const [playerId, aiInput] of aiInputs) {
+            const aiShip = this.entityManager
+                .getShips()
+                .find((ship) => ship.playerId === playerId);
+            if (aiShip && aiShip.isAI) {
+                this.updateAIShipMovement(aiShip, aiInput, currentTime);
+            }
         }
 
         // Update ship trails for all ships

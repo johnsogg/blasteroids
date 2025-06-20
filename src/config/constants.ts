@@ -258,6 +258,7 @@ export const GIFT = {
         UPGRADE_LASER_EFFICIENCY: "upgrade_laser_efficiency" as const,
         UPGRADE_LIGHTNING_RADIUS: "upgrade_lightning_radius" as const,
         UPGRADE_LIGHTNING_CHAIN: "upgrade_lightning_chain" as const,
+        AI_COMPANION: "ai_companion" as const,
     },
 
     // Spawn probabilities (higher number = more likely)
@@ -277,6 +278,7 @@ export const GIFT = {
         UPGRADE_LASER_EFFICIENCY: 12,
         UPGRADE_LIGHTNING_RADIUS: 10,
         UPGRADE_LIGHTNING_CHAIN: 8,
+        AI_COMPANION: 12, // Medium-high spawn rate for significant upgrade
     },
 
     // Warp bubble colors for different gift types
@@ -296,6 +298,7 @@ export const GIFT = {
         UPGRADE_LASER_EFFICIENCY: "#ff44aa", // Light pink
         UPGRADE_LIGHTNING_RADIUS: "#44ffff", // Light cyan
         UPGRADE_LIGHTNING_CHAIN: "#44ffff", // Light cyan
+        AI_COMPANION: "#8800ff", // Purple - distinctive color for AI companion
     },
 } as const;
 

@@ -468,6 +468,10 @@ export class CollisionSystem {
                 this.gameState.switchWeapon("lightning", playerId);
                 break;
 
+            case "ai_companion":
+                this.spawnAICompanion(ship);
+                break;
+
             default:
                 // Handle upgrades
                 this.gameState.applyWeaponUpgrade(giftType, playerId);
@@ -511,8 +515,9 @@ export class CollisionSystem {
             // Ignore audio errors
         });
 
-        // Only lose a life for human player; AI players just respawn
+        // Handle different ship types
         if (ship.playerId === "player") {
+            // Human player loses a life
             this.gameState.loseLife(ship.playerId);
 
             // If game over, remove the ship from the game
@@ -520,10 +525,17 @@ export class CollisionSystem {
                 this.entityManager.removeEntity(ship);
                 return;
             }
-        }
 
-        // Reset ship state for respawn (both human and AI players)
-        this.respawnShip(ship);
+            // Respawn human player
+            this.respawnShip(ship);
+        } else if (ship.playerId === "computer") {
+            // Original computer player respawns
+            this.respawnShip(ship);
+        } else {
+            // AI companions are permanently destroyed
+            this.gameState.removeAICompanion(ship.playerId);
+            this.entityManager.removeEntity(ship);
+        }
     }
 
     /**
@@ -634,5 +646,59 @@ export class CollisionSystem {
         }
 
         return nearestTarget;
+    }
+
+    /**
+     * Spawn an AI companion ship near the collecting ship
+     */
+    private spawnAICompanion(collectingShip?: Ship): void {
+        // Generate unique companion ID
+        const companionId = `companion_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Register the companion in game state
+        this.gameState.addAICompanion(companionId);
+
+        // Position companion near the collecting ship (or center if no ship provided)
+        let spawnPosition: Vector2;
+        if (collectingShip) {
+            // Spawn near the collecting ship but offset to avoid collision
+            const offsetAngle = Math.random() * Math.PI * 2;
+            const offsetDistance = 80; // Safe distance from player
+            const offset = Vector2.fromAngle(offsetAngle, offsetDistance);
+            spawnPosition = collectingShip.position.add(offset);
+        } else {
+            // Fallback to center position
+            spawnPosition = new Vector2(400, 300); // TODO(claude): Get canvas center from canvas manager
+        }
+
+        // Create AI companion ship
+        const companion: Ship = {
+            position: spawnPosition,
+            velocity: Vector2.zero(),
+            size: new Vector2(20, 10), // Same size as regular ships
+            rotation: 0,
+            color: "#00dd88", // Distinct green color for AI companions
+            type: "ship",
+            playerId: companionId,
+            age: 0,
+
+            // AI-specific properties
+            isAI: true,
+            aiState: "assisting", // Start in assisting mode to follow player
+            aiTarget: null,
+            aiLastDecisionTime: 0,
+
+            // Ship state
+            invulnerable: true, // Brief invulnerability on spawn
+            invulnerableTime: 2.0, // 2 seconds
+            thrusting: false,
+            strafingLeft: false,
+            strafingRight: false,
+            isLaserActive: false,
+            trail: [],
+        };
+
+        // Add the companion to the entity manager
+        this.entityManager.addEntity(companion);
     }
 }
