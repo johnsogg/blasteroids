@@ -10,26 +10,56 @@ import {
 import type { WeaponState, WeaponType, UpgradeType } from "~/entities/Weapons";
 import { WeaponManager } from "~/entities/Weapons";
 
+/**
+ * Player-specific state for individual players (human and AI)
+ */
+export interface PlayerState {
+    playerId: string;
+    fuel: number;
+    lives: number;
+    score: number;
+    weaponState: WeaponState;
+}
+
 export class GameState {
-    private _score: number = 0;
-    private _lives: number = 3;
+    private _players: Map<string, PlayerState> = new Map();
     private _level: number = 1;
     private _gameOver: boolean = false;
     private _highScore: number = 0;
-    private _fuel: number = 100;
-    private _weaponState: WeaponState = WeaponManager.getDefaultWeaponState();
     private _debugNextGift: GiftType | null = null; // Debug override for next gift type
     private _levelTimeRemaining: number = LEVEL_TIMER.INITIAL_TIME; // seconds remaining in current level
     private _extraLifeThresholdsReached: Set<number> = new Set(); // Track which score thresholds have been reached
     private readonly HIGH_SCORE_KEY = "blasteroids-highscore";
     private readonly DEBUG_GIFT_KEY = "blasteroids-debug-gift";
 
+    constructor() {
+        // Initialize default players
+        this.initializePlayer("player");
+        this.initializePlayer("computer");
+    }
+
+    private initializePlayer(playerId: string): void {
+        const playerState: PlayerState = {
+            playerId,
+            fuel: 100,
+            lives: playerId === "player" ? 3 : 1, // Human gets 3 lives, AI gets 1
+            score: 0,
+            weaponState: WeaponManager.getDefaultWeaponState(),
+        };
+        this._players.set(playerId, playerState);
+    }
+
+    getPlayerState(playerId: string): PlayerState | undefined {
+        return this._players.get(playerId);
+    }
+
+    // Backward compatibility getters for human player (UI and existing code)
     get score(): number {
-        return this._score;
+        return this.getPlayerState("player")?.score ?? 0;
     }
 
     get lives(): number {
-        return this._lives;
+        return this.getPlayerState("player")?.lives ?? 0;
     }
 
     get gameOver(): boolean {
@@ -45,19 +75,25 @@ export class GameState {
     }
 
     get fuel(): number {
-        return this._fuel;
+        return this.getPlayerState("player")?.fuel ?? 0;
     }
 
     get fuelPercentage(): number {
-        return this._fuel;
+        return this.getPlayerState("player")?.fuel ?? 0;
     }
 
     get weaponState(): WeaponState {
-        return this._weaponState;
+        return (
+            this.getPlayerState("player")?.weaponState ??
+            WeaponManager.getDefaultWeaponState()
+        );
     }
 
     get currentWeapon(): WeaponType {
-        return this._weaponState.currentWeapon;
+        return (
+            this.getPlayerState("player")?.weaponState.currentWeapon ??
+            "bullets"
+        );
     }
 
     get debugNextGift(): GiftType | null {
@@ -69,45 +105,65 @@ export class GameState {
     }
 
     get scoreStatus(): "normal" | "near-high" | "new-high" {
-        if (this._score >= this._highScore && this._score > 0) {
+        const playerScore = this.score;
+        if (playerScore >= this._highScore && playerScore > 0) {
             return "new-high";
         }
-        if (this._score >= this._highScore * 0.8) {
+        if (playerScore >= this._highScore * 0.8) {
             return "near-high";
         }
         return "normal";
     }
 
-    addScore(points: number): void {
-        const oldScore = this._score;
-        this._score += points;
+    addScore(points: number, playerId: string = "player"): void {
+        const playerState = this.getPlayerState(playerId);
+        if (!playerState) return;
 
-        // Check for extra life thresholds
-        this.checkExtraLifeThresholds(oldScore);
+        const oldScore = playerState.score;
+        playerState.score += points;
 
-        if (this._score > this._highScore) {
-            this._highScore = this._score;
-            this.saveHighScore();
+        // Only check extra life thresholds and high score for human player
+        if (playerId === "player") {
+            this.checkExtraLifeThresholds(oldScore, playerId);
+
+            if (playerState.score > this._highScore) {
+                this._highScore = playerState.score;
+                this.saveHighScore();
+            }
         }
         this.updateUI();
     }
 
-    loseLife(): void {
-        this._lives = Math.max(0, this._lives - 1);
-        if (this._lives === 0) {
+    loseLife(playerId: string = "player"): void {
+        const playerState = this.getPlayerState(playerId);
+        if (!playerState) return;
+
+        playerState.lives = Math.max(0, playerState.lives - 1);
+
+        // Only set game over if human player has no lives left
+        if (playerId === "player" && playerState.lives === 0) {
             this._gameOver = true;
         }
         this.updateUI();
     }
 
-    addLife(): void {
-        this._lives = Math.min(GAME_STATE.MAX_EXTRA_LIVES, this._lives + 1); // Cap at maximum extra lives
+    addLife(playerId: string = "player"): void {
+        const playerState = this.getPlayerState(playerId);
+        if (!playerState) return;
+
+        playerState.lives = Math.min(
+            GAME_STATE.MAX_EXTRA_LIVES,
+            playerState.lives + 1
+        );
         this.updateUI();
     }
 
     nextLevel(): void {
         this._level++;
-        this.refillFuel(); // Refill fuel on level completion
+        // Refill fuel for all players on level completion
+        for (const playerState of this._players.values()) {
+            playerState.fuel = 100;
+        }
         this._levelTimeRemaining = LEVEL_TIMER.INITIAL_TIME; // Reset timer for new level
         this.updateUI();
     }
@@ -128,18 +184,21 @@ export class GameState {
         return timeRemaining * LEVEL_TIMER.BONUS_POINTS_PER_SECOND;
     }
 
-    private checkExtraLifeThresholds(oldScore: number): void {
+    private checkExtraLifeThresholds(oldScore: number, playerId: string): void {
+        const playerState = this.getPlayerState(playerId);
+        if (!playerState) return;
+
         // Check each threshold to see if we've crossed it
         for (const threshold of SCORING.EXTRA_LIFE_THRESHOLDS) {
             // If we've crossed this threshold and haven't awarded it before
             if (
-                this._score >= threshold &&
+                playerState.score >= threshold &&
                 oldScore < threshold &&
                 !this._extraLifeThresholdsReached.has(threshold)
             ) {
                 // Only award extra life if we haven't reached the maximum
-                if (this._lives < GAME_STATE.MAX_EXTRA_LIVES) {
-                    this.addLife();
+                if (playerState.lives < GAME_STATE.MAX_EXTRA_LIVES) {
+                    this.addLife(playerId);
                 }
                 // Mark this threshold as reached regardless of whether we awarded a life
                 this._extraLifeThresholdsReached.add(threshold);
@@ -147,27 +206,35 @@ export class GameState {
         }
     }
 
-    consumeFuel(amount: number): boolean {
-        if (this._fuel >= amount) {
-            this._fuel = Math.max(0, this._fuel - amount);
+    consumeFuel(amount: number, playerId: string = "player"): boolean {
+        const playerState = this.getPlayerState(playerId);
+        if (!playerState) return false;
+
+        if (playerState.fuel >= amount) {
+            playerState.fuel = Math.max(0, playerState.fuel - amount);
             this.updateUI();
             return true;
         }
         return false;
     }
 
-    refillFuel(): void {
-        this._fuel = 100;
+    refillFuel(playerId: string = "player"): void {
+        const playerState = this.getPlayerState(playerId);
+        if (!playerState) return;
+
+        playerState.fuel = 100;
         this.updateUI();
     }
 
     reset(): void {
-        this._score = 0;
-        this._lives = 3;
+        // Reset all players
+        this._players.clear();
+        this.initializePlayer("player");
+        this.initializePlayer("computer");
+
+        // Reset global game state
         this._level = 1;
         this._gameOver = false;
-        this._fuel = 100;
-        this._weaponState = WeaponManager.getDefaultWeaponState(); // Reset weapons
         this._debugNextGift = null; // Clear debug gift override
         this._levelTimeRemaining = LEVEL_TIMER.INITIAL_TIME; // Reset timer
         this._extraLifeThresholdsReached.clear(); // Reset extra life thresholds
@@ -175,29 +242,47 @@ export class GameState {
         this.updateUI();
     }
 
-    switchWeapon(weaponType: WeaponType): boolean {
-        return WeaponManager.switchWeapon(this._weaponState, weaponType);
+    switchWeapon(weaponType: WeaponType, playerId: string = "player"): boolean {
+        const playerState = this.getPlayerState(playerId);
+        if (!playerState) return false;
+        return WeaponManager.switchWeapon(playerState.weaponState, weaponType);
     }
 
-    unlockWeapon(weaponType: WeaponType): void {
-        WeaponManager.unlockWeapon(this._weaponState, weaponType);
+    unlockWeapon(weaponType: WeaponType, playerId: string = "player"): void {
+        const playerState = this.getPlayerState(playerId);
+        if (!playerState) return;
+        WeaponManager.unlockWeapon(playerState.weaponState, weaponType);
     }
 
-    applyWeaponUpgrade(upgradeType: UpgradeType): boolean {
-        WeaponManager.addUpgrade(this._weaponState, upgradeType);
+    applyWeaponUpgrade(
+        upgradeType: UpgradeType,
+        playerId: string = "player"
+    ): boolean {
+        const playerState = this.getPlayerState(playerId);
+        if (!playerState) return false;
+        WeaponManager.addUpgrade(playerState.weaponState, upgradeType);
         return true;
     }
 
-    hasWeapon(weaponType: WeaponType): boolean {
-        return WeaponManager.isWeaponUnlocked(this._weaponState, weaponType);
+    hasWeapon(weaponType: WeaponType, playerId: string = "player"): boolean {
+        const playerState = this.getPlayerState(playerId);
+        if (!playerState) return false;
+        return WeaponManager.isWeaponUnlocked(
+            playerState.weaponState,
+            weaponType
+        );
     }
 
-    hasUpgrade(upgradeType: UpgradeType): boolean {
-        return WeaponManager.hasUpgrade(this._weaponState, upgradeType);
+    hasUpgrade(upgradeType: UpgradeType, playerId: string = "player"): boolean {
+        const playerState = this.getPlayerState(playerId);
+        if (!playerState) return false;
+        return WeaponManager.hasUpgrade(playerState.weaponState, upgradeType);
     }
 
-    updateLastFireTime(time: number): void {
-        this._weaponState.lastFireTime = time;
+    updateLastFireTime(time: number, playerId: string = "player"): void {
+        const playerState = this.getPlayerState(playerId);
+        if (!playerState) return;
+        playerState.weaponState.lastFireTime = time;
     }
 
     setDebugNextGift(giftType: GiftType | null): void {
@@ -263,7 +348,7 @@ export class GameState {
 
         if (scoreElement) {
             const formattedScore = this.formatRetroNumber(
-                this._score.toString()
+                this.score.toString()
             );
             scoreElement.innerHTML = formattedScore;
 
@@ -335,7 +420,8 @@ export class GameState {
             const position = new Vector2(x, y);
 
             // Active lives in green, lost lives in gray
-            const color = i < this._lives ? "#00ff00" : "#888888";
+            const playerLives = this.getPlayerState("player")?.lives ?? 0;
+            const color = i < playerLives ? "#00ff00" : "#888888";
 
             // Draw ship icon at 50% size facing up-right
             Shapes.drawShip({

@@ -77,6 +77,42 @@ export class EntityManager {
     }
 
     /**
+     * Get all ships
+     */
+    getShips(): Ship[] {
+        return this.getEntitiesByType<Ship>("ship").filter(isShip);
+    }
+
+    /**
+     * Get player ship by ID
+     */
+    getShipById(playerId: string): Ship | null {
+        const ships = this.getShips();
+        return ships.find((ship) => ship.playerId === playerId) || null;
+    }
+
+    /**
+     * Get human player ship
+     */
+    getPlayerShip(): Ship | null {
+        const ships = this.getShips();
+        return (
+            ships.find((ship) => ship.playerId === "player") || ships[0] || null
+        ); // Fallback to first ship
+    }
+
+    /**
+     * Get computer AI ship
+     */
+    getComputerShip(): Ship | null {
+        const ships = this.getShips();
+        return (
+            ships.find((ship) => ship.playerId === "computer" && ship.isAI) ||
+            null
+        );
+    }
+
+    /**
      * Update all entities
      */
     updateEntities(deltaTime: number, currentTime: number): void {

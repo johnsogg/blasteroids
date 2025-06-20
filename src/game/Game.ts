@@ -1,5 +1,6 @@
 import { AudioManager } from "~/audio/AudioManager";
 import { InputManager } from "~/input/InputManager";
+import { InputContext } from "~/input/InputContext";
 import { ParticleSystem } from "~/render/ParticleSystem";
 import { Shapes } from "~/render/Shapes";
 import { Vector2 } from "~/utils/Vector2";
@@ -12,6 +13,7 @@ import {
     ASTEROID,
     GIFT,
     WARP_BUBBLE,
+    AI,
     type GeometryMode,
     type GiftType,
 } from "~/config/constants";
@@ -25,6 +27,7 @@ import { WeaponSystem } from "./WeaponSystem";
 import { CollisionSystem } from "./CollisionSystem";
 import { GiftSystem } from "./GiftSystem";
 import { InputHandler } from "./InputHandler";
+import { AISystem } from "./AISystem";
 
 export class Game {
     private canvas: HTMLCanvasElement;
@@ -44,6 +47,7 @@ export class Game {
     private collisionSystem: CollisionSystem;
     private giftSystem: GiftSystem;
     private inputHandler: InputHandler;
+    private aiSystem: AISystem;
 
     // Game state
     private levelAnimationStarted = false;
@@ -97,6 +101,7 @@ export class Game {
             this.menuManager,
             this.levelCompleteAnimation
         );
+        this.aiSystem = new AISystem(this.entityManager, this.gameState);
 
         // Listen for canvas resize events
         this.canvasManager.onResize(() => this.handleCanvasResize());
@@ -106,17 +111,40 @@ export class Game {
     }
 
     private init(): void {
-        // Create a simple ship rectangle
-        const ship: Ship = {
-            position: this.getShipSpawnPosition(),
+        // Create player ship
+        const playerShip: Ship = {
+            position: this.getPlayerShipSpawnPosition(),
             velocity: Vector2.zero(),
             size: new Vector2(SHIP.WIDTH, SHIP.HEIGHT),
             rotation: 0,
             color: SHIP.COLOR,
             type: "ship",
+            playerId: "player",
             trail: [],
         };
-        this.entityManager.addEntity(ship);
+        this.entityManager.addEntity(playerShip);
+
+        // Create computer AI ship if enabled
+        if (AI.ENABLED) {
+            const computerShip: Ship = {
+                position: this.getComputerShipSpawnPosition(),
+                velocity: Vector2.zero(),
+                size: new Vector2(SHIP.WIDTH, SHIP.HEIGHT),
+                rotation: 0,
+                color: "#00ffff", // Cyan color for AI ship
+                type: "ship",
+                playerId: "computer",
+                isAI: true,
+                aiState: "hunting",
+                aiTarget: null,
+                trail: [],
+            };
+            this.entityManager.addEntity(computerShip);
+
+            // Give AI ship some initial weapons
+            this.gameState.unlockWeapon("bullets", "computer");
+            this.gameState.unlockWeapon("missiles", "computer");
+        }
 
         // Create initial asteroids with variety
         for (let i = 0; i < 4; i++) {
@@ -138,13 +166,24 @@ export class Game {
     }
 
     /**
-     * Get ship spawn position based on current canvas size
+     * Get player ship spawn position (left side of center)
      */
-    private getShipSpawnPosition(): Vector2 {
+    private getPlayerShipSpawnPosition(): Vector2 {
         const dimensions = this.getCanvasDimensions();
         return new Vector2(
-            dimensions.width * SHIP.SPAWN_X_RATIO,
-            dimensions.height * SHIP.SPAWN_Y_RATIO
+            dimensions.width * 0.4, // 40% from left
+            dimensions.height * 0.5 // Center vertically
+        );
+    }
+
+    /**
+     * Get computer ship spawn position (right side of center)
+     */
+    private getComputerShipSpawnPosition(): Vector2 {
+        const dimensions = this.getCanvasDimensions();
+        return new Vector2(
+            dimensions.width * 0.6, // 60% from left
+            dimensions.height * 0.5 // Center vertically
         );
     }
 
@@ -266,9 +305,16 @@ export class Game {
         // Update weapon-specific physics (missile acceleration, homing)
         this.weaponSystem.updateMissilePhysics(deltaTime);
 
-        // Update ship trail
-        const ship = this.entityManager.getShip();
-        if (ship) {
+        // Update AI system for computer ship
+        const aiInput = this.aiSystem.updateAI(currentTime);
+        const computerShip = this.entityManager.getComputerShip();
+        if (computerShip && computerShip.isAI) {
+            this.updateAIShipMovement(computerShip, aiInput, currentTime);
+        }
+
+        // Update ship trails for all ships
+        const ships = this.entityManager.getShips();
+        for (const ship of ships) {
             this.updateShipTrail(ship, currentTime);
         }
 
@@ -489,6 +535,106 @@ export class Game {
             return point.opacity > 0.01; // Remove fully faded points
         });
     }
+
+    /**
+     * Update AI ship movement and weapons based on AI input
+     */
+    private updateAIShipMovement(
+        ship: Ship,
+        aiInput: import("./AISystem").AIInput,
+        currentTime: number
+    ): void {
+        const deltaTime = 1 / 60; // Approximate frame time
+        const rotationSpeed = SHIP.ROTATION_SPEED; // radians per second
+        const thrustPower = SHIP.THRUST_POWER; // pixels per second squared
+        const maxSpeed = SHIP.MAX_SPEED; // pixels per second
+        const friction = SHIP.FRICTION; // velocity damping multiplier
+
+        // Rotation
+        if (aiInput.left) {
+            ship.rotation -= rotationSpeed * deltaTime;
+        }
+        if (aiInput.right) {
+            ship.rotation += rotationSpeed * deltaTime;
+        }
+
+        // Main thrust (2x fuel consumption)
+        ship.thrusting = aiInput.thrust;
+        if (aiInput.thrust) {
+            const fuelNeeded = 2 * deltaTime; // 2 units per second
+            if (this.gameState.consumeFuel(fuelNeeded, ship.playerId)) {
+                const thrustVector = Vector2.fromAngle(
+                    ship.rotation,
+                    thrustPower * deltaTime
+                );
+                ship.velocity = ship.velocity.add(thrustVector);
+            } else {
+                ship.thrusting = false; // Can't thrust without fuel
+            }
+        }
+
+        // Strafe thrusters (50% power, 1x fuel consumption each)
+        const strafePower = thrustPower * 0.5;
+
+        ship.strafingLeft = aiInput.strafeLeft;
+        if (aiInput.strafeLeft) {
+            const fuelNeeded = 1 * deltaTime; // 1 unit per second
+            if (this.gameState.consumeFuel(fuelNeeded, ship.playerId)) {
+                const strafeVector = Vector2.fromAngle(
+                    ship.rotation - Math.PI / 2,
+                    strafePower * deltaTime
+                );
+                ship.velocity = ship.velocity.add(strafeVector);
+            } else {
+                ship.strafingLeft = false;
+            }
+        }
+
+        ship.strafingRight = aiInput.strafeRight;
+        if (aiInput.strafeRight) {
+            const fuelNeeded = 1 * deltaTime; // 1 unit per second
+            if (this.gameState.consumeFuel(fuelNeeded, ship.playerId)) {
+                const strafeVector = Vector2.fromAngle(
+                    ship.rotation + Math.PI / 2,
+                    strafePower * deltaTime
+                );
+                ship.velocity = ship.velocity.add(strafeVector);
+            } else {
+                ship.strafingRight = false;
+            }
+        }
+
+        // Apply friction
+        ship.velocity = ship.velocity.multiply(friction);
+
+        // Limit max speed
+        const speed = Math.sqrt(
+            ship.velocity.x * ship.velocity.x +
+                ship.velocity.y * ship.velocity.y
+        );
+        if (speed > maxSpeed) {
+            ship.velocity = ship.velocity.multiply(maxSpeed / speed);
+        }
+
+        // Handle weapon input
+        this.weaponSystem.handleWeaponInput(
+            ship,
+            {
+                weapon1: aiInput.weapon1,
+                weapon2: aiInput.weapon2,
+                weapon3: aiInput.weapon3,
+                weapon4: aiInput.weapon4,
+                shoot: aiInput.shoot,
+                shootPressed: aiInput.shootPressed,
+            },
+            currentTime,
+            InputContext.GAMEPLAY
+        );
+    }
+
+    /**
+     * Consume fuel from a specific ship's fuel pool
+     */
 
     private render(): void {
         // Clear canvas

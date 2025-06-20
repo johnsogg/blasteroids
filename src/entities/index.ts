@@ -3,7 +3,7 @@
  */
 
 export type { BaseEntity, EntityType } from "./BaseEntity";
-export type { Ship } from "./Ship";
+export type { Ship, AIState } from "./Ship";
 export type { Asteroid } from "./Asteroid";
 export type { Bullet } from "./Bullet";
 export type { Missile } from "./Missile";

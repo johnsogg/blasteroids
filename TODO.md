@@ -17,8 +17,6 @@
       per second left when they beat the level. The timer stops at zero and
       otherwise has no effect when it reaches zero.
 - [x] Add extra life bonus at certain score thresholds
-- [ ] Implement cooperative computer player
-- [ ] Support combat between player and computer player
 
 ### 🔧 Technical Improvements
 
@@ -28,15 +26,20 @@
 - [ ] Create baseline physics behavior tests (ship movement, bullet inheritance, collision)
 - [ ] Add performance benchmarks for physics calculations with many entities
 
-#### Visual Scaling System ✅ COMPLETED
-
-#### Code Quality & Type Safety ✅ COMPLETED
-
-- [x] Fix InputHandler test linter error (replaced anonymous class with proper EntityManager instance)
-
 #### General
 
 - [ ] Performance optimizations for large numbers of objects
+
+## Big New Features
+
+- [x] Implement cooperative computer player
+  - [x] Separate resource management (fuel, weapons, lives, score) between human and AI players
+  - [x] AI player has independent weapon progression and fuel consumption
+  - [x] AI player respawns without affecting human player's lives
+  - [x] Gift collection benefits the player who collected it
+  - [x] AI can be controlled via `AI.ENABLED` constant in configuration
+- [ ] Support combat between player and computer player
+- [ ] Make AI player available as a gift spawned from warp bubbles
 
 ### 🛠️ Development & Testing Tools
 

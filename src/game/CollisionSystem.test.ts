@@ -168,6 +168,7 @@ describe("CollisionSystem", () => {
                 rotation: 0,
                 color: "#ffffff",
                 type: "ship",
+                playerId: "player",
                 trail: [],
                 invulnerable: false,
             };
@@ -200,6 +201,7 @@ describe("CollisionSystem", () => {
                 rotation: 0,
                 color: "#ffffff",
                 type: "ship",
+                playerId: "player",
                 trail: [],
                 invulnerable: true, // Ship is invulnerable
                 invulnerableTime: 2.0,
@@ -235,6 +237,7 @@ describe("CollisionSystem", () => {
                 rotation: 0,
                 color: "#ffffff",
                 type: "ship",
+                playerId: "player",
                 trail: [],
             };
 
@@ -352,6 +355,7 @@ describe("CollisionSystem", () => {
                 rotation: 0, // Pointing right
                 color: "#ffffff",
                 type: "ship",
+                playerId: "player",
                 trail: [],
                 isLaserActive: true,
                 laserStartTime: 0,
@@ -387,6 +391,7 @@ describe("CollisionSystem", () => {
                 rotation: 0,
                 color: "#ffffff",
                 type: "ship",
+                playerId: "player",
                 trail: [],
                 isLaserActive: true,
                 laserStartTime: 0,

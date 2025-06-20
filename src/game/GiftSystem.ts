@@ -278,7 +278,7 @@ export class GiftSystem {
             weight: GIFT.SPAWN_WEIGHTS.FUEL_REFILL,
         });
 
-        // Extra life gift (only if player doesn't have maximum lives)
+        // Extra life gift (only if human player doesn't have maximum lives)
         if (this.gameState.lives < GAME_STATE.MAX_EXTRA_LIVES) {
             availableGifts.push({
                 type: "extra_life",

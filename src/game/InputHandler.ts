@@ -109,16 +109,16 @@ export class InputHandler {
      * Handle gameplay input (normal game state)
      */
     private handleGameplayInput(currentTime: number): void {
-        // Get the ship for movement and weapon input
-        const ship = this.getShip();
-        if (!ship) return;
+        // Get the player ship for movement and weapon input
+        const playerShip = this.entityManager.getPlayerShip();
+        if (!playerShip) return;
 
         // Handle ship movement
-        this.updateShipMovement(ship, currentTime);
+        this.updateShipMovement(playerShip, currentTime);
 
         // Handle weapon input
         this.weaponSystem.handleWeaponInput(
-            ship,
+            playerShip,
             {
                 weapon1: this.input.weapon1,
                 weapon2: this.input.weapon2,
@@ -274,13 +274,6 @@ export class InputHandler {
     private togglePause(): void {
         this.isPaused = !this.isPaused;
         this.menuManager.toggle();
-    }
-
-    /**
-     * Get the ship from entity manager
-     */
-    private getShip(): Ship | null {
-        return this.entityManager.getShip();
     }
 
     /**

@@ -56,6 +56,7 @@ describe("WeaponSystem", () => {
             rotation: 0,
             color: "#ffffff",
             type: "ship",
+            playerId: "player",
             trail: [],
         };
 

@@ -42,34 +42,34 @@ export class CollisionSystem {
         const asteroids = this.entityManager.getAsteroids();
         const gifts = this.entityManager.getGifts();
         const warpBubblesOut = this.entityManager.getWarpBubblesOut();
-        const ship = this.entityManager.getShip();
+        const ships = this.entityManager.getShips();
 
         // Check bullet-asteroid collisions
-        this.checkBulletAsteroidCollisions(bullets, asteroids, ship);
+        this.checkBulletAsteroidCollisions(bullets, asteroids, ships[0]); // Pass first ship for repulsor effect
 
         // Check missile-asteroid collisions (with explosion)
-        this.checkMissileAsteroidCollisions(missiles, asteroids, ship);
+        this.checkMissileAsteroidCollisions(missiles, asteroids, ships[0]); // Pass first ship for repulsor effect
 
         // Check bullet-gift collisions
         this.checkBulletGiftCollisions(bullets, gifts);
 
-        // Check ship-asteroid collisions (only if ship is not invulnerable)
-        if (ship && !ship.invulnerable) {
-            this.checkShipAsteroidCollisions(ship, asteroids);
-        }
+        // Check ship-asteroid collisions for all ships (only if not invulnerable)
+        for (const ship of ships) {
+            if (!ship.invulnerable) {
+                this.checkShipAsteroidCollisions(ship, asteroids);
+            }
 
-        // Check ship-gift collisions
-        if (ship) {
+            // Check ship-gift collisions
             this.checkShipGiftCollisions(ship, gifts);
+
+            // Check laser collisions if laser is active
+            if (ship.isLaserActive) {
+                this.checkLaserCollisions(ship, asteroids, gifts);
+            }
         }
 
         // Check gift-warpBubbleOut collisions (gift gets captured by closing warp)
         this.checkGiftWarpBubbleCollisions(gifts, warpBubblesOut);
-
-        // Check laser collisions if laser is active
-        if (ship && ship.isLaserActive) {
-            this.checkLaserCollisions(ship, asteroids, gifts);
-        }
     }
 
     /**
@@ -189,7 +189,7 @@ export class CollisionSystem {
     private checkShipGiftCollisions(ship: Ship, gifts: GameEntity[]): void {
         for (const gift of gifts) {
             if (Collision.checkCircleCollision(ship, gift)) {
-                this.collectGift(gift);
+                this.collectGift(gift, ship);
                 break; // Only collect one gift per frame
             }
         }
@@ -416,7 +416,7 @@ export class CollisionSystem {
     /**
      * Collect a gift and apply its benefits
      */
-    private collectGift(gift: GameEntity): void {
+    private collectGift(gift: GameEntity, ship?: Ship): void {
         // Stop the wubwub ambient sound if it's playing
         if (isGift(gift) && gift.wubwubAudioControl) {
             gift.wubwubAudioControl.stop();
@@ -430,44 +430,47 @@ export class CollisionSystem {
         // Remove the gift from the game
         this.entityManager.removeEntity(gift);
 
+        // Determine which player collected the gift
+        const playerId = ship?.playerId || "player";
+
         // Award points for gift collection
-        this.gameState.addScore(SCORING.GIFT);
+        this.gameState.addScore(SCORING.GIFT, playerId);
 
         // Apply gift benefits based on type
         const giftType = gift.giftType || "fuel_refill";
 
         switch (giftType) {
             case "fuel_refill":
-                this.gameState.refillFuel();
+                this.gameState.refillFuel(playerId);
                 break;
 
             case "extra_life":
-                this.gameState.addLife();
+                this.gameState.addLife(playerId);
                 break;
 
             case "weapon_bullets":
-                this.gameState.unlockWeapon("bullets");
-                this.gameState.switchWeapon("bullets");
+                this.gameState.unlockWeapon("bullets", playerId);
+                this.gameState.switchWeapon("bullets", playerId);
                 break;
 
             case "weapon_missiles":
-                this.gameState.unlockWeapon("missiles");
-                this.gameState.switchWeapon("missiles");
+                this.gameState.unlockWeapon("missiles", playerId);
+                this.gameState.switchWeapon("missiles", playerId);
                 break;
 
             case "weapon_laser":
-                this.gameState.unlockWeapon("laser");
-                this.gameState.switchWeapon("laser");
+                this.gameState.unlockWeapon("laser", playerId);
+                this.gameState.switchWeapon("laser", playerId);
                 break;
 
             case "weapon_lightning":
-                this.gameState.unlockWeapon("lightning");
-                this.gameState.switchWeapon("lightning");
+                this.gameState.unlockWeapon("lightning", playerId);
+                this.gameState.switchWeapon("lightning", playerId);
                 break;
 
             default:
                 // Handle upgrades
-                this.gameState.applyWeaponUpgrade(giftType);
+                this.gameState.applyWeaponUpgrade(giftType, playerId);
                 break;
         }
     }
@@ -508,28 +511,46 @@ export class CollisionSystem {
             // Ignore audio errors
         });
 
-        // Lose a life
-        this.gameState.loseLife();
+        // Only lose a life for human player; AI players just respawn
+        if (ship.playerId === "player") {
+            this.gameState.loseLife(ship.playerId);
 
-        // If game over, remove the ship from the game
-        if (this.gameState.gameOver) {
-            this.entityManager.removeEntity(ship);
-        } else {
-            // Reset ship state for respawn
-            this.respawnShip(ship);
+            // If game over, remove the ship from the game
+            if (this.gameState.gameOver) {
+                this.entityManager.removeEntity(ship);
+                return;
+            }
         }
+
+        // Reset ship state for respawn (both human and AI players)
+        this.respawnShip(ship);
     }
 
     /**
      * Respawn the ship after destruction
      */
     private respawnShip(ship: Ship): void {
-        // Reset ship position and velocity
+        // Reset ship position and velocity based on ship type
         const dimensions = { width: 800, height: 600 }; // TODO(claude): Get dimensions from canvas manager instead of hardcoded values
-        ship.position = new Vector2(
-            dimensions.width * 0.5,
-            dimensions.height * 0.5
-        );
+
+        if (ship.playerId === "player") {
+            ship.position = new Vector2(
+                dimensions.width * 0.4, // Left side for player
+                dimensions.height * 0.5
+            );
+        } else if (ship.playerId === "computer") {
+            ship.position = new Vector2(
+                dimensions.width * 0.6, // Right side for computer
+                dimensions.height * 0.5
+            );
+        } else {
+            // Fallback to center for ships without playerId
+            ship.position = new Vector2(
+                dimensions.width * 0.5,
+                dimensions.height * 0.5
+            );
+        }
+
         ship.velocity = Vector2.zero();
         ship.rotation = 0;
 

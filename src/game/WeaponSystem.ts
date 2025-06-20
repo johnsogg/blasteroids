@@ -53,13 +53,13 @@ export class WeaponSystem {
     ): void {
         // Handle weapon switching
         if (input.weapon1) {
-            this.gameState.switchWeapon("bullets");
+            this.gameState.switchWeapon("bullets", ship.playerId);
         } else if (input.weapon2) {
-            this.gameState.switchWeapon("missiles");
+            this.gameState.switchWeapon("missiles", ship.playerId);
         } else if (input.weapon3) {
-            this.gameState.switchWeapon("laser");
+            this.gameState.switchWeapon("laser", ship.playerId);
         } else if (input.weapon4) {
-            this.gameState.switchWeapon("lightning");
+            this.gameState.switchWeapon("lightning", ship.playerId);
         }
 
         // Handle shooting only in GAMEPLAY context
@@ -88,7 +88,10 @@ export class WeaponSystem {
         this.lastShootKeyState = currentShootKeyState;
 
         // Handle shooting based on weapon type
-        const weaponState = this.gameState.weaponState;
+        const playerState = this.gameState.getPlayerState(ship.playerId);
+        if (!playerState) return;
+
+        const weaponState = playerState.weaponState;
         if (weaponState.currentWeapon === "bullets") {
             // Bullets: use continuous input (can hold key for burst)
             if (currentShootKeyState) {
@@ -115,7 +118,10 @@ export class WeaponSystem {
      * Handle weapons that use single press input
      */
     private handleSinglePressWeapons(ship: Ship, currentTime: number): void {
-        const weaponState = this.gameState.weaponState;
+        const playerState = this.gameState.getPlayerState(ship.playerId);
+        if (!playerState) return;
+
+        const weaponState = playerState.weaponState;
         switch (weaponState.currentWeapon) {
             case "missiles":
                 this.shootMissiles(ship, currentTime);
@@ -129,7 +135,7 @@ export class WeaponSystem {
     /**
      * Shoot bullets
      */
-    private shootBullets(ship: GameEntity, currentTime: number): void {
+    private shootBullets(ship: Ship, currentTime: number): void {
         // Check bullet limit per activation
         if (this.bulletsInCurrentActivation >= BULLET.BULLETS_PER_ACTIVATION) {
             return; // Already fired maximum bullets for this activation
@@ -137,7 +143,12 @@ export class WeaponSystem {
 
         // Check fire rate (with upgrade consideration)
         let fireRate = BULLET.FIRE_RATE;
-        if (this.gameState.hasUpgrade("upgrade_bullets_fire_rate")) {
+        if (
+            this.gameState.hasUpgrade(
+                "upgrade_bullets_fire_rate",
+                ship.playerId
+            )
+        ) {
             fireRate *= WEAPONS.BULLETS.FIRE_RATE_UPGRADE; // 25% faster
         }
 
@@ -146,7 +157,12 @@ export class WeaponSystem {
         }
 
         // Check and consume fuel
-        if (!this.gameState.consumeFuel(WEAPONS.BULLETS.FUEL_CONSUMPTION)) {
+        if (
+            !this.gameState.consumeFuel(
+                WEAPONS.BULLETS.FUEL_CONSUMPTION,
+                ship.playerId
+            )
+        ) {
             return; // Not enough fuel
         }
 
@@ -167,10 +183,15 @@ export class WeaponSystem {
 
         // Apply upgrades (each upgrade also increases range by 40%)
         let rangeMultiplier = 1.0;
-        if (this.gameState.hasUpgrade("upgrade_bullets_fire_rate")) {
+        if (
+            this.gameState.hasUpgrade(
+                "upgrade_bullets_fire_rate",
+                ship.playerId
+            )
+        ) {
             rangeMultiplier *= WEAPONS.BULLETS.RANGE_UPGRADE; // 40% increase
         }
-        if (this.gameState.hasUpgrade("upgrade_bullets_size")) {
+        if (this.gameState.hasUpgrade("upgrade_bullets_size", ship.playerId)) {
             bulletSize *= WEAPONS.BULLETS.SIZE_UPGRADE; // 50% larger
             bulletColor = WEAPONS.BULLETS.UPGRADED_COLOR;
             rangeMultiplier *= WEAPONS.BULLETS.RANGE_UPGRADE; // 40% increase
@@ -191,6 +212,7 @@ export class WeaponSystem {
         });
 
         this.lastShotTime = currentTime;
+        this.gameState.updateLastFireTime(currentTime, ship.playerId);
         this.bulletsInCurrentActivation++; // Increment bullet count for this activation
 
         // Play shooting sound
@@ -202,10 +224,15 @@ export class WeaponSystem {
     /**
      * Shoot missiles
      */
-    private shootMissiles(ship: GameEntity, currentTime: number): void {
+    private shootMissiles(ship: Ship, currentTime: number): void {
         // Check fire rate (with upgrade consideration)
         let fireRate = WEAPONS.MISSILES.FIRE_RATE;
-        if (this.gameState.hasUpgrade("upgrade_missiles_fire_rate")) {
+        if (
+            this.gameState.hasUpgrade(
+                "upgrade_missiles_fire_rate",
+                ship.playerId
+            )
+        ) {
             fireRate *= WEAPONS.MISSILES.FIRE_RATE_UPGRADE; // 50% faster
         }
 
@@ -218,7 +245,12 @@ export class WeaponSystem {
         }
 
         // Check and consume fuel
-        if (!this.gameState.consumeFuel(WEAPONS.MISSILES.FUEL_CONSUMPTION)) {
+        if (
+            !this.gameState.consumeFuel(
+                WEAPONS.MISSILES.FUEL_CONSUMPTION,
+                ship.playerId
+            )
+        ) {
             return; // Not enough fuel
         }
 
@@ -244,6 +276,7 @@ export class WeaponSystem {
         });
 
         this.lastShotTime = currentTime;
+        this.gameState.updateLastFireTime(currentTime, ship.playerId);
 
         // Play missile launch sound
         this.audio.playMissileLaunch().catch(() => {
@@ -257,7 +290,9 @@ export class WeaponSystem {
     private shootLaser(ship: Ship, currentTime: number): void {
         // Calculate fuel consumption rate with upgrades
         let fuelConsumptionRate = WEAPONS.LASER.FUEL_CONSUMPTION_RATE;
-        if (this.gameState.hasUpgrade("upgrade_laser_efficiency")) {
+        if (
+            this.gameState.hasUpgrade("upgrade_laser_efficiency", ship.playerId)
+        ) {
             fuelConsumptionRate *= WEAPONS.LASER.EFFICIENCY_UPGRADE; // 50% more efficient
         }
 
@@ -272,7 +307,7 @@ export class WeaponSystem {
         const fuelNeeded = fuelConsumptionRate * deltaTime;
 
         // Check if we have enough fuel to continue firing
-        if (!this.gameState.consumeFuel(fuelNeeded)) {
+        if (!this.gameState.consumeFuel(fuelNeeded, ship.playerId)) {
             // Not enough fuel, stop the laser
             ship.isLaserActive = false;
             ship.laserStartTime = undefined;
@@ -303,7 +338,9 @@ export class WeaponSystem {
 
         // Calculate lightning radius with upgrades
         let lightningRadius = WEAPONS.LIGHTNING.RADIUS;
-        if (this.gameState.hasUpgrade("upgrade_lightning_radius")) {
+        if (
+            this.gameState.hasUpgrade("upgrade_lightning_radius", ship.playerId)
+        ) {
             lightningRadius *= WEAPONS.LIGHTNING.RADIUS_UPGRADE; // 20% larger
         }
 
@@ -319,7 +356,12 @@ export class WeaponSystem {
         }
 
         // Only now check and consume fuel (since we have a valid target)
-        if (!this.gameState.consumeFuel(WEAPONS.LIGHTNING.FUEL_CONSUMPTION)) {
+        if (
+            !this.gameState.consumeFuel(
+                WEAPONS.LIGHTNING.FUEL_CONSUMPTION,
+                ship.playerId
+            )
+        ) {
             return; // Not enough fuel
         }
 
@@ -381,7 +423,9 @@ export class WeaponSystem {
         });
 
         // Chain lightning upgrade - find secondary targets
-        if (this.gameState.hasUpgrade("upgrade_lightning_chain")) {
+        if (
+            this.gameState.hasUpgrade("upgrade_lightning_chain", ship.playerId)
+        ) {
             let chainSource = primaryTarget.position;
             let chainsRemaining = 2; // Maximum 2 additional jumps
 
@@ -559,9 +603,9 @@ export class WeaponSystem {
     /**
      * Get lightning radius for collision detection
      */
-    getLightningRadius(): number {
+    getLightningRadius(playerId: string = "player"): number {
         let lightningRadius = WEAPONS.LIGHTNING.RADIUS;
-        if (this.gameState.hasUpgrade("upgrade_lightning_radius")) {
+        if (this.gameState.hasUpgrade("upgrade_lightning_radius", playerId)) {
             lightningRadius *= WEAPONS.LIGHTNING.RADIUS_UPGRADE; // 20% larger
         }
         return lightningRadius;

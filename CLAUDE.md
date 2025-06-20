@@ -92,4 +92,5 @@ See [TODO.md](./TODO.md) for current development tasks and roadmap.
 - Use descriptive commit messages that explain the "why" not just the "what"
 - When committing to git, group changes into meaningful sets so their commits are logical
 - Keep the README.md up to date before pushing to remote
-- Leave TODOs formatted like `// TODO(claude): <comment>` when making temporary changes to make it easier to find and fix later
+- Leave TODOs formatted like `// TODO(claude): <comment>` when making temporary
+  changes to make it easier to find and fix later

@@ -84,6 +84,7 @@ describe("EntityManager", () => {
                 rotation: 0,
                 color: "#ffffff",
                 type: "ship",
+                playerId: "player",
                 trail: [],
             };
 
@@ -116,6 +117,7 @@ describe("EntityManager", () => {
                 rotation: 0,
                 color: "#ffffff",
                 type: "ship",
+                playerId: "player",
                 trail: [],
             };
 
