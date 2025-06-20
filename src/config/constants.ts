@@ -60,7 +60,7 @@ export const SHIP = {
     ROTATION_SPEED: 5, // radians per second
     THRUST_POWER: 300, // pixels per second squared
     MAX_SPEED: 400, // pixels per second
-    FRICTION: 0.98, // velocity damping multiplier
+    FRICTION: 1.0, // velocity damping multiplier (1.0 = no friction, authentic space physics)
 
     // Dimensions
     WIDTH: 20,

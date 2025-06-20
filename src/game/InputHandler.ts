@@ -7,7 +7,7 @@ import { EntityManager } from "./EntityManager";
 import { MenuManager } from "~/menu/MenuManager";
 import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
 import { Vector2 } from "~/utils/Vector2";
-import { FUEL } from "~/config/constants";
+import { FUEL, SHIP } from "~/config/constants";
 
 /**
  * Handles context-based input processing for the game
@@ -176,10 +176,10 @@ export class InputHandler {
      */
     private updateShipMovement(ship: Ship, _currentTime: number): void {
         const deltaTime = 1 / 60; // Approximate frame time
-        const rotationSpeed = 5; // radians per second
-        const thrustPower = 300; // pixels per second squared
-        const maxSpeed = 400; // pixels per second
-        const friction = 0.98; // velocity damping
+        const rotationSpeed = SHIP.ROTATION_SPEED; // radians per second
+        const thrustPower = SHIP.THRUST_POWER; // pixels per second squared
+        const maxSpeed = SHIP.MAX_SPEED; // pixels per second
+        const friction = SHIP.FRICTION; // velocity damping multiplier
 
         // Rotation
         if (this.input.left) {

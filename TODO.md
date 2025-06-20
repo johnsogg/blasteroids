@@ -9,7 +9,7 @@
       random heading.
 - [x] If the player has all lives left, do not gift extra lives
 - [x] Create a constant that determines the maximum number of extra lives, and set it to 5. Then, use that constant wherever this idea is used, instead of the number literal (which is currently 99).
-- [ ] When the ship stops thrusting, there seems to be friction. Changing the
+- [x] When the ship stops thrusting, there seems to be friction. Changing the
       constant for FRICTION does not seem to have any effect.
 - [ ] Add an audio effect for gifts: wubwubwubwubwubwubwub in a soft, low
       frequency that oscillates a bit
