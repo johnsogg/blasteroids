@@ -1,6 +1,12 @@
 import { Shapes } from "~/render/Shapes";
 import { Vector2 } from "~/utils/Vector2";
-import { UI, GAME_STATE, LEVEL_TIMER, type GiftType } from "~/config/constants";
+import {
+    UI,
+    GAME_STATE,
+    LEVEL_TIMER,
+    SCORING,
+    type GiftType,
+} from "~/config/constants";
 import type { WeaponState, WeaponType, UpgradeType } from "~/entities/Weapons";
 import { WeaponManager } from "~/entities/Weapons";
 
@@ -14,6 +20,7 @@ export class GameState {
     private _weaponState: WeaponState = WeaponManager.getDefaultWeaponState();
     private _debugNextGift: GiftType | null = null; // Debug override for next gift type
     private _levelTimeRemaining: number = LEVEL_TIMER.INITIAL_TIME; // seconds remaining in current level
+    private _extraLifeThresholdsReached: Set<number> = new Set(); // Track which score thresholds have been reached
     private readonly HIGH_SCORE_KEY = "blasteroids-highscore";
     private readonly DEBUG_GIFT_KEY = "blasteroids-debug-gift";
 
@@ -72,7 +79,12 @@ export class GameState {
     }
 
     addScore(points: number): void {
+        const oldScore = this._score;
         this._score += points;
+
+        // Check for extra life thresholds
+        this.checkExtraLifeThresholds(oldScore);
+
         if (this._score > this._highScore) {
             this._highScore = this._score;
             this.saveHighScore();
@@ -116,6 +128,25 @@ export class GameState {
         return timeRemaining * LEVEL_TIMER.BONUS_POINTS_PER_SECOND;
     }
 
+    private checkExtraLifeThresholds(oldScore: number): void {
+        // Check each threshold to see if we've crossed it
+        for (const threshold of SCORING.EXTRA_LIFE_THRESHOLDS) {
+            // If we've crossed this threshold and haven't awarded it before
+            if (
+                this._score >= threshold &&
+                oldScore < threshold &&
+                !this._extraLifeThresholdsReached.has(threshold)
+            ) {
+                // Only award extra life if we haven't reached the maximum
+                if (this._lives < GAME_STATE.MAX_EXTRA_LIVES) {
+                    this.addLife();
+                }
+                // Mark this threshold as reached regardless of whether we awarded a life
+                this._extraLifeThresholdsReached.add(threshold);
+            }
+        }
+    }
+
     consumeFuel(amount: number): boolean {
         if (this._fuel >= amount) {
             this._fuel = Math.max(0, this._fuel - amount);
@@ -139,6 +170,7 @@ export class GameState {
         this._weaponState = WeaponManager.getDefaultWeaponState(); // Reset weapons
         this._debugNextGift = null; // Clear debug gift override
         this._levelTimeRemaining = LEVEL_TIMER.INITIAL_TIME; // Reset timer
+        this._extraLifeThresholdsReached.clear(); // Reset extra life thresholds
         this.loadHighScore(); // Preserve high score across resets
         this.updateUI();
     }

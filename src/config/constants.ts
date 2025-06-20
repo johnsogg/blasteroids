@@ -177,8 +177,8 @@ export const SCORING = {
     // Gift destruction penalty
     GIFT_DESTRUCTION_PENALTY: 80,
 
-    // Thresholds
-    EXTRA_LIFE_THRESHOLD: 10000, // Future feature
+    // Extra life score thresholds (classic arcade style)
+    EXTRA_LIFE_THRESHOLDS: [10000, 25000, 50000, 100000], // Score points at which player earns extra lives
 } as const;
 
 // =============================================================================

@@ -16,7 +16,7 @@
 - [x] Add a timer for each level that starts at 60 seconds. Player gets N points
       per second left when they beat the level. The timer stops at zero and
       otherwise has no effect when it reaches zero.
-- [ ] Add extra life bonus at certain score thresholds
+- [x] Add extra life bonus at certain score thresholds
 - [ ] Implement cooperative computer player
 - [ ] Support combat between player and computer player
 
