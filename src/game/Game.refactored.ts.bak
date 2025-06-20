@@ -1,0 +1,670 @@
+/* eslint-disable */
+// Legacy refactored code - disabled for now
+import { AudioManager } from "~/audio/AudioManager";
+import { InputManager } from "~/input/InputManager";
+import { ParticleSystem } from "~/render/ParticleSystem";
+import { Vector2 } from "~/utils/Vector2";
+import type { Ship, GameEntity } from "~/entities";
+import { SHIP, type GeometryMode, type GiftType } from "~/config/constants";
+import { CanvasManager } from "~/display/CanvasManager";
+import { MenuManager } from "~/menu/MenuManager";
+import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
+
+// Import our extracted systems
+import { GameState } from "./GameState";
+import { EntityManager } from "./EntityManager";
+import { WeaponSystem } from "./WeaponSystem";
+import { CollisionSystem } from "./CollisionSystem";
+import { GiftSystem } from "./GiftSystem";
+import { InputHandler } from "./InputHandler";
+
+/**
+ * Main game class - now focused on orchestrating systems rather than implementing everything
+ */
+export class Game {
+    private canvas: HTMLCanvasElement;
+    private ctx: CanvasRenderingContext2D;
+
+    // Core systems
+    private gameState: GameState;
+    private entityManager: EntityManager;
+    private weaponSystem: WeaponSystem;
+    private collisionSystem: CollisionSystem;
+    private giftSystem: GiftSystem;
+    private inputHandler: InputHandler;
+
+    // Support systems
+    private audio: AudioManager;
+    private particles: ParticleSystem;
+    private canvasManager: CanvasManager;
+    private menuManager: MenuManager;
+    private levelCompleteAnimation: LevelCompleteAnimation;
+
+    // Game loop state
+    private running = false;
+    private lastTime = 0;
+    private levelAnimationStarted = false;
+    private levelStartTime = 0;
+    private gameOverSoundPlayed = false;
+
+    constructor(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+        this.canvas = canvas;
+        this.ctx = ctx;
+
+        // Initialize support systems first
+        this.gameState = new GameState();
+        this.audio = new AudioManager();
+        this.particles = new ParticleSystem();
+        this.canvasManager = new CanvasManager(canvas);
+        this.menuManager = new MenuManager(this, canvas, ctx);
+        this.levelCompleteAnimation = new LevelCompleteAnimation(
+            canvas,
+            ctx,
+            this.gameState
+        );
+
+        // Initialize core game systems
+        this.entityManager = new EntityManager(canvas);
+        this.weaponSystem = new WeaponSystem(
+            this.audio,
+            this.particles,
+            this.gameState,
+            this.entityManager
+        );
+        this.collisionSystem = new CollisionSystem(
+            this.audio,
+            this.particles,
+            this.gameState,
+            this.entityManager,
+            this.weaponSystem
+        );
+        this.giftSystem = new GiftSystem(
+            this.audio,
+            this.gameState,
+            this.entityManager,
+            canvas
+        );
+        this.inputHandler = new InputHandler(
+            new InputManager(),
+            this.gameState,
+            this.weaponSystem,
+            this.menuManager,
+            this.levelCompleteAnimation,
+            canvas
+        );
+
+        // Setup canvas resize handling
+        this.canvasManager.onResize(() => this.handleCanvasResize());
+
+        // Initialize game
+        this.gameState.init();
+        this.initializeLevel();
+    }
+
+    /**
+     * Initialize a new level with ship and asteroids
+     */
+    private initializeLevel(): void {
+        // Create ship
+        const ship: Ship = {
+            position: this.getShipSpawnPosition(),
+            velocity: Vector2.zero(),
+            size: new Vector2(SHIP.WIDTH, SHIP.HEIGHT),
+            rotation: 0,
+            color: SHIP.COLOR,
+            type: "ship",
+            trail: [],
+        };
+        this.entityManager.addEntity(ship);
+
+        // Create initial asteroids
+        for (let i = 0; i < 4; i++) {
+            this.createAsteroid();
+        }
+
+        // Start timing the level
+        this.levelStartTime = performance.now();
+    }
+
+    /**
+     * Create a new asteroid at a random position away from center
+     */
+    private createAsteroid(basePosition?: Vector2): void {
+        // Choose random size category
+        const sizeCategory = Math.random();
+        let size: number;
+        let speed: number;
+
+        if (sizeCategory < 0.3) {
+            // Large asteroids (30-40px) - slow
+            size = 30 + Math.random() * 10;
+            speed = 20 + Math.random() * 40;
+        } else if (sizeCategory < 0.6) {
+            // Medium asteroids (20-30px) - medium speed
+            size = 20 + Math.random() * 10;
+            speed = 40 + Math.random() * 60;
+        } else {
+            // Small asteroids (10-20px) - fast
+            size = 10 + Math.random() * 10;
+            speed = 60 + Math.random() * 80;
+        }
+
+        // Position - either random or near a base position (for splitting)
+        let x, y;
+        if (basePosition) {
+            // Spawn near the base position (for asteroid splitting)
+            x = basePosition.x + (Math.random() - 0.5) * 100;
+            y = basePosition.y + (Math.random() - 0.5) * 100;
+        } else {
+            // Spawn away from ship (at center)
+            do {
+                x = Math.random() * this.canvas.width;
+                y = Math.random() * this.canvas.height;
+            } while (Math.abs(x - 400) < 150 && Math.abs(y - 300) < 150); // Avoid center area
+        }
+
+        // Random velocity direction
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = Vector2.fromAngle(angle, speed);
+
+        this.entityManager.addEntity({
+            position: new Vector2(x, y),
+            velocity: velocity,
+            size: new Vector2(size, size),
+            rotation: Math.random() * Math.PI * 2,
+            color: "#ffffff",
+            type: "asteroid",
+            age: 0,
+        });
+    }
+
+    /**
+     * Get ship spawn position based on current canvas size
+     */
+    private getShipSpawnPosition(): Vector2 {
+        return new Vector2(
+            this.canvas.width * SHIP.SPAWN_X_RATIO,
+            this.canvas.height * SHIP.SPAWN_Y_RATIO
+        );
+    }
+
+    /**
+     * Handle canvas resize events
+     */
+    private handleCanvasResize(): void {
+        // Game objects will automatically adapt to new canvas dimensions
+        // through the existing screen wrapping logic in EntityManager
+    }
+
+    /**
+     * Set geometry mode for the canvas
+     */
+    setGeometry(
+        mode: string,
+        options?: {
+            aspectRatio?: number;
+            customWidth?: number;
+            customHeight?: number;
+        }
+    ): void {
+        this.canvasManager.setGeometry({
+            mode: mode as GeometryMode,
+            aspectRatio: options?.aspectRatio,
+            customWidth: options?.customWidth,
+            customHeight: options?.customHeight,
+        });
+    }
+
+    /**
+     * Set debug next gift type
+     */
+    setDebugNextGift(giftType: GiftType | null): void {
+        this.gameState.setDebugNextGift(giftType);
+    }
+
+    /**
+     * Get current debug next gift type
+     */
+    getDebugNextGift(): GiftType | null {
+        return this.gameState.debugNextGift;
+    }
+
+    /**
+     * Start the game
+     */
+    start(): void {
+        this.running = true;
+
+        // Play game start fanfare
+        this.audio.playGameStart().catch(() => {
+            // Ignore audio errors
+        });
+
+        this.gameLoop();
+    }
+
+    /**
+     * Stop the game
+     */
+    stop(): void {
+        this.running = false;
+    }
+
+    /**
+     * Main game loop - orchestrates all systems
+     */
+    private gameLoop = (): void => {
+        if (!this.running) return;
+
+        const currentTime = performance.now();
+        const deltaTime = (currentTime - this.lastTime) / 1000;
+        this.lastTime = currentTime;
+
+        this.update(deltaTime, currentTime);
+        this.render();
+
+        requestAnimationFrame(this.gameLoop);
+    };
+
+    /**
+     * Update all game systems
+     */
+    private update(deltaTime: number, currentTime: number): void {
+        // Process input first
+        this.inputHandler.processInput(
+            currentTime,
+            () => this.showGameOver(),
+            () => this.restart()
+        );
+
+        // Update level completion animation
+        this.levelCompleteAnimation.update(currentTime);
+
+        // Check if animation completed and advance to next level
+        if (!this.levelCompleteAnimation.active && this.levelAnimationStarted) {
+            this.advanceToNextLevel();
+            this.levelAnimationStarted = false;
+        }
+
+        // Skip updates if game is over, paused, or level animation is playing
+        if (
+            this.gameState.gameOver ||
+            this.inputHandler.isPausedState() ||
+            this.levelCompleteAnimation.active
+        ) {
+            return;
+        }
+
+        // Update all systems
+        this.entityManager.updateEntities(deltaTime, currentTime);
+        this.weaponSystem.updateMissilePhysics(deltaTime);
+        this.giftSystem.update(currentTime);
+        this.particles.update(deltaTime);
+
+        // Update ship trail
+        const ship = this.entityManager.getShip();
+        if (ship) {
+            this.updateShipTrail(ship, currentTime);
+        }
+
+        // Check collisions
+        this.collisionSystem.checkAllCollisions();
+
+        // Remove expired entities
+        this.entityManager.filterExpiredEntities(currentTime);
+
+        // Check for level completion
+        this.checkLevelCompletion();
+    }
+
+    /**
+     * Check if level is complete and trigger next level
+     */
+    private checkLevelCompletion(): void {
+        const remainingAsteroids = this.entityManager.getAsteroids();
+        if (remainingAsteroids.length === 0) {
+            this.nextLevel();
+        }
+    }
+
+    /**
+     * Start next level sequence
+     */
+    private nextLevel(): void {
+        // Calculate level completion time
+        const completionTime = (performance.now() - this.levelStartTime) / 1000;
+
+        // Start level completion animation
+        this.levelCompleteAnimation.start(this.gameState.level, completionTime);
+        this.levelAnimationStarted = true;
+    }
+
+    /**
+     * Advance to the next level
+     */
+    private advanceToNextLevel(): void {
+        // Clean up all objects except the ship before starting new level
+        this.entityManager.clearAllExceptShips();
+
+        // Advance to next level
+        this.gameState.nextLevel();
+
+        // Spawn more asteroids based on level (3 + level number)
+        const asteroidCount = 3 + this.gameState.level;
+        for (let i = 0; i < asteroidCount; i++) {
+            this.createAsteroid();
+        }
+
+        // Start timing the new level
+        this.levelStartTime = performance.now();
+    }
+
+    /**
+     * Show game over screen
+     */
+    private showGameOver(): void {
+        // Play sad trombone sound (only once)
+        if (!this.gameOverSoundPlayed) {
+            this.audio.playGameOver().catch(() => {
+                // Ignore audio errors
+            });
+            this.gameOverSoundPlayed = true;
+        }
+    }
+
+    /**
+     * Restart the game
+     */
+    restart(): void {
+        // Reset all systems
+        this.gameState.reset();
+        this.entityManager.clearAllEntities();
+        this.weaponSystem.reset();
+        this.giftSystem.reset();
+        this.inputHandler.reset();
+
+        // Reset game state
+        this.levelAnimationStarted = false;
+        this.gameOverSoundPlayed = false;
+
+        // Reinitialize level
+        this.initializeLevel();
+
+        // Play game start fanfare
+        this.audio.playGameStart().catch(() => {
+            // Ignore audio errors
+        });
+    }
+
+    /**
+     * Update ship trail effect
+     */
+    private updateShipTrail(ship: Ship, currentTime: number): void {
+        // Initialize trail if it doesn't exist
+        if (!ship.trail) {
+            ship.trail = [];
+        }
+
+        // Trail configuration
+        const TRAIL_MAX_POINTS = 8;
+        const TRAIL_POINT_INTERVAL = 150; // milliseconds
+        const TRAIL_DECAY_TIME = 2500; // milliseconds
+        const MIN_MOVEMENT_THRESHOLD = 5; // pixels
+
+        // Add new trail point if conditions are met
+        const lastTrailPoint = ship.trail[ship.trail.length - 1];
+        const shouldAddPoint =
+            !lastTrailPoint ||
+            (currentTime - lastTrailPoint.timestamp >= TRAIL_POINT_INTERVAL &&
+                ship.position.subtract(lastTrailPoint.position).magnitude() >=
+                    MIN_MOVEMENT_THRESHOLD);
+
+        if (shouldAddPoint) {
+            const baseSize = 1.8;
+            const sizeVariation = 0.5 + Math.random() * 1.0;
+            const hueVariation = 25 + Math.random() * 20;
+            const opacityVariation = (0.7 + Math.random() * 0.3) * 0.6;
+
+            ship.trail.push({
+                position: ship.position,
+                timestamp: currentTime,
+                opacity: opacityVariation,
+                size: baseSize * sizeVariation,
+                hue: hueVariation,
+                baseOpacity: opacityVariation,
+            });
+
+            // Limit trail length
+            if (ship.trail.length > TRAIL_MAX_POINTS) {
+                ship.trail.shift();
+            }
+        }
+
+        // Update opacity of existing trail points
+        ship.trail = ship.trail.filter((point) => {
+            const age = currentTime - point.timestamp;
+            const ageFactor = Math.max(0, 1 - age / TRAIL_DECAY_TIME);
+            point.opacity = point.baseOpacity * ageFactor;
+            return point.opacity > 0.01;
+        });
+    }
+
+    /**
+     * Render the game
+     */
+    private render(): void {
+        // Clear canvas
+        this.ctx.fillStyle = "#000000";
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Draw all entities
+        this.renderEntities();
+
+        // Draw particles
+        this.particles.render(this.ctx);
+
+        // Draw UI elements
+        this.renderUI();
+
+        // Draw overlays
+        this.renderOverlays();
+    }
+
+    /**
+     * Render all game entities
+     */
+    private renderEntities(): void {
+        const entities = this.entityManager.getAllEntities();
+        entities.forEach((entity) => {
+            this.drawEntityWithWrapAround(entity);
+        });
+    }
+
+    /**
+     * Draw entity with screen wrapping
+     */
+    private drawEntityWithWrapAround(entity: GameEntity): void {
+        // Get entity radius for wrap-around detection
+        const radius =
+            entity.type === "bullet"
+                ? 5
+                : Math.max(entity.size.x, entity.size.y) / 2;
+
+        // Calculate all positions where entity should be drawn
+        const positions: Vector2[] = [entity.position];
+
+        // Check if entity is near edges and add wrap-around positions
+        if (entity.position.x - radius < 0) {
+            positions.push(
+                new Vector2(
+                    entity.position.x + this.canvas.width,
+                    entity.position.y
+                )
+            );
+        }
+        if (entity.position.x + radius > this.canvas.width) {
+            positions.push(
+                new Vector2(
+                    entity.position.x - this.canvas.width,
+                    entity.position.y
+                )
+            );
+        }
+        if (entity.position.y - radius < 0) {
+            positions.push(
+                new Vector2(
+                    entity.position.x,
+                    entity.position.y + this.canvas.height
+                )
+            );
+        }
+        if (entity.position.y + radius > this.canvas.height) {
+            positions.push(
+                new Vector2(
+                    entity.position.x,
+                    entity.position.y - this.canvas.height
+                )
+            );
+        }
+
+        // Handle corner cases
+        if (positions.length > 2) {
+            // Add diagonal wrap-around positions for corners
+            if (
+                entity.position.x - radius < 0 &&
+                entity.position.y - radius < 0
+            ) {
+                positions.push(
+                    new Vector2(
+                        entity.position.x + this.canvas.width,
+                        entity.position.y + this.canvas.height
+                    )
+                );
+            }
+            if (
+                entity.position.x + radius > this.canvas.width &&
+                entity.position.y - radius < 0
+            ) {
+                positions.push(
+                    new Vector2(
+                        entity.position.x - this.canvas.width,
+                        entity.position.y + this.canvas.height
+                    )
+                );
+            }
+            if (
+                entity.position.x - radius < 0 &&
+                entity.position.y + radius > this.canvas.height
+            ) {
+                positions.push(
+                    new Vector2(
+                        entity.position.x + this.canvas.width,
+                        entity.position.y - this.canvas.height
+                    )
+                );
+            }
+            if (
+                entity.position.x + radius > this.canvas.width &&
+                entity.position.y + radius > this.canvas.height
+            ) {
+                positions.push(
+                    new Vector2(
+                        entity.position.x - this.canvas.width,
+                        entity.position.y - this.canvas.height
+                    )
+                );
+            }
+        }
+
+        // Draw entity at all calculated positions
+        positions.forEach((pos) => {
+            this.drawEntityAtPosition(entity, pos);
+        });
+    }
+
+    /**
+     * Draw entity at specific position (placeholder for Shapes integration)
+     */
+    private drawEntityAtPosition(entity: GameEntity, position: Vector2): void {
+        // This would integrate with the Shapes system
+        // For now, we'll draw simple representations
+        this.ctx.save();
+        this.ctx.translate(position.x, position.y);
+        this.ctx.rotate(entity.rotation);
+        this.ctx.fillStyle = entity.color;
+
+        if (entity.type === "ship") {
+            // Draw simple ship triangle
+            this.ctx.beginPath();
+            this.ctx.moveTo(10, 0);
+            this.ctx.lineTo(-5, -5);
+            this.ctx.lineTo(-5, 5);
+            this.ctx.closePath();
+            this.ctx.fill();
+        } else if (entity.type === "asteroid") {
+            // Draw simple asteroid circle
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, entity.size.x / 2, 0, Math.PI * 2);
+            this.ctx.stroke();
+        } else if (entity.type === "bullet") {
+            // Draw simple bullet
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, 2, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+        // Add other entity types as needed
+
+        this.ctx.restore();
+    }
+
+    /**
+     * Render UI elements
+     */
+    private renderUI(): void {
+        // Draw score, lives, level (placeholder)
+        this.ctx.fillStyle = "#ffffff";
+        this.ctx.font = "20px Arial";
+        this.ctx.fillText(`Score: ${this.gameState.score}`, 10, 30);
+        this.ctx.fillText(`Lives: ${this.gameState.lives}`, 10, 60);
+        this.ctx.fillText(`Level: ${this.gameState.level}`, 10, 90);
+
+        // Draw fuel gauge (simplified)
+        const fuelPercent = this.gameState.fuelPercentage;
+        this.ctx.fillStyle = fuelPercent > 20 ? "#00ff00" : "#ff0000";
+        this.ctx.fillRect(this.canvas.width / 2 - 50, 10, fuelPercent, 10);
+        this.ctx.strokeStyle = "#ffffff";
+        this.ctx.strokeRect(this.canvas.width / 2 - 50, 10, 100, 10);
+    }
+
+    /**
+     * Render overlays (game over, menu, etc.)
+     */
+    private renderOverlays(): void {
+        // Draw game over screen if needed
+        if (this.gameState.gameOver) {
+            this.ctx.save();
+            this.ctx.textAlign = "center";
+            this.ctx.fillStyle = "#ff0000";
+            this.ctx.font = "48px Arial";
+            this.ctx.fillText(
+                "GAME OVER",
+                this.canvas.width / 2,
+                this.canvas.height / 2
+            );
+            this.ctx.fillStyle = "#ffff88";
+            this.ctx.font = "24px Arial";
+            this.ctx.fillText(
+                "Press R to Restart",
+                this.canvas.width / 2,
+                this.canvas.height / 2 + 60
+            );
+            this.ctx.restore();
+        }
+
+        // Draw menu overlay if visible
+        this.menuManager.render();
+
+        // Draw level completion animation if active
+        this.levelCompleteAnimation.render();
+    }
+}

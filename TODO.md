@@ -21,9 +21,11 @@
 ### 🔧 Technical Improvements
 
 - [ ] Game.ts is still gigantic, even after the refactor (See section on that
-      below). Perhaps the parts that were extracted left dead code behind?
-- [ ] We have Game.ts, Game.refactored.ts, and Game.backup.ts - something must
-      be wrong here.
+      below). Perhaps the parts that were extracted left dead code behind? The
+      git hash 2dc32520778ee981f52e53b2df07890fcfd58c0d shows many new files
+      added to the repo that duplicate code that is still in Game.ts. The
+      refactored code from that commit should stay, the duplicated code in
+      Game.ts should be removed.
 
 #### Physics Testing Foundation (for future gravity system)
 
