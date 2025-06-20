@@ -209,6 +209,11 @@ export class CollisionSystem {
                 const dy = gift.position.y - warpOut.position.y;
                 const distanceToCenter = Math.sqrt(dx * dx + dy * dy);
                 if (distanceToCenter <= 10 && !warpOut.warpDisappearing) {
+                    // Stop the wubwub ambient sound if it's playing
+                    if (isGift(gift) && gift.wubwubAudioControl) {
+                        gift.wubwubAudioControl.stop();
+                    }
+
                     // Remove the gift (it gets captured by the closing warp)
                     this.entityManager.removeEntity(gift);
 
