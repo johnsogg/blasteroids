@@ -65,6 +65,7 @@ export const SHIP = {
     // Dimensions
     WIDTH: 20,
     HEIGHT: 10,
+    SCALE: 0.5, // scale factor for size adjustments
 
     // Spawn (relative to canvas center)
     SPAWN_X_RATIO: 0.5, // 50% of canvas width (center)
@@ -115,6 +116,9 @@ export const BULLET = {
 // ASTEROIDS
 // =============================================================================
 export const ASTEROID = {
+    // Scaling
+    SCALE: 3.0, // scale factor for size adjustments
+
     // Size categories
     LARGE_MIN_SIZE: 30,
     LARGE_MAX_SIZE: 40,

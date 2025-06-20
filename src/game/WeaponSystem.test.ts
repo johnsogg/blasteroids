@@ -500,7 +500,7 @@ describe("WeaponSystem", () => {
                 size: new Vector2(20, 20),
                 rotation: 0,
                 color: "#ffffff",
-                type: "asteroid",
+                type: "asteroid" as const,
             };
             entityManager.addEntity(asteroid);
 
@@ -535,7 +535,7 @@ describe("WeaponSystem", () => {
                 size: new Vector2(5, 5),
                 rotation: 0,
                 color: "#ff0000",
-                type: "missile",
+                type: "missile" as const,
                 age: 0,
             };
             entityManager.addEntity(missile);

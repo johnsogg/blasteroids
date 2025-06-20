@@ -4,6 +4,7 @@ import { AudioManager } from "~/audio/AudioManager";
 import { GameState } from "./GameState";
 import { EntityManager } from "./EntityManager";
 import { GIFT, type GiftType } from "~/config/constants";
+import type { UpgradeType } from "~/entities/Weapons";
 
 /**
  * Manages the gift spawning system including warp bubbles and gift lifecycle
@@ -16,7 +17,7 @@ export class GiftSystem {
 
     // Gift spawning state
     private lastGiftSpawnTime = 0;
-    private giftSpawnInterval = GIFT.SPAWN_INTERVAL;
+    private giftSpawnInterval: number = GIFT.SPAWN_INTERVAL;
 
     constructor(
         audio: AudioManager,
@@ -449,7 +450,7 @@ export class GiftSystem {
     /**
      * Get upgrade types for a specific weapon
      */
-    private getUpgradeTypesForWeapon(weapon: string): string[] {
+    private getUpgradeTypesForWeapon(weapon: string): UpgradeType[] {
         switch (weapon) {
             case "bullets":
                 return ["upgrade_bullets_fire_rate", "upgrade_bullets_size"];

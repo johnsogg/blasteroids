@@ -1,20 +1,58 @@
 import { Vector2 } from "~/utils/Vector2";
+import { ScaleManager } from "~/utils/ScaleManager";
 import { TrailPoint } from "~/entities/Ship";
 
+// Base ship coordinates (reference dimensions)
+const SHIP_BASE_COORDS = {
+    // Ship is a triangle pointing forward (right in 0-degree rotation)
+    NOSE: new Vector2(10, 0),
+    BACK_LEFT: new Vector2(-8, -6),
+    BACK_CENTER: new Vector2(-5, 0),
+    BACK_RIGHT: new Vector2(-8, 6),
+
+    // Thrust flame positions and sizes
+    THRUST_BASE_X: -8,
+    THRUST_BASE_LEFT_Y: -3,
+    THRUST_BASE_RIGHT_Y: 3,
+    THRUST_MIN_LENGTH: 8,
+    THRUST_MAX_LENGTH: 14,
+
+    // Strafe thrust positions
+    STRAFE_BASE_X: -3,
+    STRAFE_LEFT_Y: 8, // Right side of ship (for leftward movement)
+    STRAFE_RIGHT_Y: -8, // Left side of ship (for rightward movement)
+    STRAFE_MIN_LENGTH: 4,
+    STRAFE_MAX_LENGTH: 7,
+};
+
 export class Shapes {
-    static drawShip(
-        ctx: CanvasRenderingContext2D,
-        position: Vector2,
-        rotation: number,
-        color: string,
-        invulnerable?: boolean,
-        invulnerableTime?: number,
-        showThrust?: boolean,
-        scale: number = 1.0,
-        strafingLeft?: boolean,
-        strafingRight?: boolean,
-        trail?: TrailPoint[]
-    ): void {
+    static drawShip({
+        ctx,
+        position,
+        rotation,
+        color,
+        invulnerable = false,
+        invulnerableTime = 0,
+        showThrust = false,
+        scale = 1.0,
+        strafingLeft = false,
+        strafingRight = false,
+        trail,
+        scaleManager,
+    }: {
+        ctx: CanvasRenderingContext2D;
+        position: Vector2;
+        rotation: number;
+        color: string;
+        invulnerable?: boolean;
+        invulnerableTime?: number;
+        showThrust?: boolean;
+        scale?: number;
+        strafingLeft?: boolean;
+        strafingRight?: boolean;
+        trail?: TrailPoint[];
+        scaleManager?: ScaleManager;
+    }): void {
         // Draw trail first (behind ship)
         if (trail && trail.length > 1) {
             this.drawShipTrail(ctx, trail, color);
@@ -29,20 +67,37 @@ export class Shapes {
             return;
         }
 
+        // Get scaling factor
+        const displayScale = scaleManager ? scaleManager.getScale() : 1.0;
+        const combinedScale = scale * displayScale;
+
         ctx.save();
         ctx.translate(position.x, position.y);
         ctx.rotate(rotation);
-        ctx.scale(scale, scale);
+        ctx.scale(combinedScale, combinedScale);
 
         ctx.strokeStyle = invulnerable ? "#ffff00" : color; // Yellow when invulnerable
-        ctx.lineWidth = 2;
+        ctx.lineWidth = scaleManager ? scaleManager.scaleValue(2) : 2;
         ctx.beginPath();
 
-        // Ship is a triangle pointing forward
-        ctx.moveTo(10, 0); // nose
-        ctx.lineTo(-8, -6); // back left
-        ctx.lineTo(-5, 0); // back center
-        ctx.lineTo(-8, 6); // back right
+        // Ship is a triangle pointing forward - use scaled coordinates
+        const nose = scaleManager
+            ? scaleManager.scaleVector(SHIP_BASE_COORDS.NOSE)
+            : SHIP_BASE_COORDS.NOSE;
+        const backLeft = scaleManager
+            ? scaleManager.scaleVector(SHIP_BASE_COORDS.BACK_LEFT)
+            : SHIP_BASE_COORDS.BACK_LEFT;
+        const backCenter = scaleManager
+            ? scaleManager.scaleVector(SHIP_BASE_COORDS.BACK_CENTER)
+            : SHIP_BASE_COORDS.BACK_CENTER;
+        const backRight = scaleManager
+            ? scaleManager.scaleVector(SHIP_BASE_COORDS.BACK_RIGHT)
+            : SHIP_BASE_COORDS.BACK_RIGHT;
+
+        ctx.moveTo(nose.x, nose.y);
+        ctx.lineTo(backLeft.x, backLeft.y);
+        ctx.lineTo(backCenter.x, backCenter.y);
+        ctx.lineTo(backRight.x, backRight.y);
         ctx.closePath();
 
         ctx.stroke();
@@ -50,14 +105,32 @@ export class Shapes {
         // Draw main thrust flames if thrusting
         if (showThrust) {
             ctx.strokeStyle = "#ff6600"; // Orange flames
-            ctx.lineWidth = 2;
+            ctx.lineWidth = scaleManager ? scaleManager.scaleValue(2) : 2;
             ctx.beginPath();
 
             // Main thrust flames - random length for flicker effect
-            const flameLength = 8 + Math.random() * 6;
-            ctx.moveTo(-8, -3);
-            ctx.lineTo(-8 - flameLength, 0);
-            ctx.lineTo(-8, 3);
+            const baseFlameLength =
+                SHIP_BASE_COORDS.THRUST_MIN_LENGTH +
+                Math.random() *
+                    (SHIP_BASE_COORDS.THRUST_MAX_LENGTH -
+                        SHIP_BASE_COORDS.THRUST_MIN_LENGTH);
+            const flameLength = scaleManager
+                ? scaleManager.scaleValue(baseFlameLength)
+                : baseFlameLength;
+
+            const thrustBaseX = scaleManager
+                ? scaleManager.scaleValue(SHIP_BASE_COORDS.THRUST_BASE_X)
+                : SHIP_BASE_COORDS.THRUST_BASE_X;
+            const thrustLeftY = scaleManager
+                ? scaleManager.scaleValue(SHIP_BASE_COORDS.THRUST_BASE_LEFT_Y)
+                : SHIP_BASE_COORDS.THRUST_BASE_LEFT_Y;
+            const thrustRightY = scaleManager
+                ? scaleManager.scaleValue(SHIP_BASE_COORDS.THRUST_BASE_RIGHT_Y)
+                : SHIP_BASE_COORDS.THRUST_BASE_RIGHT_Y;
+
+            ctx.moveTo(thrustBaseX, thrustLeftY);
+            ctx.lineTo(thrustBaseX - flameLength, 0);
+            ctx.lineTo(thrustBaseX, thrustRightY);
 
             ctx.stroke();
         }
@@ -65,15 +138,33 @@ export class Shapes {
         // Draw Q key strafe flames (ship moves LEFT, so flames point RIGHT)
         if (strafingLeft) {
             ctx.strokeStyle = "#ff6600"; // Orange flames
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = scaleManager ? scaleManager.scaleValue(1.5) : 1.5;
             ctx.beginPath();
 
             // Q key: Ship moves LEFT, so starboard thruster fires RIGHT-ward flames (aft)
-            const strafeFlameLength = 4 + Math.random() * 3;
-            ctx.moveTo(-3, 8); // Right side of ship
-            ctx.lineTo(-3 - strafeFlameLength, 8 + strafeFlameLength);
-            ctx.moveTo(-3, 8);
-            ctx.lineTo(-3 - strafeFlameLength * 0.8, 8);
+            const baseStrafeLength =
+                SHIP_BASE_COORDS.STRAFE_MIN_LENGTH +
+                Math.random() *
+                    (SHIP_BASE_COORDS.STRAFE_MAX_LENGTH -
+                        SHIP_BASE_COORDS.STRAFE_MIN_LENGTH);
+            const strafeFlameLength = scaleManager
+                ? scaleManager.scaleValue(baseStrafeLength)
+                : baseStrafeLength;
+
+            const strafeBaseX = scaleManager
+                ? scaleManager.scaleValue(SHIP_BASE_COORDS.STRAFE_BASE_X)
+                : SHIP_BASE_COORDS.STRAFE_BASE_X;
+            const strafeLeftY = scaleManager
+                ? scaleManager.scaleValue(SHIP_BASE_COORDS.STRAFE_LEFT_Y)
+                : SHIP_BASE_COORDS.STRAFE_LEFT_Y;
+
+            ctx.moveTo(strafeBaseX, strafeLeftY); // Right side of ship
+            ctx.lineTo(
+                strafeBaseX - strafeFlameLength,
+                strafeLeftY + strafeFlameLength
+            );
+            ctx.moveTo(strafeBaseX, strafeLeftY);
+            ctx.lineTo(strafeBaseX - strafeFlameLength * 0.8, strafeLeftY);
 
             ctx.stroke();
         }
@@ -81,15 +172,33 @@ export class Shapes {
         // Draw E key strafe flames (ship moves RIGHT, so flames point LEFT)
         if (strafingRight) {
             ctx.strokeStyle = "#ff6600"; // Orange flames
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = scaleManager ? scaleManager.scaleValue(1.5) : 1.5;
             ctx.beginPath();
 
             // E key: Ship moves RIGHT, so port thruster fires LEFT-ward flames
-            const strafeFlameLength = 4 + Math.random() * 3;
-            ctx.moveTo(-3, -8); // Left side of ship
-            ctx.lineTo(-3 - strafeFlameLength, -8 - strafeFlameLength);
-            ctx.moveTo(-3, -8);
-            ctx.lineTo(-3 - strafeFlameLength * 0.8, -8);
+            const baseStrafeLength =
+                SHIP_BASE_COORDS.STRAFE_MIN_LENGTH +
+                Math.random() *
+                    (SHIP_BASE_COORDS.STRAFE_MAX_LENGTH -
+                        SHIP_BASE_COORDS.STRAFE_MIN_LENGTH);
+            const strafeFlameLength = scaleManager
+                ? scaleManager.scaleValue(baseStrafeLength)
+                : baseStrafeLength;
+
+            const strafeBaseX = scaleManager
+                ? scaleManager.scaleValue(SHIP_BASE_COORDS.STRAFE_BASE_X)
+                : SHIP_BASE_COORDS.STRAFE_BASE_X;
+            const strafeRightY = scaleManager
+                ? scaleManager.scaleValue(SHIP_BASE_COORDS.STRAFE_RIGHT_Y)
+                : SHIP_BASE_COORDS.STRAFE_RIGHT_Y;
+
+            ctx.moveTo(strafeBaseX, strafeRightY); // Left side of ship
+            ctx.lineTo(
+                strafeBaseX - strafeFlameLength,
+                strafeRightY - strafeFlameLength
+            );
+            ctx.moveTo(strafeBaseX, strafeRightY);
+            ctx.lineTo(strafeBaseX - strafeFlameLength * 0.8, strafeRightY);
 
             ctx.stroke();
         }
@@ -97,19 +206,34 @@ export class Shapes {
         ctx.restore();
     }
 
-    static drawAsteroid(
-        ctx: CanvasRenderingContext2D,
-        position: Vector2,
-        rotation: number,
-        size: Vector2,
-        color: string
-    ): void {
+    static drawAsteroid({
+        ctx,
+        position,
+        rotation,
+        size,
+        color,
+        scale = 1.0,
+        scaleManager,
+    }: {
+        ctx: CanvasRenderingContext2D;
+        position: Vector2;
+        rotation: number;
+        size: Vector2;
+        color: string;
+        scale?: number;
+        scaleManager?: ScaleManager;
+    }): void {
+        // Get scaling factor
+        const displayScale = scaleManager ? scaleManager.getScale() : 1.0;
+        const combinedScale = scale * displayScale;
+
         ctx.save();
         ctx.translate(position.x, position.y);
         ctx.rotate(rotation);
+        ctx.scale(combinedScale, combinedScale);
 
         ctx.strokeStyle = color;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = scaleManager ? scaleManager.scaleValue(1.5) : 1.5;
         ctx.beginPath();
 
         // Create irregular asteroid shape
@@ -385,16 +509,16 @@ export class Shapes {
                     // Draw heart shape or ship icon
                     ctx.strokeStyle = "#ff00ff";
                     ctx.lineWidth = 2;
-                    this.drawShip(
+                    this.drawShip({
                         ctx,
-                        new Vector2(0, 0),
-                        0,
-                        "#ff00ff",
-                        false,
-                        0,
-                        false,
-                        0.6
-                    );
+                        position: new Vector2(0, 0),
+                        rotation: 0,
+                        color: "#ff00ff",
+                        invulnerable: false,
+                        invulnerableTime: 0,
+                        showThrust: false,
+                        scale: 0.6,
+                    });
                     break;
 
                 case "weapon_bullets":

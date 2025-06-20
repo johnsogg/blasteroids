@@ -265,16 +265,16 @@ export class GameState {
             const color = i < this._lives ? "#00ff00" : "#888888";
 
             // Draw ship icon at 50% size facing up-right
-            Shapes.drawShip(
+            Shapes.drawShip({
                 ctx,
                 position,
                 rotation,
                 color,
-                false,
-                0,
-                false,
-                UI.LIVES_ICON_SIZE
-            );
+                invulnerable: false,
+                invulnerableTime: 0,
+                showThrust: false,
+                scale: UI.LIVES_ICON_SIZE,
+            });
         }
     }
 

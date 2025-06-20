@@ -6,7 +6,7 @@ import { WeaponSystem } from "./WeaponSystem";
 import { MenuManager } from "~/menu/MenuManager";
 import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
 import { Vector2 } from "~/utils/Vector2";
-import { SHIP, FUEL } from "~/config/constants";
+import { FUEL } from "~/config/constants";
 
 /**
  * Handles context-based input processing for the game
@@ -17,7 +17,6 @@ export class InputHandler {
     private weaponSystem: WeaponSystem;
     private menuManager: MenuManager;
     private levelCompleteAnimation: LevelCompleteAnimation;
-    private canvas: HTMLCanvasElement;
 
     // Input state
     private isPaused = false;
@@ -27,15 +26,13 @@ export class InputHandler {
         gameState: GameState,
         weaponSystem: WeaponSystem,
         menuManager: MenuManager,
-        levelCompleteAnimation: LevelCompleteAnimation,
-        canvas: HTMLCanvasElement
+        levelCompleteAnimation: LevelCompleteAnimation
     ) {
         this.input = input;
         this.gameState = gameState;
         this.weaponSystem = weaponSystem;
         this.menuManager = menuManager;
         this.levelCompleteAnimation = levelCompleteAnimation;
-        this.canvas = canvas;
     }
 
     /**
@@ -80,7 +77,7 @@ export class InputHandler {
      */
     private handleContextInput(
         currentTime: number,
-        gameOverCallback: () => void,
+        _gameOverCallback: () => void,
         restartCallback: () => void
     ): void {
         const context = this.input.getContext();
@@ -282,16 +279,6 @@ export class InputHandler {
         // This is a placeholder - in the full refactor, this would come from EntityManager
         // For now, return null to prevent errors
         return null;
-    }
-
-    /**
-     * Get ship spawn position based on current canvas size
-     */
-    private getShipSpawnPosition(): Vector2 {
-        return new Vector2(
-            this.canvas.width * SHIP.SPAWN_X_RATIO,
-            this.canvas.height * SHIP.SPAWN_Y_RATIO
-        );
     }
 
     /**

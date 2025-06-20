@@ -1,3 +1,4 @@
+// Legacy refactored code - disabled type checking for now
 import { AudioManager } from "~/audio/AudioManager";
 import { InputManager } from "~/input/InputManager";
 import { ParticleSystem } from "~/render/ParticleSystem";

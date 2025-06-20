@@ -47,8 +47,7 @@ describe("InputHandler", () => {
             gameState,
             weaponSystem,
             menuManager,
-            levelCompleteAnimation,
-            mockCanvas
+            levelCompleteAnimation
         );
 
         // Initialize game state

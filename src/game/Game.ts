@@ -5,6 +5,7 @@ import { Collision } from "~/physics/Collision";
 import { ParticleSystem } from "~/render/ParticleSystem";
 import { Shapes } from "~/render/Shapes";
 import { Vector2 } from "~/utils/Vector2";
+import { ScaleManager } from "~/utils/ScaleManager";
 import type { GameEntity, Ship } from "~/entities";
 import { isShip } from "~/entities";
 import {
@@ -38,6 +39,7 @@ export class Game {
     private canvasManager: CanvasManager;
     private menuManager: MenuManager;
     private levelCompleteAnimation: LevelCompleteAnimation;
+    private scaleManager: ScaleManager;
     private levelAnimationStarted = false;
     private levelStartTime = 0;
     private lastTime = 0;
@@ -69,6 +71,7 @@ export class Game {
             ctx,
             this.gameState
         );
+        this.scaleManager = new ScaleManager(canvas.width, canvas.height);
 
         // Listen for canvas resize events
         this.canvasManager.onResize(() => this.handleCanvasResize());
@@ -124,6 +127,12 @@ export class Game {
      * Handle canvas resize events
      */
     private handleCanvasResize(): void {
+        // Update the scale manager with the new canvas dimensions
+        this.scaleManager.updateCanvasSize(
+            this.canvas.width,
+            this.canvas.height
+        );
+
         // Note: Game objects will automatically adapt to new canvas dimensions
         // through the existing screen wrapping logic
         // Canvas dimensions updated automatically
@@ -350,8 +359,13 @@ export class Game {
                                     2
                                 )
                         );
+                        const asteroidRadius =
+                            this.getAsteroidCollisionRadius(asteroid);
 
-                        if (distance <= WEAPONS.MISSILES.EXPLOSION_RADIUS) {
+                        if (
+                            distance <=
+                            WEAPONS.MISSILES.EXPLOSION_RADIUS + asteroidRadius
+                        ) {
                             // Get ship position for repulsor effect
                             const shipEntity = this.gameObjects.find(
                                 (obj) => obj.type === "ship"
@@ -421,6 +435,50 @@ export class Game {
         }
     }
 
+    /**
+     * Check collision between ship and another object, accounting for ship scaling
+     */
+    private checkShipCollision(ship: Ship, other: GameEntity): boolean {
+        // Create a scaled version of the ship for collision detection
+        const scaledShip = {
+            position: ship.position,
+            size: new Vector2(
+                ship.size.x * SHIP.SCALE,
+                ship.size.y * SHIP.SCALE
+            ),
+        };
+
+        return Collision.checkCircleCollision(scaledShip, other);
+    }
+
+    /**
+     * Check collision between an asteroid and another object, accounting for asteroid scaling
+     */
+    private checkAsteroidCollision(
+        asteroid: GameEntity,
+        other: GameEntity
+    ): boolean {
+        // Create a scaled version of the asteroid for collision detection
+        const scaledAsteroid = {
+            position: asteroid.position,
+            size: new Vector2(
+                asteroid.size.x * ASTEROID.SCALE,
+                asteroid.size.y * ASTEROID.SCALE
+            ),
+        };
+
+        return Collision.checkCircleCollision(scaledAsteroid, other);
+    }
+
+    /**
+     * Get the scaled collision radius for an asteroid
+     */
+    private getAsteroidCollisionRadius(asteroid: GameEntity): number {
+        return (
+            (Math.max(asteroid.size.x, asteroid.size.y) / 2) * ASTEROID.SCALE
+        );
+    }
+
     private checkCollisions(): void {
         const bullets = this.gameObjects.filter((obj) => obj.type === "bullet");
         const missiles = this.gameObjects.filter(
@@ -439,7 +497,7 @@ export class Game {
         // Check bullet-asteroid collisions
         for (const bullet of bullets) {
             for (const asteroid of asteroids) {
-                if (Collision.checkCircleCollision(bullet, asteroid)) {
+                if (this.checkAsteroidCollision(asteroid, bullet)) {
                     // Mark for removal by setting age very high
                     bullet.age = 999;
 
@@ -457,9 +515,14 @@ export class Game {
                     Math.pow(missile.position.x - asteroid.position.x, 2) +
                         Math.pow(missile.position.y - asteroid.position.y, 2)
                 );
+                const asteroidRadius =
+                    this.getAsteroidCollisionRadius(asteroid);
 
-                // Missiles explode when within explosion radius
-                if (distance <= WEAPONS.MISSILES.EXPLOSION_RADIUS) {
+                // Missiles explode when within explosion radius + asteroid collision radius
+                if (
+                    distance <=
+                    WEAPONS.MISSILES.EXPLOSION_RADIUS + asteroidRadius
+                ) {
                     // Mark missile for removal
                     missile.age = 999;
 
@@ -479,10 +542,13 @@ export class Game {
                                     2
                                 )
                         );
+                        const explosionTargetRadius =
+                            this.getAsteroidCollisionRadius(explosionTarget);
 
                         if (
                             explosionDistance <=
-                            WEAPONS.MISSILES.EXPLOSION_RADIUS
+                            WEAPONS.MISSILES.EXPLOSION_RADIUS +
+                                explosionTargetRadius
                         ) {
                             // Get ship position for repulsor effect
                             const shipEntity = this.gameObjects.find(
@@ -516,7 +582,7 @@ export class Game {
         // Check ship-asteroid collisions (only if ship is not invulnerable)
         if (ship && !ship.invulnerable) {
             for (const asteroid of asteroids) {
-                if (Collision.checkCircleCollision(ship, asteroid)) {
+                if (this.checkShipCollision(ship, asteroid)) {
                     this.destroyShip(ship);
                     break; // Only one collision per frame
                 }
@@ -526,7 +592,7 @@ export class Game {
         // Check ship-gift collisions
         if (ship) {
             for (const gift of gifts) {
-                if (Collision.checkCircleCollision(ship, gift)) {
+                if (this.checkShipCollision(ship, gift)) {
                     this.collectGift(gift);
                     break; // Only collect one gift per frame
                 }
@@ -1376,7 +1442,7 @@ export class Game {
                     laserStart,
                     laserEnd,
                     asteroid.position,
-                    asteroid.size.x / 2
+                    this.getAsteroidCollisionRadius(asteroid)
                 )
             ) {
                 // Laser hit this asteroid - mark for destruction
@@ -1507,8 +1573,14 @@ export class Game {
                 continue;
             }
 
+            let effectiveRadius = radius;
+            if (obj.type === "asteroid") {
+                // For asteroids, add their collision radius to the search radius
+                effectiveRadius += this.getAsteroidCollisionRadius(obj);
+            }
+
             const distance = sourcePosition.subtract(obj.position).magnitude();
-            if (distance <= radius && distance < nearestDistance) {
+            if (distance <= effectiveRadius && distance < nearestDistance) {
                 nearestTarget = obj;
                 nearestDistance = distance;
             }
@@ -1659,19 +1731,20 @@ export class Game {
         // Draw object at all calculated positions
         positions.forEach((pos) => {
             if (obj.type === "ship") {
-                Shapes.drawShip(
-                    this.ctx,
-                    pos,
-                    obj.rotation,
-                    obj.color,
-                    obj.invulnerable,
-                    obj.invulnerableTime,
-                    obj.thrusting,
-                    1.0,
-                    obj.strafingLeft,
-                    obj.strafingRight,
-                    obj.trail
-                );
+                Shapes.drawShip({
+                    ctx: this.ctx,
+                    position: pos,
+                    rotation: obj.rotation,
+                    color: obj.color,
+                    invulnerable: obj.invulnerable,
+                    invulnerableTime: obj.invulnerableTime,
+                    showThrust: obj.thrusting,
+                    scale: SHIP.SCALE, // Scale base coordinates to match entity size
+                    strafingLeft: obj.strafingLeft,
+                    strafingRight: obj.strafingRight,
+                    trail: obj.trail,
+                    scaleManager: this.scaleManager,
+                });
 
                 // Draw laser beam if active
                 if (obj.isLaserActive) {
@@ -1702,13 +1775,15 @@ export class Game {
                     );
                 }
             } else if (obj.type === "asteroid") {
-                Shapes.drawAsteroid(
-                    this.ctx,
-                    pos,
-                    obj.rotation,
-                    obj.size,
-                    obj.color
-                );
+                Shapes.drawAsteroid({
+                    ctx: this.ctx,
+                    position: pos,
+                    rotation: obj.rotation,
+                    size: obj.size,
+                    color: obj.color,
+                    scale: ASTEROID.SCALE,
+                    scaleManager: this.scaleManager,
+                });
             } else if (obj.type === "bullet") {
                 Shapes.drawBullet(this.ctx, pos, obj.color);
             } else if (obj.type === "missile") {

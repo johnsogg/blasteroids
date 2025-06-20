@@ -1,9 +1,9 @@
 // Test setup file for Vitest
-import { vi } from "vitest";
+import { vi, beforeEach } from "vitest";
 
 // Mock requestAnimationFrame for testing
 global.requestAnimationFrame = vi.fn((callback) => {
-    return setTimeout(callback, 16); // ~60fps
+    return setTimeout(callback, 16) as unknown as number; // ~60fps
 });
 
 global.cancelAnimationFrame = vi.fn((id) => {

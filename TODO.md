@@ -1,78 +1,22 @@
 # Blasteroids Development TODO
 
-### Misc Thinklist
-
-These are not TODOs - they are simply ideas as a foil for where the game might
-go, and what is needed to make them happen.
-
-- [ ] Would like the ability to tweak a parameter to make individual object
-      types larger or smaller
-- [ ] Would like for dimensions to be reckoned in terms of a board size (e.g.
-      "ship is 1/40th of the screen width") - this will take some thinking
-- [ ] Possibilities about additional game mechanics and systems:
-    - Level types with different rules or conditions
-    - Ship types
-    - Shields
-    - Level objectives or goals
-    - Plot or storyline (why are we out there blasting asteroids anyway?)
-    - Planet/star: gravity has an effect items with mass
-    - Asteroid types that yield items and have different hit points
-    - Multiplayer (cooperative, combative)
-
 ### 🎨 Visual & Audio Polish
-
-- [x] Implement ship trails/afterimage effect
-    - [x] Particle-based trail system with 8 trail points
-    - [x] Dim orange color variations using HSL (25-45° hue range)
-    - [x] Size variation (0.9 to 2.7 pixel radius range)
-    - [x] Opacity variation with 2.5 second fade time
-    - [x] Subtle glow effects for larger particles
-    - [x] Performance optimized with automatic cleanup
 
 ### 🎮 Gameplay Features
 
-- [x] Weapon mechanics: different weapons, each with their own upgrades
-
-    - [x] Lasers!
-        - [x] Keyboard shortcut: 3
-        - [x] Firing emits a solid beam, like a laser sword, but it is not very long
-        - [x] It drains fuel quickly (7 units/sec, reduced by 30% from original design)
-        - [x] Gift Upgrade: 50% longer range
-        - [x] Gift Upgrade: 50% more efficient fuel usage
-        - [x] Instant hit-scan beam with line-circle collision detection
-        - [x] Multi-layer visual rendering with glow effects
-        - [x] Sci-fi audio effects with frequency modulation
-        - [x] Auto-switch to newly acquired weapons
-    - [x] Lightning
-        - [x] Keyboard shortcut: 4
-        - [x] An electrical arc will zap the nearest object in a circle around the ship
-        - [x] Consumes 8 fuel per shot with 1.5 second cooldown
-        - [x] 60 pixel base radius for target finding
-        - [x] Gift Upgrade: 20% larger radius
-        - [x] Gift Upgrade: Chain lightning jumps to additional targets (max 3 total)
-        - [x] Animated jagged electrical arcs with glow effects
-        - [x] Electrical crackling sound effects with frequency modulation
-        - [x] Muffled "urk" sound when no targets in range (no fuel consumed)
-        - [x] Only consumes fuel and cooldown when valid target found
-
-- [x] **Repulsor Beam**: Asteroid fragments now fly away from ship instead of toward it
-
-    - [x] 40% bias away from ship position with 60% randomness
-    - [x] Applied to all weapon destructions (bullets, missiles, laser, lightning)
-    - [x] Prevents cheap deaths from debris created by successful attacks
-    - [x] Configurable repulsor strength in constants
-
-- [x] **Life Support Fuel System**: Running out of fuel now kills you
-
-    - [x] Continuous fuel drain: 0.1 units per second for life support
-    - [x] Fuel depletion triggers immediate death with explosion effects
-    - [x] Automatic fuel refill on respawn (if lives remaining)
-    - [x] Adds survival tension and strategic resource management
-    - [x] "Hey, life support takes fuel too, right?" gameplay mechanic
-
+- [ ] When gifts appear out of warp bubbles, their movement vector seems to be
+      away from the center of the board. Instead, they should have a completely
+      random heading.
+- [ ] If the player has all lives left, do not gift extra lives
+- [ ] When the ship stops thrusting, there seems to be friction. Changing the
+      constant for FRICTION does not seem to have any effect.
+- [ ] Add an audio effect for gifts: wubwubwubwubwubwubwub in a soft, low frequency
+- [ ] Add a timer for each level that starts at 60 seconds. Player gets N points
+      per second left when they beat the level. The timer stops at zero and
+      otherwise has no effect when it reaches zero.
 - [ ] Add extra life bonus at certain score thresholds
-- [ ] Implement UFO enemy ships (original Asteroids feature)
-- [ ] Add power-ups or weapon variants
+- [ ] Implement cooperative computer player
+- [ ] Support combat between player and computer player
 
 ### 🔧 Technical Improvements
 
@@ -86,7 +30,7 @@ go, and what is needed to make them happen.
 
 - [x] **MAJOR REFACTOR COMPLETED**: Split Game.ts into smaller collaborating systems for better maintainability and testing
 - [x] Extract EntityManager system from Game.ts (~300 lines) - entity lifecycle, filtering, queries
-- [x] Extract WeaponSystem from Game.ts (~400 lines) - weapon firing, switching, fuel management  
+- [x] Extract WeaponSystem from Game.ts (~400 lines) - weapon firing, switching, fuel management
 - [x] Extract CollisionSystem from Game.ts (~200 lines) - collision detection and response
 - [x] Extract GiftSystem from Game.ts (~300 lines) - gift spawning, warp bubbles, type selection
 - [x] Extract InputHandler from Game.ts (~200 lines) - context-based input processing
@@ -96,6 +40,16 @@ go, and what is needed to make them happen.
 - [x] Fix all linting and formatting issues for code quality compliance
 
 **Result**: Successfully transformed monolithic 2,312-line Game.ts into 6 focused, testable systems with clear separation of concerns. The codebase is now significantly more maintainable and ready for future development.
+
+#### Visual Scaling System ✅ IN PROGRESS
+
+- [x] **Ship Scaling Implemented**: Added ScaleManager system for canvas-relative scaling
+- [x] **Ship Visual & Collision**: Ship renders at 3x scale with properly scaled collision detection
+- [x] **Asteroid Scaling Implemented**: Asteroids render at 3x scale with scaled collision detection
+- [x] **Object Parameter Refactoring**: Converted Shapes.drawShip and drawAsteroid to use destructured object parameters for better readability
+- [ ] **Remaining Elements**: Refactor other Shapes.drawFoo functions (bullets, missiles, etc.) to use object parameters and implement scaling
+
+**Progress**: Core scaling infrastructure complete. Ship and asteroids successfully scaled 3x with visual-collision consistency. Framework ready for remaining game elements.
 
 #### General
 
