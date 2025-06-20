@@ -3,7 +3,12 @@ import type { GameEntity } from "~/entities";
 import { AudioManager } from "~/audio/AudioManager";
 import { GameState } from "./GameState";
 import { EntityManager } from "./EntityManager";
-import { GIFT, WARP_BUBBLE, type GiftType } from "~/config/constants";
+import {
+    GIFT,
+    WARP_BUBBLE,
+    GAME_STATE,
+    type GiftType,
+} from "~/config/constants";
 import type { UpgradeType } from "~/entities/Weapons";
 
 /**
@@ -263,7 +268,7 @@ export class GiftSystem {
         });
 
         // Extra life gift (only if player doesn't have maximum lives)
-        if (this.gameState.lives < 99) {
+        if (this.gameState.lives < GAME_STATE.MAX_EXTRA_LIVES) {
             availableGifts.push({
                 type: "extra_life",
                 weight: GIFT.SPAWN_WEIGHTS.EXTRA_LIFE,

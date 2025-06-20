@@ -1,6 +1,6 @@
 import { Shapes } from "~/render/Shapes";
 import { Vector2 } from "~/utils/Vector2";
-import { UI, type GiftType } from "~/config/constants";
+import { UI, GAME_STATE, type GiftType } from "~/config/constants";
 import type { WeaponState, WeaponType, UpgradeType } from "~/entities/Weapons";
 import { WeaponManager } from "~/entities/Weapons";
 
@@ -84,7 +84,7 @@ export class GameState {
     }
 
     addLife(): void {
-        this._lives = Math.min(99, this._lives + 1); // Cap at 99 lives
+        this._lives = Math.min(GAME_STATE.MAX_EXTRA_LIVES, this._lives + 1); // Cap at maximum extra lives
         this.updateUI();
     }
 
