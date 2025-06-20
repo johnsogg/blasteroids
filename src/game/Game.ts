@@ -254,6 +254,9 @@ export class Game {
             return;
         }
 
+        // Update level timer
+        this.gameState.updateLevelTimer(deltaTime);
+
         // Update gift system
         this.giftSystem.update(currentTime);
 
@@ -349,6 +352,12 @@ export class Game {
     private nextLevel(): void {
         // Calculate level completion time
         const completionTime = (performance.now() - this.levelStartTime) / 1000; // Convert to seconds
+
+        // Calculate and award time bonus points
+        const timeBonus = this.gameState.getLevelTimeBonusPoints();
+        if (timeBonus > 0) {
+            this.gameState.addScore(timeBonus);
+        }
 
         // Start level completion animation
         this.levelCompleteAnimation.start(this.gameState.level, completionTime);

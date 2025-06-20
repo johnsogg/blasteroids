@@ -13,7 +13,7 @@
       constant for FRICTION does not seem to have any effect.
 - [ ] Add an audio effect for gifts: wubwubwubwubwubwubwub in a soft, low
       frequency that oscillates a bit
-- [ ] Add a timer for each level that starts at 60 seconds. Player gets N points
+- [x] Add a timer for each level that starts at 60 seconds. Player gets N points
       per second left when they beat the level. The timer stops at zero and
       otherwise has no effect when it reaches zero.
 - [ ] Add extra life bonus at certain score thresholds

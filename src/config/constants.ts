@@ -189,6 +189,14 @@ export const GAME_STATE = {
 } as const;
 
 // =============================================================================
+// LEVEL TIMER
+// =============================================================================
+export const LEVEL_TIMER = {
+    INITIAL_TIME: 60, // seconds per level
+    BONUS_POINTS_PER_SECOND: 10, // points awarded per second remaining
+} as const;
+
+// =============================================================================
 // LEVELS
 // =============================================================================
 export const LEVEL = {

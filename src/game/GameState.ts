@@ -1,6 +1,6 @@
 import { Shapes } from "~/render/Shapes";
 import { Vector2 } from "~/utils/Vector2";
-import { UI, GAME_STATE, type GiftType } from "~/config/constants";
+import { UI, GAME_STATE, LEVEL_TIMER, type GiftType } from "~/config/constants";
 import type { WeaponState, WeaponType, UpgradeType } from "~/entities/Weapons";
 import { WeaponManager } from "~/entities/Weapons";
 
@@ -13,6 +13,7 @@ export class GameState {
     private _fuel: number = 100;
     private _weaponState: WeaponState = WeaponManager.getDefaultWeaponState();
     private _debugNextGift: GiftType | null = null; // Debug override for next gift type
+    private _levelTimeRemaining: number = LEVEL_TIMER.INITIAL_TIME; // seconds remaining in current level
     private readonly HIGH_SCORE_KEY = "blasteroids-highscore";
     private readonly DEBUG_GIFT_KEY = "blasteroids-debug-gift";
 
@@ -56,6 +57,10 @@ export class GameState {
         return this._debugNextGift;
     }
 
+    get levelTimeRemaining(): number {
+        return this._levelTimeRemaining;
+    }
+
     get scoreStatus(): "normal" | "near-high" | "new-high" {
         if (this._score >= this._highScore && this._score > 0) {
             return "new-high";
@@ -91,7 +96,24 @@ export class GameState {
     nextLevel(): void {
         this._level++;
         this.refillFuel(); // Refill fuel on level completion
+        this._levelTimeRemaining = LEVEL_TIMER.INITIAL_TIME; // Reset timer for new level
         this.updateUI();
+    }
+
+    updateLevelTimer(deltaTime: number): void {
+        if (this._levelTimeRemaining > 0) {
+            this._levelTimeRemaining = Math.max(
+                0,
+                this._levelTimeRemaining - deltaTime
+            );
+            this.updateUI();
+        }
+    }
+
+    getLevelTimeBonusPoints(): number {
+        // Calculate bonus points based on time remaining
+        const timeRemaining = Math.ceil(this._levelTimeRemaining);
+        return timeRemaining * LEVEL_TIMER.BONUS_POINTS_PER_SECOND;
     }
 
     consumeFuel(amount: number): boolean {
@@ -116,6 +138,7 @@ export class GameState {
         this._fuel = 100;
         this._weaponState = WeaponManager.getDefaultWeaponState(); // Reset weapons
         this._debugNextGift = null; // Clear debug gift override
+        this._levelTimeRemaining = LEVEL_TIMER.INITIAL_TIME; // Reset timer
         this.loadHighScore(); // Preserve high score across resets
         this.updateUI();
     }
@@ -237,6 +260,24 @@ export class GameState {
                 this._highScore.toString()
             );
             highScoreElement.innerHTML = formattedHighScore;
+        }
+
+        // Update level timer display
+        const timerElement = document.getElementById("timerValue");
+        if (timerElement) {
+            const minutes = Math.floor(this._levelTimeRemaining / 60);
+            const seconds = Math.floor(this._levelTimeRemaining % 60);
+            const formattedTime = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+            timerElement.textContent = formattedTime;
+
+            // Change color based on remaining time
+            if (this._levelTimeRemaining <= 10) {
+                timerElement.style.color = "#ff0000"; // Red for critical time
+            } else if (this._levelTimeRemaining <= 20) {
+                timerElement.style.color = "#ffff00"; // Yellow for warning
+            } else {
+                timerElement.style.color = "#ffffff"; // White for normal
+            }
         }
     }
 
