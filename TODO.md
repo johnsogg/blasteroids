@@ -30,6 +30,10 @@
 
 #### Visual Scaling System ✅ COMPLETED
 
+#### Code Quality & Type Safety ✅ COMPLETED
+
+- [x] Fix InputHandler test linter error (replaced anonymous class with proper EntityManager instance)
+
 #### General
 
 - [ ] Performance optimizations for large numbers of objects
@@ -37,3 +41,6 @@
 ### 🛠️ Development & Testing Tools
 
 ## Known Bugs
+
+- [ ] The lightning weapon no longer destroys asteroids. It does fire and the
+      A/V effects work, but it doesn't remove asteroids.

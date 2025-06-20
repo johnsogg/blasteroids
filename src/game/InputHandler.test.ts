@@ -4,6 +4,7 @@ import { InputManager } from "~/input/InputManager";
 import { InputContext } from "~/input/InputContext";
 import { GameState } from "./GameState";
 import { WeaponSystem } from "./WeaponSystem";
+import { EntityManager } from "./EntityManager";
 import { MenuManager } from "~/menu/MenuManager";
 import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
 import type { Game } from "~/game/Game";
@@ -42,15 +43,15 @@ describe("InputHandler", () => {
             gameState
         );
 
-        const entityManager = new (class {
-            getShip() { return null; }
-        })();
+        // Create proper mock EntityManager using actual class
+        const entityManager = new EntityManager(mockCanvas);
+        vi.spyOn(entityManager, "getShip").mockReturnValue(null);
 
         inputHandler = new InputHandler(
             inputManager,
             gameState,
             weaponSystem,
-            entityManager as any,
+            entityManager,
             menuManager,
             levelCompleteAnimation
         );

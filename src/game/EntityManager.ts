@@ -204,12 +204,12 @@ export class EntityManager {
         } else if (entity.type === "gift") {
             // Gift lifecycle is managed by GiftSystem
             const isExpired = (entity.age || 0) >= GIFT.LIFESPAN;
-            
+
             // Stop wubwub sound if gift is expiring
             if (isExpired && isGift(entity) && entity.wubwubAudioControl) {
                 entity.wubwubAudioControl.stop();
             }
-            
+
             return !isExpired;
         }
         return true;

@@ -908,7 +908,7 @@ export class AudioManager {
                 // Stop oscillators after fade out
                 oscillator.stop(this.audioContext.currentTime + 0.2);
                 lfoOscillator.stop(this.audioContext.currentTime + 0.2);
-            }
+            },
         };
     }
 }
