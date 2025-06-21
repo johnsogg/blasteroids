@@ -34,6 +34,8 @@ import { AISystem } from "./AISystem";
 import { MessageSystem } from "./MessageSystem";
 import { DebugRenderer } from "./DebugRenderer";
 import { ZoneSystem } from "./ZoneSystem";
+import { NebulaSystem } from "./NebulaSystem";
+import { LocalStorage } from "~/utils/LocalStorage";
 
 export class Game {
     private canvas: HTMLCanvasElement;
@@ -59,6 +61,7 @@ export class Game {
     private messageSystem: MessageSystem;
     private debugRenderer: DebugRenderer;
     private zoneSystem: ZoneSystem;
+    private nebulaSystem: NebulaSystem;
 
     // Game state
     private levelAnimationStarted = false;
@@ -135,6 +138,7 @@ export class Game {
             this.scaleManager
         );
         this.zoneSystem = new ZoneSystem(this.gameState);
+        this.nebulaSystem = new NebulaSystem(canvas.width, canvas.height);
 
         // Listen for canvas resize events
         this.canvasManager.onResize(() => this.handleCanvasResize());
@@ -199,6 +203,9 @@ export class Game {
             this.createAsteroid();
         }
 
+        // Initialize nebula for starting zone
+        this.nebulaSystem.initializeForZone(this.gameState.zone);
+
         // Start timing the first level
         this.levelStartTime = performance.now();
     }
@@ -245,6 +252,12 @@ export class Game {
             this.canvas.height
         );
 
+        // Update nebula system with new canvas dimensions
+        this.nebulaSystem.updateCanvasSize(
+            this.canvas.width,
+            this.canvas.height
+        );
+
         // Note: Game objects will automatically adapt to new canvas dimensions
         // through the existing screen wrapping logic
         // Canvas dimensions updated automatically
@@ -287,6 +300,9 @@ export class Game {
 
     start(): void {
         this.running = true;
+
+        // Load debug settings from localStorage
+        this.loadDebugSettings();
 
         // Play game start fanfare
         this.audio.playGameStart().catch(() => {
@@ -402,6 +418,9 @@ export class Game {
         // Update message system
         this.messageSystem.update(currentTime);
 
+        // Update nebula system
+        this.nebulaSystem.update(deltaTime, currentTime);
+
         // Check all collisions through CollisionSystem
         this.collisionSystem.checkAllCollisions(currentTime);
 
@@ -468,6 +487,9 @@ export class Game {
         this.giftSystem.reset();
         this.inputHandler.reset();
         this.messageSystem.clearAllMessages();
+
+        // Initialize nebula for starting zone
+        this.nebulaSystem.initializeForZone(this.gameState.zone);
 
         // Reset timing and flags
         this.gameOverSoundPlayed = false;
@@ -556,6 +578,9 @@ export class Game {
                 this.gameState.continueCurrentZone();
                 break;
         }
+
+        // Initialize nebula for the new zone
+        this.nebulaSystem.initializeForZone(this.gameState.zone);
 
         // Spawn asteroids for the new level
         this.spawnLevelAsteroids();
@@ -786,6 +811,9 @@ export class Game {
         // Draw shields for all ships
         this.renderShields();
 
+        // Draw nebula layer (above entities, below HUD)
+        this.renderNebula();
+
         // Draw particles
         this.particles.render(this.ctx);
 
@@ -797,6 +825,9 @@ export class Game {
 
         // Draw weapon HUD
         this.renderWeaponHUD();
+
+        // Draw score and status HUD
+        this.renderStatusHUD();
 
         // Draw animated messages
         this.renderMessages();
@@ -1009,8 +1040,24 @@ export class Game {
         const gaugeX = (this.canvas.width - gaugeWidth) / 2;
         const gaugeY = 20;
         const cornerRadius = 4;
+        const backgroundPadding = 4;
 
         this.ctx.save();
+
+        // Draw semi-transparent black background for better readability in nebula zones
+        if (this.zoneSystem.hasNebulaEffects()) {
+            this.ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+            this.ctx.beginPath();
+            this.ctx.roundRect(
+                gaugeX - backgroundPadding,
+                gaugeY - backgroundPadding,
+                gaugeWidth + backgroundPadding * 2,
+                gaugeHeight + backgroundPadding * 2,
+                cornerRadius + 2
+            );
+            this.ctx.fill();
+        }
+
         this.ctx.globalAlpha = 0.4;
 
         // Draw gauge outline
@@ -1086,6 +1133,29 @@ export class Game {
             WEAPONS.HUD.X_OFFSET,
             WEAPONS.HUD.Y_START
         );
+
+        // Draw semi-transparent background for weapon HUD in nebula zones
+        if (this.zoneSystem.hasNebulaEffects()) {
+            const backgroundPadding = 8;
+            const hudWidth = WEAPONS.HUD.ICON_SIZE + backgroundPadding * 2;
+            const hudHeight =
+                weapons.length * WEAPONS.HUD.ICON_SPACING +
+                WEAPONS.HUD.ICON_SIZE +
+                backgroundPadding * 2;
+
+            this.ctx.save();
+            this.ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+            this.ctx.beginPath();
+            this.ctx.roundRect(
+                hudPosition.x - WEAPONS.HUD.ICON_SIZE / 2 - backgroundPadding,
+                hudPosition.y - WEAPONS.HUD.ICON_SIZE / 2 - backgroundPadding,
+                hudWidth,
+                hudHeight,
+                4
+            );
+            this.ctx.fill();
+            this.ctx.restore();
+        }
 
         Shapes.drawWeaponHUD(
             this.ctx,
@@ -1197,9 +1267,171 @@ export class Game {
     }
 
     /**
+     * Render nebula effects for zones that have them
+     */
+    private renderNebula(): void {
+        // Check if current zone has nebula effects
+        if (this.zoneSystem.hasNebulaEffects()) {
+            const particles = this.nebulaSystem.getParticles();
+            Shapes.drawNebulaLayer(this.ctx, particles, this.scaleManager);
+        }
+    }
+
+    /**
+     * Render score, lives, and level information with nebula-aware backgrounds
+     */
+    private renderStatusHUD(): void {
+        this.ctx.save();
+
+        const isNebulaZone = this.zoneSystem.hasNebulaEffects();
+        const textPadding = 8;
+        const fontSize = 20;
+        const lineHeight = 30;
+        const topOffset = 15;
+        const leftOffset = 15;
+
+        // Set font
+        this.ctx.font = `${fontSize}px Orbitron, "Courier New", monospace`;
+
+        // Define HUD items
+        const hudItems = [
+            `Score: ${this.gameState.score.toLocaleString()}`,
+            `Lives: ${this.gameState.lives}`,
+            `Zone ${this.gameState.zone} - Level ${this.gameState.level}`,
+        ];
+
+        // Calculate background size if needed
+        if (isNebulaZone) {
+            // Measure text width for background sizing
+            this.ctx.textAlign = "left";
+            const maxWidth = Math.max(
+                ...hudItems.map((item) => this.ctx.measureText(item).width)
+            );
+            const backgroundWidth = maxWidth + textPadding * 2;
+            const backgroundHeight =
+                hudItems.length * lineHeight + textPadding * 2 - 10;
+
+            // Draw semi-transparent background
+            this.ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+            this.ctx.beginPath();
+            this.ctx.roundRect(
+                leftOffset - textPadding,
+                topOffset - textPadding,
+                backgroundWidth,
+                backgroundHeight,
+                4
+            );
+            this.ctx.fill();
+        }
+
+        // Draw text
+        this.ctx.fillStyle = "#ffffff";
+        this.ctx.textAlign = "left";
+        this.ctx.textBaseline = "top";
+
+        hudItems.forEach((item, index) => {
+            this.ctx.fillText(item, leftOffset, topOffset + index * lineHeight);
+        });
+
+        this.ctx.restore();
+    }
+
+    /**
      * Get MessageSystem for external access
      */
     getMessageSystem(): MessageSystem {
         return this.messageSystem;
+    }
+
+    /**
+     * Debug method to directly load a specific zone (bypasses normal progression)
+     */
+    setDebugZone(zone: number): void {
+        // Validate zone
+        const zoneConfig = this.zoneSystem.getZoneConfig(zone);
+        if (!zoneConfig) {
+            console.warn(`Invalid zone: ${zone}`);
+            return;
+        }
+
+        // Clean up current state
+        this.entityManager.clearAllExceptShips();
+        this.particles.clear();
+        this.nebulaSystem.clear();
+
+        // Set new zone and reset level
+        this.gameState.setZoneAndLevel(zone, 1);
+
+        // Initialize zone-specific systems
+        this.nebulaSystem.initializeForZone(zone);
+
+        // Start new level with proper asteroid generation
+        this.initializeLevel();
+    }
+
+    /**
+     * Get available zones for debugging
+     */
+    getAvailableZones(): Array<{
+        zone: number;
+        name: string;
+        hasNebula: boolean;
+    }> {
+        return this.zoneSystem.getAvailableZones().map((zoneInfo) => ({
+            zone: zoneInfo.zone,
+            name: zoneInfo.config.name,
+            hasNebula: zoneInfo.config.hasNebula || false,
+        }));
+    }
+
+    /**
+     * Get debug mode state
+     */
+    getDebugMode(): boolean {
+        return this.debugMode;
+    }
+
+    /**
+     * Set debug mode state (for localStorage persistence)
+     */
+    setDebugMode(enabled: boolean): void {
+        this.debugMode = enabled;
+    }
+
+    /**
+     * Load debug settings from localStorage on startup
+     */
+    private loadDebugSettings(): void {
+        // Load debug graphics toggle
+        this.debugMode = LocalStorage.getDebugGraphics();
+
+        // Load debug gift setting
+        const debugGift = LocalStorage.getDebugGifts();
+        if (debugGift && debugGift !== "none") {
+            this.setDebugNextGift(debugGift as GiftType);
+        }
+
+        // Load debug zone preference and apply if set
+        const debugZone = LocalStorage.getDebugZone();
+        if (debugZone && debugZone !== this.gameState.zone) {
+            // Use setTimeout to delay zone loading until after game initialization
+            setTimeout(() => {
+                this.setDebugZone(debugZone);
+            }, 100);
+        }
+    }
+
+    /**
+     * Initialize level with proper asteroid generation
+     */
+    private initializeLevel(): void {
+        // Generate asteroids for the level
+        const asteroidCount = this.zoneSystem.calculateAsteroidCount();
+        for (let i = 0; i < asteroidCount; i++) {
+            this.createAsteroid();
+        }
+
+        // Record level start time
+        this.levelStartTime = performance.now();
     }
 }

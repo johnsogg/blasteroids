@@ -44,7 +44,11 @@ describe("DebugRenderer", () => {
         entityManager = new EntityManager(mockCanvas);
         gameState = new GameState();
         scaleManager = new ScaleManager(800, 600);
-        debugRenderer = new DebugRenderer(entityManager, gameState, scaleManager);
+        debugRenderer = new DebugRenderer(
+            entityManager,
+            gameState,
+            scaleManager
+        );
     });
 
     describe("render", () => {

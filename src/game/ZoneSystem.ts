@@ -9,6 +9,7 @@ export interface ZoneConfig {
     asteroidsPerLevel: number;
     maxAsteroids: number;
     currencyMultiplier: number;
+    hasNebula?: boolean;
 }
 
 export interface ZoneInfo {
@@ -150,6 +151,22 @@ export class ZoneSystem {
     getZoneColorTheme(): string {
         const config = this.getCurrentZoneInfo().config;
         return config.color;
+    }
+
+    /**
+     * Check if current zone has nebula effects
+     */
+    hasNebulaEffects(): boolean {
+        const config = this.getCurrentZoneInfo().config;
+        return config.hasNebula || false;
+    }
+
+    /**
+     * Check if a specific zone has nebula effects
+     */
+    zoneHasNebula(zone: number): boolean {
+        const config = this.getZoneConfig(zone);
+        return config?.hasNebula || false;
     }
 
     private getDefaultZoneConfig(): ZoneConfig {

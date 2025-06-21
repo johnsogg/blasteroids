@@ -1,6 +1,7 @@
 import { MenuItem } from "./MenuItem";
 import type { Game } from "~/game/Game";
 import { GIFT, type GiftType } from "~/config/constants";
+import { LocalStorage } from "~/utils/LocalStorage";
 
 export class MenuManager {
     private game: Game;
@@ -178,6 +179,25 @@ export class MenuManager {
             }),
 
             new MenuItem({
+                id: "debug_zone",
+                label: "Load Zone",
+                type: "select",
+                value: this.getInitialDebugZoneValue(),
+                options: [], // Initialize empty, will be populated when menu is shown
+                onChange: (value) =>
+                    this.handleDebugZoneChange(value as string),
+            }),
+
+            new MenuItem({
+                id: "debug_graphics",
+                label: "Debug Graphics",
+                type: "toggle",
+                value: this.getInitialDebugGraphicsValue(),
+                onChange: (value) =>
+                    this.handleDebugGraphicsChange(value as boolean),
+            }),
+
+            new MenuItem({
                 id: "separator3",
                 label: "",
                 type: "separator",
@@ -208,6 +228,9 @@ export class MenuManager {
     show(): void {
         this.isVisible = true;
         this.currentIndex = this.findNextNavigableIndex(-1);
+
+        // Populate zone options when menu is shown (after Game is fully initialized)
+        this.updateZoneOptions();
     }
 
     /**
@@ -391,17 +414,97 @@ export class MenuManager {
     private handleDebugNextGiftChange(value: string): void {
         if (value === "none") {
             this.game.setDebugNextGift(null);
+            LocalStorage.setDebugGifts(null);
         } else {
             this.game.setDebugNextGift(value as GiftType);
+            LocalStorage.setDebugGifts(value);
         }
+    }
+
+    /**
+     * Handle debug zone change
+     */
+    private handleDebugZoneChange(value: string): void {
+        if (value === "current") {
+            LocalStorage.setDebugZone(null);
+            return;
+        }
+
+        const zone = parseInt(value, 10);
+        if (!isNaN(zone) && zone > 0) {
+            this.game.setDebugZone(zone);
+            LocalStorage.setDebugZone(zone);
+        }
+    }
+
+    /**
+     * Handle debug graphics toggle
+     */
+    private handleDebugGraphicsChange(enabled: boolean): void {
+        this.game.setDebugMode(enabled);
+        LocalStorage.setDebugGraphics(enabled);
     }
 
     /**
      * Get initial debug gift value from game state
      */
     private getInitialDebugGiftValue(): string {
+        // Load from localStorage first, then fallback to game state
+        const persistedGift = LocalStorage.getDebugGifts();
+        if (persistedGift) {
+            this.game.setDebugNextGift(persistedGift as GiftType);
+            return persistedGift;
+        }
+
         const debugGift = this.game.getDebugNextGift();
         return debugGift || "none";
+    }
+
+    /**
+     * Get initial debug zone value
+     */
+    private getInitialDebugZoneValue(): string {
+        const persistedZone = LocalStorage.getDebugZone();
+        return persistedZone ? persistedZone.toString() : "current";
+    }
+
+    /**
+     * Get initial debug graphics value
+     */
+    private getInitialDebugGraphicsValue(): boolean {
+        const persistedGraphics = LocalStorage.getDebugGraphics();
+        this.game.setDebugMode(persistedGraphics);
+        return persistedGraphics;
+    }
+
+    /**
+     * Get zone options for debug menu
+     */
+    private getZoneOptions(): Array<{ label: string; value: string }> {
+        const options = [{ label: "Current Zone", value: "current" }];
+
+        const availableZones = this.game.getAvailableZones();
+        for (const zone of availableZones) {
+            const nebulaIndicator = zone.hasNebula ? " ✨" : "";
+            options.push({
+                label: `Zone ${zone.zone}: ${zone.name}${nebulaIndicator}`,
+                value: zone.zone.toString(),
+            });
+        }
+
+        return options;
+    }
+
+    /**
+     * Update zone options for the debug zone menu item
+     */
+    private updateZoneOptions(): void {
+        const debugZoneItem = this.items.find(
+            (item) => item.id === "debug_zone"
+        );
+        if (debugZoneItem) {
+            debugZoneItem.options = this.getZoneOptions();
+        }
     }
 
     /**

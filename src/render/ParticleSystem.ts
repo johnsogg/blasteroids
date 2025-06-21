@@ -207,4 +207,8 @@ export class ParticleSystem {
     getParticleCount(): number {
         return this.particles.length;
     }
+
+    clear(): void {
+        this.particles = [];
+    }
 }

@@ -252,6 +252,7 @@ export const ZONES = {
             asteroidsPerLevel: 1,
             maxAsteroids: 12,
             currencyMultiplier: 1.0,
+            hasNebula: false,
         },
         2: {
             name: "Dense Nebula",
@@ -261,6 +262,7 @@ export const ZONES = {
             asteroidsPerLevel: 1,
             maxAsteroids: 15,
             currencyMultiplier: 1.2,
+            hasNebula: true,
         },
         3: {
             name: "Gravity Wells",
@@ -270,6 +272,7 @@ export const ZONES = {
             asteroidsPerLevel: 2,
             maxAsteroids: 18,
             currencyMultiplier: 1.5,
+            hasNebula: false,
         },
         // Additional zones will be added in future updates
     },
@@ -643,6 +646,37 @@ export const DEBUG = {
     // Transparency for debug visuals
     ALPHA: 0.8, // Slightly transparent to not obstruct gameplay
 } as const;
+
+// =============================================================================
+// NEBULA SYSTEM
+// =============================================================================
+export const NEBULA = {
+    // Particle configuration
+    PARTICLE_COUNT: 40, // Number of nebula particles
+    PARTICLE_MIN_SIZE: 10, // Minimum particle radius
+    PARTICLE_MAX_SIZE: 40, // Maximum particle radius
+    PARTICLE_MIN_OPACITY: 0.1, // Minimum particle opacity
+    PARTICLE_MAX_OPACITY: 0.4, // Maximum particle opacity
+
+    // Animation
+    DRIFT_SPEED_MIN: 10, // Minimum drift speed (pixels per second)
+    DRIFT_SPEED_MAX: 30, // Maximum drift speed (pixels per second)
+    OPACITY_PULSE_SPEED: 0.002, // Speed of opacity pulsing animation
+
+    // Zone colors
+    ZONE_COLORS: {
+        2: "#aa88ff", // Dense Nebula (purple)
+        // Future zones can have different nebula colors
+    },
+
+    // Shape variety
+    SHAPE_TYPES: ["circle", "oval"] as const,
+    OVAL_ASPECT_RATIO_MIN: 1.2, // Minimum width/height ratio for ovals
+    OVAL_ASPECT_RATIO_MAX: 2.0, // Maximum width/height ratio for ovals
+} as const;
+
+// Nebula shape type union for TypeScript
+export type NebulaShapeType = (typeof NEBULA.SHAPE_TYPES)[number];
 
 // =============================================================================
 // PERFORMANCE

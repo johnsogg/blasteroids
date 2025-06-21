@@ -217,6 +217,22 @@ export class GameState {
         this.updateUI();
     }
 
+    /**
+     * Debug method to directly set zone and level (bypasses normal progression)
+     */
+    setZoneAndLevel(zone: number, level: number): void {
+        this._zone = zone;
+        this._level = level;
+
+        // Refill fuel for all players when jumping to new zone
+        for (const playerState of this._players.values()) {
+            playerState.fuel = 100;
+        }
+        this._levelTimeRemaining = LEVEL_TIMER.INITIAL_TIME;
+        this.saveZoneProgress();
+        this.updateUI();
+    }
+
     shouldShowChoiceScreen(): boolean {
         return this._level > ZONES.LEVELS_PER_CHOICE;
     }

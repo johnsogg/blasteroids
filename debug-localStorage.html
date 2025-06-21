@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug localStorage</title>
+</head>
+<body>
+    <h1>Debug localStorage Check</h1>
+    <div id="output"></div>
+    <button onclick="clearDebugStorage()">Clear Debug Storage</button>
+    
+    <script>
+        function checkLocalStorage() {
+            const output = document.getElementById('output');
+            const debugGraphics = localStorage.getItem('blasteroids-debug-graphics');
+            const debugZone = localStorage.getItem('blasteroids-debug-zone');
+            const debugGifts = localStorage.getItem('blasteroids-debug-gifts');
+            
+            output.innerHTML = `
+                <p><strong>Debug Graphics:</strong> ${debugGraphics || 'not set'}</p>
+                <p><strong>Debug Zone:</strong> ${debugZone || 'not set'}</p>
+                <p><strong>Debug Gifts:</strong> ${debugGifts || 'not set'}</p>
+            `;
+        }
+        
+        function clearDebugStorage() {
+            localStorage.removeItem('blasteroids-debug-graphics');
+            localStorage.removeItem('blasteroids-debug-zone');
+            localStorage.removeItem('blasteroids-debug-gifts');
+            checkLocalStorage();
+            alert('Debug localStorage cleared!');
+        }
+        
+        checkLocalStorage();
+    </script>
+</body>
+</html>

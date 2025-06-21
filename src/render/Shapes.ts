@@ -3,6 +3,7 @@ import { ScaleManager } from "~/utils/ScaleManager";
 import { TrailPoint } from "~/entities/Ship";
 import { WARP_BUBBLE, MESSAGE } from "~/config/constants";
 import type { Message } from "~/entities/Message";
+import type { NebulaParticle } from "~/entities/NebulaParticle";
 
 // Base ship coordinates (reference dimensions)
 const SHIP_BASE_COORDS = {
@@ -1174,6 +1175,96 @@ export class Shapes {
     ): void {
         for (const message of messages) {
             this.drawAnimatedMessage(ctx, message, scaleManager);
+        }
+    }
+
+    // =============================================================================
+    // NEBULA SYSTEM
+    // =============================================================================
+
+    /**
+     * Draw a single nebula particle
+     */
+    static drawNebulaParticle(
+        ctx: CanvasRenderingContext2D,
+        particle: NebulaParticle,
+        scaleManager?: ScaleManager
+    ): void {
+        ctx.save();
+
+        // Apply scaling
+        const displayScale = scaleManager ? scaleManager.getScale() : 1.0;
+        const scaledSize = particle.size * displayScale;
+        const scaledHeight = particle.height * displayScale;
+
+        // Set opacity
+        ctx.globalAlpha = particle.opacity;
+
+        // Parse the hex color and apply transparency
+        const hex = particle.color.replace("#", "");
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${particle.opacity})`;
+
+        // Draw based on shape type
+        if (particle.shapeType === "circle") {
+            ctx.beginPath();
+            ctx.arc(
+                particle.position.x,
+                particle.position.y,
+                scaledSize,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+        } else if (particle.shapeType === "oval") {
+            ctx.save();
+            ctx.translate(particle.position.x, particle.position.y);
+            ctx.rotate(particle.rotation);
+            ctx.scale(1, scaledHeight / scaledSize); // Create oval by scaling y-axis
+            ctx.beginPath();
+            ctx.arc(0, 0, scaledSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        ctx.restore();
+    }
+
+    /**
+     * Draw all nebula particles in a batch for efficiency
+     */
+    static drawNebulaLayer(
+        ctx: CanvasRenderingContext2D,
+        particles: readonly NebulaParticle[],
+        scaleManager?: ScaleManager
+    ): void {
+        if (particles.length === 0) {
+            return;
+        }
+
+        // Group particles by shape type and color for batch rendering
+        const circleParticles: NebulaParticle[] = [];
+        const ovalParticles: NebulaParticle[] = [];
+
+        for (const particle of particles) {
+            if (particle.shapeType === "circle") {
+                circleParticles.push(particle);
+            } else {
+                ovalParticles.push(particle);
+            }
+        }
+
+        // Draw all circles
+        for (const particle of circleParticles) {
+            this.drawNebulaParticle(ctx, particle, scaleManager);
+        }
+
+        // Draw all ovals
+        for (const particle of ovalParticles) {
+            this.drawNebulaParticle(ctx, particle, scaleManager);
         }
     }
 }
