@@ -539,6 +539,38 @@ export const ANIMATIONS = {
 } as const;
 
 // =============================================================================
+// ANIMATED MESSAGES
+// =============================================================================
+export const MESSAGE = {
+    // Animation timing
+    DEFAULT_DURATION: 2000, // milliseconds
+
+    // Visual effects
+    SCALE_START: 1.0,
+    SCALE_END: 1.5, // Grow by 50%
+    OPACITY_START: 1.0,
+    OPACITY_END: 0.0,
+
+    // Rainbow animation
+    HUE_CYCLE_SPEED: 2.0, // Full rainbow cycle in 2 seconds
+    SATURATION: 80, // Rich colors
+    LIGHTNESS: 60, // Bright but readable
+
+    // Positioning
+    SHIP_DIAMETER_OFFSET_START: 2, // Start 2 ship diameters toward center
+    SHIP_DIAMETER_OFFSET_END: 3, // End 3 ship diameters further
+
+    // Font styling
+    FONT_SIZE: 24,
+    FONT_FAMILY: 'Orbitron, "Courier New", monospace',
+    FONT_WEIGHT: "700",
+    STROKE_WIDTH: 2,
+
+    // Colors
+    STROKE_COLOR: "#000000", // Black outline for readability
+} as const;
+
+// =============================================================================
 // PERFORMANCE
 // =============================================================================
 export const PERFORMANCE = {

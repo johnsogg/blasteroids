@@ -61,13 +61,32 @@ describe("CollisionSystem", () => {
         );
         shieldSystem = new ShieldSystem(audioManager, gameState, entityManager);
 
+        const messageSystem = {
+            createGiftMessage: vi.fn(),
+            createAsteroidCollisionMessage: vi.fn(),
+            createBonusTimerExpiredMessage: vi.fn(),
+            update: vi.fn(),
+            getActiveMessages: vi.fn(() => []),
+            getActiveMessageCount: vi.fn(() => 0),
+            clearAllMessages: vi.fn(),
+            getMessageStats: vi.fn(() => ({
+                active: 0,
+                giftMessages: 0,
+                asteroidMessages: 0,
+                bonusMessages: 0,
+                genericMessages: 0,
+            })),
+            createMessage: vi.fn(),
+        };
+
         collisionSystem = new CollisionSystem(
             audioManager,
             particleSystem,
             gameState,
             entityManager,
             weaponSystem,
-            shieldSystem
+            shieldSystem,
+            messageSystem as unknown as import("./MessageSystem").MessageSystem
         );
 
         // Initialize game state
@@ -661,16 +680,13 @@ describe("CollisionSystem", () => {
             vi.spyOn(shieldSystem, "isShieldActive").mockReturnValue(true);
             vi.spyOn(shieldSystem, "isShieldRecharging").mockReturnValue(true);
 
-            // Mock destroyShip to verify it was called
-            const destroyShipSpy = vi.spyOn(
-                collisionSystem as { destroyShip: (ship: Ship) => void },
-                "destroyShip"
-            );
+            // Check initial state
+            const initialLives = gameState.lives;
 
             collisionSystem.checkAllCollisions();
 
-            // Ship should be destroyed when shield is recharging
-            expect(destroyShipSpy).toHaveBeenCalledWith(ship);
+            // Ship should be destroyed when shield is recharging (lives should decrease)
+            expect(gameState.lives).toBeLessThan(initialLives);
         });
 
         it("should handle shield collision when shield is active and not recharging", () => {
@@ -717,21 +733,18 @@ describe("CollisionSystem", () => {
                 "handleShieldCollision"
             );
 
-            // Mock destroyShip to verify it was NOT called
-            const destroyShipSpy = vi.spyOn(
-                collisionSystem as { destroyShip: (ship: Ship) => void },
-                "destroyShip"
-            );
+            // Check initial state
+            const initialLives = gameState.lives;
 
             collisionSystem.checkAllCollisions();
 
-            // Shield collision should be handled, ship should not be destroyed
+            // Shield collision should be handled, ship should not be destroyed (lives should stay the same)
             expect(handleShieldCollisionSpy).toHaveBeenCalledWith(
                 ship,
                 asteroid,
                 expect.any(Number)
             );
-            expect(destroyShipSpy).not.toHaveBeenCalled();
+            expect(gameState.lives).toBe(initialLives);
         });
     });
 });

@@ -8,6 +8,7 @@ import { GameState } from "./GameState";
 import { EntityManager } from "./EntityManager";
 import { WeaponSystem } from "./WeaponSystem";
 import { ShieldSystem } from "./ShieldSystem";
+import { MessageSystem } from "./MessageSystem";
 import { WEAPONS, SCORING, ASTEROID } from "~/config/constants";
 
 /**
@@ -20,6 +21,7 @@ export class CollisionSystem {
     private entityManager: EntityManager;
     private weaponSystem: WeaponSystem;
     private shieldSystem: ShieldSystem;
+    private messageSystem: MessageSystem;
 
     constructor(
         audio: AudioManager,
@@ -27,7 +29,8 @@ export class CollisionSystem {
         gameState: GameState,
         entityManager: EntityManager,
         weaponSystem: WeaponSystem,
-        shieldSystem: ShieldSystem
+        shieldSystem: ShieldSystem,
+        messageSystem: MessageSystem
     ) {
         this.audio = audio;
         this.particles = particles;
@@ -35,6 +38,7 @@ export class CollisionSystem {
         this.entityManager = entityManager;
         this.weaponSystem = weaponSystem;
         this.shieldSystem = shieldSystem;
+        this.messageSystem = messageSystem;
     }
 
     /**
@@ -195,6 +199,12 @@ export class CollisionSystem {
                     );
                 } else {
                     // No shield or shield is recharging - destroy the ship
+                    // Create asteroid collision message first
+                    this.messageSystem.createAsteroidCollisionMessage(
+                        ship.position,
+                        800, // TODO(claude): Get canvas dimensions from canvas manager
+                        600
+                    );
                     this.destroyShip(ship);
                 }
                 break; // Only one collision per frame
@@ -463,6 +473,16 @@ export class CollisionSystem {
 
         // Apply gift benefits based on type
         const giftType = gift.giftType || "fuel_refill";
+
+        // Create message for gift collection
+        if (ship) {
+            this.messageSystem.createGiftMessage(
+                giftType,
+                ship.position,
+                800, // TODO(claude): Get canvas dimensions from canvas manager
+                600
+            );
+        }
 
         switch (giftType) {
             case "fuel_refill":

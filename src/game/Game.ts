@@ -30,6 +30,7 @@ import { CollisionSystem } from "./CollisionSystem";
 import { GiftSystem } from "./GiftSystem";
 import { InputHandler } from "./InputHandler";
 import { AISystem } from "./AISystem";
+import { MessageSystem } from "./MessageSystem";
 
 export class Game {
     private canvas: HTMLCanvasElement;
@@ -51,6 +52,7 @@ export class Game {
     private giftSystem: GiftSystem;
     private inputHandler: InputHandler;
     private aiSystem: AISystem;
+    private messageSystem: MessageSystem;
 
     // Game state
     private levelAnimationStarted = false;
@@ -88,13 +90,15 @@ export class Game {
             this.gameState,
             this.entityManager
         );
+        this.messageSystem = new MessageSystem();
         this.collisionSystem = new CollisionSystem(
             this.audio,
             this.particles,
             this.gameState,
             this.entityManager,
             this.weaponSystem,
-            this.shieldSystem
+            this.shieldSystem,
+            this.messageSystem
         );
         this.giftSystem = new GiftSystem(
             this.audio,
@@ -117,6 +121,21 @@ export class Game {
         this.canvasManager.onResize(() => this.handleCanvasResize());
 
         this.gameState.init(); // Initialize high score
+
+        // Set up bonus timer expiration callback
+        this.gameState.setOnBonusTimerExpired(() => {
+            const playerShip = this.entityManager
+                .getShips()
+                .find((ship) => ship.playerId === "player");
+            if (playerShip) {
+                this.messageSystem.createBonusTimerExpiredMessage(
+                    playerShip.position,
+                    this.canvas.width,
+                    this.canvas.height
+                );
+            }
+        });
+
         this.init();
     }
 
@@ -338,6 +357,9 @@ export class Game {
         // Update particles
         this.particles.update(deltaTime);
 
+        // Update message system
+        this.messageSystem.update(currentTime);
+
         // Check all collisions through CollisionSystem
         this.collisionSystem.checkAllCollisions(currentTime);
 
@@ -403,6 +425,7 @@ export class Game {
         this.shieldSystem.resetShieldState();
         this.giftSystem.reset();
         this.inputHandler.reset();
+        this.messageSystem.clearAllMessages();
 
         // Reset timing and flags
         this.gameOverSoundPlayed = false;
@@ -676,6 +699,9 @@ export class Game {
 
         // Draw weapon HUD
         this.renderWeaponHUD();
+
+        // Draw animated messages
+        this.renderMessages();
 
         // Draw game over screen if needed
         if (this.gameState.gameOver) {
@@ -1054,5 +1080,20 @@ export class Game {
             this.ctx.stroke();
             this.ctx.restore();
         }
+    }
+
+    /**
+     * Render animated messages
+     */
+    private renderMessages(): void {
+        const activeMessages = this.messageSystem.getActiveMessages();
+        Shapes.drawActiveMessages(this.ctx, activeMessages, this.scaleManager);
+    }
+
+    /**
+     * Get MessageSystem for external access
+     */
+    getMessageSystem(): MessageSystem {
+        return this.messageSystem;
     }
 }

@@ -1,7 +1,8 @@
 import { Vector2 } from "~/utils/Vector2";
 import { ScaleManager } from "~/utils/ScaleManager";
 import { TrailPoint } from "~/entities/Ship";
-import { WARP_BUBBLE } from "~/config/constants";
+import { WARP_BUBBLE, MESSAGE } from "~/config/constants";
+import type { Message } from "~/entities/Message";
 
 // Base ship coordinates (reference dimensions)
 const SHIP_BASE_COORDS = {
@@ -1110,5 +1111,69 @@ export class Shapes {
             g: Math.round((g + m) * 255),
             b: Math.round((b + m) * 255),
         };
+    }
+
+    /**
+     * Draw an animated message with rainbow colors, scaling, and fading
+     */
+    static drawAnimatedMessage(
+        ctx: CanvasRenderingContext2D,
+        message: Message,
+        scaleManager?: ScaleManager
+    ): void {
+        ctx.save();
+
+        // Apply scaling
+        const displayScale = scaleManager ? scaleManager.getScale() : 1.0;
+        const totalScale = message.currentScale * displayScale;
+
+        // Position and scale
+        ctx.translate(message.currentPosition.x, message.currentPosition.y);
+        ctx.scale(totalScale, totalScale);
+
+        // Set font
+        const fontSize = scaleManager
+            ? scaleManager.scaleValue(MESSAGE.FONT_SIZE)
+            : MESSAGE.FONT_SIZE;
+        ctx.font = `${MESSAGE.FONT_WEIGHT} ${fontSize}px ${MESSAGE.FONT_FAMILY}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        // Convert HSL to RGB for rainbow effect
+        const color = this.hslToRgb(
+            message.currentHue,
+            MESSAGE.SATURATION,
+            MESSAGE.LIGHTNESS
+        );
+
+        // Apply opacity to both fill and stroke
+        const fillColor = `rgba(${color.r}, ${color.g}, ${color.b}, ${message.currentOpacity})`;
+        const strokeColor = `rgba(0, 0, 0, ${message.currentOpacity})`;
+
+        // Draw text stroke (outline) for readability
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = scaleManager
+            ? scaleManager.scaleValue(MESSAGE.STROKE_WIDTH)
+            : MESSAGE.STROKE_WIDTH;
+        ctx.strokeText(message.text, 0, 0);
+
+        // Draw text fill
+        ctx.fillStyle = fillColor;
+        ctx.fillText(message.text, 0, 0);
+
+        ctx.restore();
+    }
+
+    /**
+     * Draw all active messages
+     */
+    static drawActiveMessages(
+        ctx: CanvasRenderingContext2D,
+        messages: readonly Message[],
+        scaleManager?: ScaleManager
+    ): void {
+        for (const message of messages) {
+            this.drawAnimatedMessage(ctx, message, scaleManager);
+        }
     }
 }

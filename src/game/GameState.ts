@@ -33,6 +33,7 @@ export class GameState {
     private readonly MAX_COMPANIONS = 2; // Maximum number of AI companions
     private readonly HIGH_SCORE_KEY = "blasteroids-highscore";
     private readonly DEBUG_GIFT_KEY = "blasteroids-debug-gift";
+    private _onBonusTimerExpired?: () => void; // Callback for when bonus timer reaches zero
 
     constructor() {
         // Initialize default players
@@ -172,10 +173,19 @@ export class GameState {
 
     updateLevelTimer(deltaTime: number): void {
         if (this._levelTimeRemaining > 0) {
+            const oldTimeRemaining = this._levelTimeRemaining;
             this._levelTimeRemaining = Math.max(
                 0,
                 this._levelTimeRemaining - deltaTime
             );
+
+            // Check if timer just expired (went from > 0 to 0)
+            if (oldTimeRemaining > 0 && this._levelTimeRemaining === 0) {
+                if (this._onBonusTimerExpired) {
+                    this._onBonusTimerExpired();
+                }
+            }
+
             this.updateUI();
         }
     }
@@ -540,5 +550,12 @@ export class GameState {
         if (size >= 30) return 20; // Large asteroid
         if (size >= 20) return 50; // Medium asteroid
         return 100; // Small asteroid
+    }
+
+    /**
+     * Set callback for when bonus timer expires
+     */
+    setOnBonusTimerExpired(callback: () => void): void {
+        this._onBonusTimerExpired = callback;
     }
 }
