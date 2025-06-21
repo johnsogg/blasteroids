@@ -552,7 +552,6 @@ describe("CollisionSystem", () => {
             entityManager.addEntity(computerShip);
             entityManager.addEntity(gift);
 
-
             collisionSystem.checkAllCollisions();
 
             // Gift should be collected (removed from game)
@@ -598,7 +597,6 @@ describe("CollisionSystem", () => {
 
             entityManager.addEntity(playerShip);
             entityManager.addEntity(gift);
-
 
             collisionSystem.checkAllCollisions();
 
