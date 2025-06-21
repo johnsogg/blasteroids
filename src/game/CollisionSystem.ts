@@ -187,6 +187,12 @@ export class CollisionSystem {
      * Check ship-gift collisions
      */
     private checkShipGiftCollisions(ship: Ship, gifts: GameEntity[]): void {
+        // AI companions (excluding original computer player) should not collect gifts
+        const isCompanion = ship.isAI && ship.playerId !== "computer";
+        if (isCompanion) {
+            return; // Skip gift collection for AI companions
+        }
+
         for (const gift of gifts) {
             if (Collision.checkCircleCollision(ship, gift)) {
                 this.collectGift(gift, ship);

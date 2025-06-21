@@ -453,4 +453,166 @@ describe("CollisionSystem", () => {
             expect(gameState.score).toBe(initialScore + expectedPoints);
         });
     });
+
+    describe("AI Companion Gift Collection Prevention", () => {
+        it("should prevent AI companions from collecting gifts through collision", () => {
+            // Create an AI companion ship
+            const companionShip: Ship = {
+                position: new Vector2(100, 100),
+                velocity: Vector2.zero(),
+                size: new Vector2(20, 10),
+                rotation: 0,
+                color: "#00dd88",
+                type: "ship",
+                playerId: "companion_test_789",
+                age: 0,
+                isAI: true,
+                aiState: "hunting",
+                aiTarget: null,
+                aiLastDecisionTime: 0,
+                invulnerable: false,
+                thrusting: false,
+                strafingLeft: false,
+                strafingRight: false,
+                isLaserActive: false,
+                trail: [],
+            };
+
+            // Create a gift that overlaps with the companion
+            const gift: GameEntity = {
+                position: new Vector2(100, 100), // Same position as companion
+                velocity: Vector2.zero(),
+                size: new Vector2(20, 20),
+                rotation: 0,
+                color: "#ffff00",
+                type: "gift",
+                age: 0,
+                giftType: "fuel_refill",
+            };
+
+            // Register the companion in game state
+            gameState.addAICompanion("companion_test_789");
+
+            entityManager.addEntity(companionShip);
+            entityManager.addEntity(gift);
+
+            const initialGiftCount = entityManager.getGifts().length;
+            const companionState =
+                gameState.getPlayerState("companion_test_789");
+            const initialFuel = companionState?.fuel || 0;
+
+            collisionSystem.checkAllCollisions();
+
+            // Gift should still exist (not collected by companion)
+            const remainingGifts = entityManager.getGifts();
+            expect(remainingGifts.length).toBe(initialGiftCount);
+            expect(remainingGifts[0]).toBe(gift);
+
+            // Companion fuel should not have changed
+            const finalFuel =
+                gameState.getPlayerState("companion_test_789")?.fuel || 0;
+            expect(finalFuel).toBe(initialFuel);
+        });
+
+        it("should allow original computer player to collect gifts through collision", () => {
+            // Create the original computer player ship
+            const computerShip: Ship = {
+                position: new Vector2(200, 200),
+                velocity: Vector2.zero(),
+                size: new Vector2(20, 10),
+                rotation: 0,
+                color: "#00ff00",
+                type: "ship",
+                playerId: "computer",
+                age: 0,
+                isAI: true,
+                aiState: "hunting",
+                aiTarget: null,
+                aiLastDecisionTime: 0,
+                invulnerable: false,
+                thrusting: false,
+                strafingLeft: false,
+                strafingRight: false,
+                isLaserActive: false,
+                trail: [],
+            };
+
+            // Create a gift that overlaps with the computer player
+            const gift: GameEntity = {
+                position: new Vector2(200, 200), // Same position as computer player
+                velocity: Vector2.zero(),
+                size: new Vector2(20, 20),
+                rotation: 0,
+                color: "#ffff00",
+                type: "gift",
+                age: 0,
+                giftType: "fuel_refill",
+            };
+
+            entityManager.addEntity(computerShip);
+            entityManager.addEntity(gift);
+
+            const computerState = gameState.getPlayerState("computer");
+            const _initialFuel = computerState?.fuel || 0;
+
+            collisionSystem.checkAllCollisions();
+
+            // Gift should be collected (removed from game)
+            const remainingGifts = entityManager.getGifts();
+            expect(remainingGifts.length).toBe(0);
+
+            // Computer player fuel should be refilled
+            const finalFuel = gameState.getPlayerState("computer")?.fuel || 0;
+            expect(finalFuel).toBe(100); // Fuel refill should set to 100
+        });
+
+        it("should allow human player to collect gifts through collision", () => {
+            // Create the human player ship
+            const playerShip: Ship = {
+                position: new Vector2(300, 300),
+                velocity: Vector2.zero(),
+                size: new Vector2(20, 10),
+                rotation: 0,
+                color: "#00ff00",
+                type: "ship",
+                playerId: "player",
+                age: 0,
+                isAI: false,
+                invulnerable: false,
+                thrusting: false,
+                strafingLeft: false,
+                strafingRight: false,
+                isLaserActive: false,
+                trail: [],
+            };
+
+            // Create a gift that overlaps with the player
+            const gift: GameEntity = {
+                position: new Vector2(300, 300), // Same position as player
+                velocity: Vector2.zero(),
+                size: new Vector2(20, 20),
+                rotation: 0,
+                color: "#ffff00",
+                type: "gift",
+                age: 0,
+                giftType: "fuel_refill",
+            };
+
+            entityManager.addEntity(playerShip);
+            entityManager.addEntity(gift);
+
+            const playerState = gameState.getPlayerState("player");
+            const _initialFuel = playerState?.fuel || 0;
+
+            collisionSystem.checkAllCollisions();
+
+            // Gift should be collected (removed from game)
+            const remainingGifts = entityManager.getGifts();
+            expect(remainingGifts.length).toBe(0);
+
+            // Player fuel should be refilled
+            const finalFuel = gameState.getPlayerState("player")?.fuel || 0;
+            expect(finalFuel).toBe(100); // Fuel refill should set to 100
+        });
+    });
 });

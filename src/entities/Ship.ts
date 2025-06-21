@@ -21,7 +21,7 @@ export type AIState =
     | "hunting" // Seeking asteroids to destroy
     | "assisting" // Moving to help player
     | "avoiding" // Dodging asteroids
-    | "collecting"; // Going for power-ups
+    | "collecting"; // Going for power-ups (only used by original computer player, not AI companions)
 
 /**
  * Ship entity with ship-specific properties

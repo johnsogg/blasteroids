@@ -117,6 +117,8 @@ export class AISystem {
             gifts.length > 0 &&
             this.shouldCollectGifts(ship, isCompanion)
         ) {
+            // Only the original computer player can collect gifts
+            // AI companions will skip this state and focus on combat assistance
             ship.aiState = "collecting" as AIState;
             ship.aiTarget = this.getNearestGift(ship);
         } else if (asteroids.length > 0) {
@@ -573,17 +575,16 @@ export class AISystem {
         ship: Ship,
         isCompanion: boolean = false
     ): boolean {
+        // AI companions should not collect gifts - leave all gifts for the human player
+        if (isCompanion) {
+            return false;
+        }
+
         // Get AI player's state
         const aiPlayerState = this.gameState.getPlayerState(ship.playerId);
         if (!aiPlayerState) return false;
 
-        // Companions are less aggressive about collecting gifts (let player have them)
-        if (isCompanion) {
-            const weaponCount = aiPlayerState.weaponState.unlockedWeapons.size;
-            return aiPlayerState.fuel < 30 || weaponCount < 2; // More conservative
-        }
-
-        // Original computer player behavior
+        // Original computer player behavior (unchanged for backward compatibility)
         const weaponCount = aiPlayerState.weaponState.unlockedWeapons.size;
         return aiPlayerState.fuel < 50 || weaponCount < 3;
     }
