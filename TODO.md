@@ -4,20 +4,6 @@
 
 ### 🎮 Gameplay Features
 
-- [x] When gifts appear out of warp bubbles, their movement vector seems to be
-      away from the center of the board. Instead, they should have a completely
-      random heading.
-- [x] If the player has all lives left, do not gift extra lives
-- [x] Create a constant that determines the maximum number of extra lives, and set it to 5. Then, use that constant wherever this idea is used, instead of the number literal (which is currently 99).
-- [x] When the ship stops thrusting, there seems to be friction. Changing the
-      constant for FRICTION does not seem to have any effect.
-- [x] Add an audio effect for gifts: wubwubwubwubwubwubwub in a soft, low
-      frequency that oscillates a bit
-- [x] Add a timer for each level that starts at 60 seconds. Player gets N points
-      per second left when they beat the level. The timer stops at zero and
-      otherwise has no effect when it reaches zero.
-- [x] Add extra life bonus at certain score thresholds
-
 ### 🔧 Technical Improvements
 
 #### Physics Testing Foundation (for future gravity system)
@@ -32,14 +18,21 @@
 
 ## Big New Features
 
-- [x] Implement cooperative computer player
-  - [x] Separate resource management (fuel, weapons, lives, score) between human and AI players
-  - [x] AI player has independent weapon progression and fuel consumption
-  - [x] AI player respawns without affecting human player's lives
-  - [x] Gift collection benefits the player who collected it
-  - [x] AI can be controlled via `AI.ENABLED` constant in configuration
-- [ ] Support combat between player and computer player
-- [x] Make AI player available as a gift spawned from warp bubbles
+- [ ] Shields! When the user presses S or the Down Arrow it puts a shield around the ship that also slows the ship down.
+    - [ ] Keyboard keys S and Down Arrow
+    - [ ] Shield is a bright light blue circle where the collision detection circle is
+    - [ ] Sound effect is a crackly btzz btzz sound that loops
+    - [ ] Shield does not draw power during use
+    - [ ] Exception: if the ship collides with an asteroid, it eats up fuel (lots for large asteroids, less for smaller asteroids)
+    - [ ] When a shield/asteroid collision happens:
+        - [ ] asteroid and ship bounce off each other
+        - [ ] it plays an amusing BONK sound
+    - [ ] After a collision, the shield is in a "recharging" mode
+        - [ ] Recharging mode initially lasts 10 seconds
+        - [ ] This will eventually be modifiable via gifts
+        - [ ] When the shield is on and recharging, audio effect is a "click click" that does not loop - it only plays when the user first engages it
+        - [ ] When the shield is recharging it still slows the ship down when in use (this is also a feature in that you can now stop the ship)
+        - [ ] After the recharge is complete and the user is still engaging the shield it automatically flips back to its original state where it deflects asteroids
 
 ### 🛠️ Development & Testing Tools
 
