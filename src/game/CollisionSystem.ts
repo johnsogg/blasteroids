@@ -1,4 +1,5 @@
 import { Vector2 } from "~/utils/Vector2";
+import { ScaleManager } from "~/utils/ScaleManager";
 import type { GameEntity, Ship } from "~/entities";
 import { isGift } from "~/entities";
 import { Collision } from "~/physics/Collision";
@@ -22,6 +23,7 @@ export class CollisionSystem {
     private weaponSystem: WeaponSystem;
     private shieldSystem: ShieldSystem;
     private messageSystem: MessageSystem;
+    private scaleManager: ScaleManager;
 
     constructor(
         audio: AudioManager,
@@ -30,7 +32,8 @@ export class CollisionSystem {
         entityManager: EntityManager,
         weaponSystem: WeaponSystem,
         shieldSystem: ShieldSystem,
-        messageSystem: MessageSystem
+        messageSystem: MessageSystem,
+        scaleManager: ScaleManager
     ) {
         this.audio = audio;
         this.particles = particles;
@@ -39,6 +42,7 @@ export class CollisionSystem {
         this.weaponSystem = weaponSystem;
         this.shieldSystem = shieldSystem;
         this.messageSystem = messageSystem;
+        this.scaleManager = scaleManager;
     }
 
     /**
@@ -115,7 +119,13 @@ export class CollisionSystem {
     ): void {
         for (const bullet of bullets) {
             for (const asteroid of asteroids) {
-                if (Collision.checkCircleCollision(bullet, asteroid)) {
+                if (
+                    Collision.checkCircleCollision(
+                        bullet,
+                        asteroid,
+                        this.scaleManager
+                    )
+                ) {
                     // Mark for removal by setting age very high
                     bullet.age = 999;
 
@@ -189,7 +199,13 @@ export class CollisionSystem {
     ): void {
         for (const bullet of bullets) {
             for (const gift of gifts) {
-                if (Collision.checkCircleCollision(bullet, gift)) {
+                if (
+                    Collision.checkCircleCollision(
+                        bullet,
+                        gift,
+                        this.scaleManager
+                    )
+                ) {
                     // Mark bullet for removal
                     bullet.age = 999;
 
@@ -210,7 +226,13 @@ export class CollisionSystem {
         currentTime: number
     ): void {
         for (const asteroid of asteroids) {
-            if (Collision.checkCircleCollision(ship, asteroid)) {
+            if (
+                Collision.checkCircleCollision(
+                    ship,
+                    asteroid,
+                    this.scaleManager
+                )
+            ) {
                 // Check if ship has an active shield that is not recharging
                 if (
                     this.shieldSystem.isShieldActive(ship.playerId) &&
@@ -248,7 +270,7 @@ export class CollisionSystem {
         }
 
         for (const gift of gifts) {
-            if (Collision.checkCircleCollision(ship, gift)) {
+            if (Collision.checkCircleCollision(ship, gift, this.scaleManager)) {
                 this.collectGift(gift, ship);
                 break; // Only collect one gift per frame
             }

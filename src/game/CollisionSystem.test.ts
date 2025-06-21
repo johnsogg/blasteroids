@@ -6,6 +6,7 @@ import { ShieldSystem } from "./ShieldSystem";
 import { GameState } from "./GameState";
 import { AudioManager } from "~/audio/AudioManager";
 import { ParticleSystem } from "~/render/ParticleSystem";
+import { ScaleManager } from "~/utils/ScaleManager";
 import { Vector2 } from "~/utils/Vector2";
 import type { Ship, GameEntity } from "~/entities";
 
@@ -45,6 +46,7 @@ describe("CollisionSystem", () => {
     let gameState: GameState;
     let audioManager: AudioManager;
     let particleSystem: ParticleSystem;
+    let scaleManager: ScaleManager;
     let mockCanvas: HTMLCanvasElement;
 
     beforeEach(() => {
@@ -53,6 +55,7 @@ describe("CollisionSystem", () => {
         gameState = new GameState();
         audioManager = new AudioManager();
         particleSystem = new ParticleSystem();
+        scaleManager = new ScaleManager(800, 600);
         weaponSystem = new WeaponSystem(
             audioManager,
             particleSystem,
@@ -86,7 +89,8 @@ describe("CollisionSystem", () => {
             entityManager,
             weaponSystem,
             shieldSystem,
-            messageSystem as unknown as import("./MessageSystem").MessageSystem
+            messageSystem as unknown as import("./MessageSystem").MessageSystem,
+            scaleManager
         );
 
         // Initialize game state

@@ -1,4 +1,5 @@
 import { Vector2 } from "~/utils/Vector2";
+import { ScaleManager } from "~/utils/ScaleManager";
 import type { GameEntity, Ship } from "~/entities";
 import { DEBUG, WEAPONS } from "~/config/constants";
 import { EntityManager } from "./EntityManager";
@@ -11,10 +12,16 @@ import { Collision } from "~/physics/Collision";
 export class DebugRenderer {
     private entityManager: EntityManager;
     private gameState: GameState;
+    private scaleManager: ScaleManager;
 
-    constructor(entityManager: EntityManager, gameState: GameState) {
+    constructor(
+        entityManager: EntityManager,
+        gameState: GameState,
+        scaleManager: ScaleManager
+    ) {
         this.entityManager = entityManager;
         this.gameState = gameState;
+        this.scaleManager = scaleManager;
     }
 
     /**
@@ -142,7 +149,7 @@ export class DebugRenderer {
      * Get collision radius for an entity (same logic as collision system)
      */
     private getCollisionRadius(entity: GameEntity): number {
-        return Collision.getEntityCollisionRadius(entity);
+        return Collision.getEntityCollisionRadius(entity, this.scaleManager);
     }
 
     /**

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { DebugRenderer } from "./DebugRenderer";
 import { EntityManager } from "./EntityManager";
 import { GameState } from "./GameState";
+import { ScaleManager } from "~/utils/ScaleManager";
 import { Vector2 } from "~/utils/Vector2";
 import type { GameEntity } from "~/entities";
 
@@ -14,6 +15,7 @@ describe("DebugRenderer", () => {
     let debugRenderer: DebugRenderer;
     let entityManager: EntityManager;
     let gameState: GameState;
+    let scaleManager: ScaleManager;
     let mockCanvas: HTMLCanvasElement;
     let mockCtx: Partial<CanvasRenderingContext2D>;
 
@@ -41,7 +43,8 @@ describe("DebugRenderer", () => {
         // Create systems
         entityManager = new EntityManager(mockCanvas);
         gameState = new GameState();
-        debugRenderer = new DebugRenderer(entityManager, gameState);
+        scaleManager = new ScaleManager(800, 600);
+        debugRenderer = new DebugRenderer(entityManager, gameState, scaleManager);
     });
 
     describe("render", () => {

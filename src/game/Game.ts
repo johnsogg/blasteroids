@@ -110,7 +110,8 @@ export class Game {
             this.entityManager,
             this.weaponSystem,
             this.shieldSystem,
-            this.messageSystem
+            this.messageSystem,
+            this.scaleManager
         );
         this.giftSystem = new GiftSystem(
             this.audio,
@@ -130,7 +131,8 @@ export class Game {
         this.aiSystem = new AISystem(this.entityManager, this.gameState);
         this.debugRenderer = new DebugRenderer(
             this.entityManager,
-            this.gameState
+            this.gameState,
+            this.scaleManager
         );
         this.zoneSystem = new ZoneSystem(this.gameState);
 
