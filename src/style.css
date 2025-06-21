@@ -65,6 +65,22 @@ body {
     letter-spacing: 1px;
 }
 
+/* Currency display at bottom left, above level */
+#currencyDisplay {
+    position: absolute;
+    bottom: 40px;
+    left: 10px;
+    z-index: 10;
+}
+
+.currency-text {
+    font-family: "Orbitron", "Courier New", monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: #888;
+    letter-spacing: 1px;
+}
+
 /* Level display at bottom left */
 #levelDisplay {
     position: absolute;

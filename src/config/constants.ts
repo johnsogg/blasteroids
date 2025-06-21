@@ -235,12 +235,68 @@ export const LEVEL_TIMER = {
 } as const;
 
 // =============================================================================
-// LEVELS
+// ZONES AND LEVELS
 // =============================================================================
+export const ZONES = {
+    // Zone progression
+    LEVELS_PER_CHOICE: 5, // Show choice screen every N levels
+    MAX_ZONES: 10, // Total number of zones planned
+
+    // Zone definitions
+    ZONE_CONFIGS: {
+        1: {
+            name: "Asteroid Field",
+            description: "The classic asteroid field where it all began",
+            color: "#ffffff",
+            baseAsteroidCount: 3,
+            asteroidsPerLevel: 1,
+            maxAsteroids: 12,
+            currencyMultiplier: 1.0,
+        },
+        2: {
+            name: "Dense Nebula",
+            description: "Thicker asteroid clusters in cosmic dust",
+            color: "#aa88ff",
+            baseAsteroidCount: 4,
+            asteroidsPerLevel: 1,
+            maxAsteroids: 15,
+            currencyMultiplier: 1.2,
+        },
+        3: {
+            name: "Gravity Wells",
+            description: "Asteroids affected by gravitational anomalies",
+            color: "#ffaa44",
+            baseAsteroidCount: 3,
+            asteroidsPerLevel: 2,
+            maxAsteroids: 18,
+            currencyMultiplier: 1.5,
+        },
+        // Additional zones will be added in future updates
+    },
+} as const;
+
+// Legacy level constants (for backward compatibility)
 export const LEVEL = {
     BASE_ASTEROID_COUNT: 3,
     ASTEROIDS_PER_LEVEL: 1, // 3 + level number
     MAX_ASTEROIDS: 12, // Practical limit for playability
+} as const;
+
+// =============================================================================
+// CURRENCY SYSTEM
+// =============================================================================
+export const CURRENCY = {
+    // Currency earning rates
+    BASE_LEVEL_REWARD: 10, // Base currency per level completion
+    TIME_BONUS_MULTIPLIER: 0.5, // Extra currency per second remaining
+    PERFECT_CLEAR_BONUS: 25, // Bonus for taking no damage
+
+    // Starting currency
+    STARTING_AMOUNT: 0,
+
+    // Display
+    NAME: "Spacebucks", // Currency name for UI
+    SYMBOL: "🪙", // Currency symbol
 } as const;
 
 // =============================================================================

@@ -5,6 +5,8 @@ import {
     GAME_STATE,
     LEVEL_TIMER,
     SCORING,
+    ZONES,
+    CURRENCY,
     type GiftType,
 } from "~/config/constants";
 import type { WeaponState, WeaponType, UpgradeType } from "~/entities/Weapons";
@@ -23,15 +25,20 @@ export interface PlayerState {
 
 export class GameState {
     private _players: Map<string, PlayerState> = new Map();
-    private _level: number = 1;
+    private _zone: number = 1;
+    private _level: number = 1; // Level within current zone
     private _gameOver: boolean = false;
     private _highScore: number = 0;
+    private _currency: number = CURRENCY.STARTING_AMOUNT;
     private _debugNextGift: GiftType | null = null; // Debug override for next gift type
     private _levelTimeRemaining: number = LEVEL_TIMER.INITIAL_TIME; // seconds remaining in current level
     private _extraLifeThresholdsReached: Set<number> = new Set(); // Track which score thresholds have been reached
     private _activeCompanions: Set<string> = new Set(); // Track active AI companion IDs
     private readonly MAX_COMPANIONS = 2; // Maximum number of AI companions
     private readonly HIGH_SCORE_KEY = "blasteroids-highscore";
+    private readonly CURRENCY_KEY = "blasteroids-currency";
+    private readonly ZONE_KEY = "blasteroids-zone";
+    private readonly ZONE_LEVEL_KEY = "blasteroids-zone-level";
     private readonly DEBUG_GIFT_KEY = "blasteroids-debug-gift";
     private _onBonusTimerExpired?: () => void; // Callback for when bonus timer reaches zero
 
@@ -69,8 +76,25 @@ export class GameState {
         return this._gameOver;
     }
 
+    get zone(): number {
+        return this._zone;
+    }
+
     get level(): number {
         return this._level;
+    }
+
+    get absoluteLevel(): number {
+        // Calculate overall level number for backward compatibility
+        return (this._zone - 1) * ZONES.LEVELS_PER_CHOICE + this._level;
+    }
+
+    get zoneLevel(): string {
+        return `${this._zone}-${this._level}`;
+    }
+
+    get currency(): number {
+        return this._currency;
     }
 
     get highScore(): number {
@@ -163,12 +187,66 @@ export class GameState {
 
     nextLevel(): void {
         this._level++;
+
         // Refill fuel for all players on level completion
         for (const playerState of this._players.values()) {
             playerState.fuel = 100;
         }
         this._levelTimeRemaining = LEVEL_TIMER.INITIAL_TIME; // Reset timer for new level
+        this.saveZoneProgress();
         this.updateUI();
+    }
+
+    continueCurrentZone(): void {
+        // Reset to level 1 of current zone
+        this._level = 1;
+
+        // Refill fuel for all players
+        for (const playerState of this._players.values()) {
+            playerState.fuel = 100;
+        }
+        this._levelTimeRemaining = LEVEL_TIMER.INITIAL_TIME;
+        this.saveZoneProgress();
+        this.updateUI();
+    }
+
+    advanceToNextZone(): void {
+        this._zone++;
+        this._level = 1;
+        this.saveZoneProgress();
+        this.updateUI();
+    }
+
+    shouldShowChoiceScreen(): boolean {
+        return this._level > ZONES.LEVELS_PER_CHOICE;
+    }
+
+    addCurrency(amount: number): void {
+        this._currency += amount;
+        this.saveCurrency();
+        this.updateUI();
+    }
+
+    spendCurrency(amount: number): boolean {
+        if (this._currency >= amount) {
+            this._currency -= amount;
+            this.saveCurrency();
+            this.updateUI();
+            return true;
+        }
+        return false;
+    }
+
+    calculateLevelCurrencyReward(): number {
+        const zoneConfig =
+            ZONES.ZONE_CONFIGS[this._zone as keyof typeof ZONES.ZONE_CONFIGS];
+        const baseReward = CURRENCY.BASE_LEVEL_REWARD;
+        const zoneMultiplier = zoneConfig?.currencyMultiplier ?? 1.0;
+        const timeBonus =
+            Math.ceil(this._levelTimeRemaining) *
+            CURRENCY.TIME_BONUS_MULTIPLIER;
+
+        return Math.floor((baseReward + timeBonus) * zoneMultiplier);
     }
 
     updateLevelTimer(deltaTime: number): void {
@@ -245,12 +323,15 @@ export class GameState {
         this.initializePlayer("computer");
 
         // Reset global game state
+        this._zone = 1;
         this._level = 1;
         this._gameOver = false;
         this._debugNextGift = null; // Clear debug gift override
         this._levelTimeRemaining = LEVEL_TIMER.INITIAL_TIME; // Reset timer
         this._extraLifeThresholdsReached.clear(); // Reset extra life thresholds
         this.loadHighScore(); // Preserve high score across resets
+        this.loadCurrency(); // Preserve currency across resets
+        // Note: Zone progress is reset to 1-1, not loaded from storage on game reset
         this.updateUI();
     }
 
@@ -357,6 +438,7 @@ export class GameState {
         const scoreElement = document.getElementById("scoreValue");
         const levelElement = document.getElementById("levelValue");
         const highScoreElement = document.getElementById("highScoreValue");
+        const currencyElement = document.getElementById("currencyValue");
 
         if (scoreElement) {
             const formattedScore = this.formatRetroNumber(
@@ -381,7 +463,7 @@ export class GameState {
         this.updateLivesDisplay();
 
         if (levelElement) {
-            levelElement.textContent = this._level.toString();
+            levelElement.textContent = this.zoneLevel;
         }
 
         if (highScoreElement) {
@@ -389,6 +471,13 @@ export class GameState {
                 this._highScore.toString()
             );
             highScoreElement.innerHTML = formattedHighScore;
+        }
+
+        if (currencyElement) {
+            const formattedCurrency = this.formatRetroNumber(
+                this._currency.toString()
+            );
+            currencyElement.innerHTML = `${CURRENCY.SYMBOL} ${formattedCurrency}`;
         }
 
         // Update level timer display
@@ -538,10 +627,59 @@ export class GameState {
         }
     }
 
+    private loadCurrency(): void {
+        try {
+            const saved = localStorage.getItem(this.CURRENCY_KEY);
+            if (saved) {
+                this._currency =
+                    parseInt(saved, 10) || CURRENCY.STARTING_AMOUNT;
+            }
+        } catch (_error) {
+            // localStorage might not be available
+            this._currency = CURRENCY.STARTING_AMOUNT;
+        }
+    }
+
+    private saveCurrency(): void {
+        try {
+            localStorage.setItem(this.CURRENCY_KEY, this._currency.toString());
+        } catch (_error) {
+            // localStorage might not be available
+        }
+    }
+
+    private loadZoneProgress(): void {
+        try {
+            const savedZone = localStorage.getItem(this.ZONE_KEY);
+            const savedLevel = localStorage.getItem(this.ZONE_LEVEL_KEY);
+            if (savedZone) {
+                this._zone = parseInt(savedZone, 10) || 1;
+            }
+            if (savedLevel) {
+                this._level = parseInt(savedLevel, 10) || 1;
+            }
+        } catch (_error) {
+            // localStorage might not be available
+            this._zone = 1;
+            this._level = 1;
+        }
+    }
+
+    private saveZoneProgress(): void {
+        try {
+            localStorage.setItem(this.ZONE_KEY, this._zone.toString());
+            localStorage.setItem(this.ZONE_LEVEL_KEY, this._level.toString());
+        } catch (_error) {
+            // localStorage might not be available
+        }
+    }
+
     // Initialize high score and debug gift on first load
     init(): void {
         this.loadHighScore();
         this.loadDebugGift();
+        this.loadCurrency();
+        this.loadZoneProgress();
         this.updateUI();
     }
 

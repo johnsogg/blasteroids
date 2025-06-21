@@ -211,7 +211,7 @@ export class LevelCompleteAnimation {
         width: number,
         height: number
     ): void {
-        const text = `LEVEL ${this.stats?.completedLevel} COMPLETE`;
+        const text = `LEVEL ${this.gameState.zoneLevel} COMPLETE`;
         const centerY = height / 2 - 50;
 
         // Typewriter effect - reveal characters over time

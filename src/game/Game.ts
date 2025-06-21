@@ -21,6 +21,7 @@ import {
 import { CanvasManager } from "~/display/CanvasManager";
 import { MenuManager } from "~/menu/MenuManager";
 import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
+import { ZoneChoiceScreen } from "~/ui/ZoneChoiceScreen";
 
 import { GameState } from "./GameState";
 import { EntityManager } from "./EntityManager";
@@ -32,6 +33,7 @@ import { InputHandler } from "./InputHandler";
 import { AISystem } from "./AISystem";
 import { MessageSystem } from "./MessageSystem";
 import { DebugRenderer } from "./DebugRenderer";
+import { ZoneSystem } from "./ZoneSystem";
 
 export class Game {
     private canvas: HTMLCanvasElement;
@@ -43,6 +45,7 @@ export class Game {
     private canvasManager: CanvasManager;
     private menuManager: MenuManager;
     private levelCompleteAnimation: LevelCompleteAnimation;
+    private zoneChoiceScreen: ZoneChoiceScreen;
     private scaleManager: ScaleManager;
 
     // Extracted systems
@@ -55,6 +58,7 @@ export class Game {
     private aiSystem: AISystem;
     private messageSystem: MessageSystem;
     private debugRenderer: DebugRenderer;
+    private zoneSystem: ZoneSystem;
 
     // Game state
     private levelAnimationStarted = false;
@@ -74,6 +78,11 @@ export class Game {
         this.canvasManager = new CanvasManager(canvas);
         this.menuManager = new MenuManager(this, canvas, ctx);
         this.levelCompleteAnimation = new LevelCompleteAnimation(
+            canvas,
+            ctx,
+            this.gameState
+        );
+        this.zoneChoiceScreen = new ZoneChoiceScreen(
             canvas,
             ctx,
             this.gameState
@@ -123,6 +132,7 @@ export class Game {
             this.entityManager,
             this.gameState
         );
+        this.zoneSystem = new ZoneSystem(this.gameState);
 
         // Listen for canvas resize events
         this.canvasManager.onResize(() => this.handleCanvasResize());
@@ -304,12 +314,29 @@ export class Game {
     private update(deltaTime: number): void {
         const currentTime = performance.now();
 
-        // Handle input processing through InputHandler
-        this.inputHandler.processInput(
-            currentTime,
-            () => this.showGameOver(),
-            () => this.restart()
-        );
+        // Handle zone choice screen input first
+        if (this.zoneChoiceScreen.active) {
+            // Check for zone choice screen input
+            if (this.input.keys.ArrowUp || this.input.keys.w) {
+                this.zoneChoiceScreen.handleInput("ArrowUp");
+            }
+            if (this.input.keys.ArrowDown || this.input.keys.s) {
+                this.zoneChoiceScreen.handleInput("ArrowDown");
+            }
+            if (this.input.space || this.input.keys.Enter) {
+                this.zoneChoiceScreen.handleInput("Enter");
+            }
+            if (this.input.keys.Escape) {
+                this.zoneChoiceScreen.handleInput("Escape");
+            }
+        } else {
+            // Handle regular input processing through InputHandler
+            this.inputHandler.processInput(
+                currentTime,
+                () => this.showGameOver(),
+                () => this.restart()
+            );
+        }
 
         // Handle debug mode toggle
         if (this.input.debugToggle) {
@@ -325,11 +352,12 @@ export class Game {
             this.levelAnimationStarted = false;
         }
 
-        // Skip updates if game is over, paused, or level animation is playing
+        // Skip updates if game is over, paused, level animation is playing, or zone choice is active
         if (
             this.gameState.gameOver ||
             this.inputHandler.isPausedState() ||
-            this.levelCompleteAnimation.active
+            this.levelCompleteAnimation.active ||
+            this.zoneChoiceScreen.active
         ) {
             return;
         }
@@ -458,8 +486,17 @@ export class Game {
             this.gameState.addScore(timeBonus);
         }
 
+        // Calculate and award currency for level completion
+        const currencyReward = this.gameState.calculateLevelCurrencyReward();
+        if (currencyReward > 0) {
+            this.gameState.addCurrency(currencyReward);
+        }
+
         // Start level completion animation
-        this.levelCompleteAnimation.start(this.gameState.level, completionTime);
+        this.levelCompleteAnimation.start(
+            this.gameState.absoluteLevel,
+            completionTime
+        );
         this.levelAnimationStarted = true;
     }
 
@@ -470,12 +507,56 @@ export class Game {
         // Advance to next level
         this.gameState.nextLevel();
 
-        // Spawn more asteroids based on level (3 + level number)
-        const asteroidCount = 3 + this.gameState.level;
+        // Check if we should show the zone choice screen
+        if (this.gameState.shouldShowChoiceScreen()) {
+            this.showZoneChoiceScreen();
+            return;
+        }
+
+        // Continue with normal level progression
+        this.spawnLevelAsteroids();
+
+        // Start timing the new level
+        this.levelStartTime = performance.now();
+    }
+
+    private spawnLevelAsteroids(): void {
+        // Apply zone-specific effects before spawning
+        this.zoneSystem.applyZoneEffects();
+
+        // Spawn asteroids based on current zone configuration
+        const asteroidCount = this.zoneSystem.calculateAsteroidCount();
 
         for (let i = 0; i < asteroidCount; i++) {
             this.createAsteroid();
         }
+    }
+
+    private showZoneChoiceScreen(): void {
+        this.zoneChoiceScreen.show((choice) => {
+            this.handleZoneChoice(choice);
+        });
+    }
+
+    private handleZoneChoice(choice: "continue" | "next_zone" | "shop"): void {
+        switch (choice) {
+            case "continue":
+                // Reset level to 1 and continue in current zone
+                this.gameState.continueCurrentZone();
+                break;
+            case "next_zone":
+                // Advance to next zone
+                this.gameState.advanceToNextZone();
+                break;
+            case "shop":
+                // TODO: Open shop interface (future feature)
+                // For now, just continue current zone
+                this.gameState.continueCurrentZone();
+                break;
+        }
+
+        // Spawn asteroids for the new level
+        this.spawnLevelAsteroids();
 
         // Start timing the new level
         this.levelStartTime = performance.now();
@@ -728,6 +809,9 @@ export class Game {
 
         // Draw level completion animation if active
         this.levelCompleteAnimation.render();
+
+        // Draw zone choice screen if active
+        this.zoneChoiceScreen.render();
     }
 
     private drawObjectWithWrapAround(obj: GameEntity): void {
