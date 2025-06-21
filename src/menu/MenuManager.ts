@@ -168,6 +168,10 @@ export class MenuManager {
                         label: "Lightning: Chain",
                         value: GIFT.TYPES.UPGRADE_LIGHTNING_CHAIN,
                     },
+                    {
+                        label: "AI Companion",
+                        value: GIFT.TYPES.AI_COMPANION,
+                    },
                 ],
                 onChange: (value) =>
                     this.handleDebugNextGiftChange(value as string),

@@ -103,7 +103,7 @@ export const FUEL = {
 // =============================================================================
 export const AI = {
     // Whether AI player is enabled at start
-    ENABLED: true,
+    ENABLED: false,
 } as const;
 
 // =============================================================================

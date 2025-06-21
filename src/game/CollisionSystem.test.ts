@@ -552,8 +552,6 @@ describe("CollisionSystem", () => {
             entityManager.addEntity(computerShip);
             entityManager.addEntity(gift);
 
-            const computerState = gameState.getPlayerState("computer");
-            const _initialFuel = computerState?.fuel || 0;
 
             collisionSystem.checkAllCollisions();
 
@@ -601,8 +599,6 @@ describe("CollisionSystem", () => {
             entityManager.addEntity(playerShip);
             entityManager.addEntity(gift);
 
-            const playerState = gameState.getPlayerState("player");
-            const _initialFuel = playerState?.fuel || 0;
 
             collisionSystem.checkAllCollisions();
 

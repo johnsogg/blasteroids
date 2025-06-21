@@ -39,7 +39,7 @@
   - [x] Gift collection benefits the player who collected it
   - [x] AI can be controlled via `AI.ENABLED` constant in configuration
 - [ ] Support combat between player and computer player
-- [ ] Make AI player available as a gift spawned from warp bubbles
+- [x] Make AI player available as a gift spawned from warp bubbles
 
 ### 🛠️ Development & Testing Tools
 
