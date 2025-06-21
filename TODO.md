@@ -38,5 +38,6 @@
 
 ## Known Bugs
 
-- [ ] Lightning weapon: it no longer destroys asteroids. It does fire and the
+- [x] Lightning weapon: it no longer destroys asteroids. It does fire and the
       A/V effects work, but it doesn't remove asteroids.
+      **FIXED**: Added missing lightning collision detection to CollisionSystem.checkAllCollisions(). The weapon was firing correctly but the collision check was never being called from the main game loop.

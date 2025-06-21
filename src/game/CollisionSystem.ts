@@ -74,6 +74,31 @@ export class CollisionSystem {
             if (ship.isLaserActive) {
                 this.checkLaserCollisions(ship, asteroids, gifts);
             }
+
+            // Check lightning collisions if lightning was recently fired
+            if (
+                ship.lightningTargets &&
+                ship.lightningTargets.length > 0 &&
+                ship.lightningTime
+            ) {
+                // Lightning effects are brief, only check collisions for a short time after firing
+                const lightningDuration = 100; // milliseconds
+                if (currentTime - ship.lightningTime <= lightningDuration) {
+                    // Find the primary target from the lightning targets
+                    const primaryTarget = this.findNearestLightningTarget(
+                        ship.position,
+                        this.weaponSystem.getLightningRadius(ship.playerId)
+                    );
+                    if (primaryTarget) {
+                        this.checkLightningCollisions(
+                            ship,
+                            primaryTarget,
+                            this.weaponSystem.getLightningRadius(ship.playerId),
+                            currentTime
+                        );
+                    }
+                }
+            }
         }
 
         // Check gift-warpBubbleOut collisions (gift gets captured by closing warp)
