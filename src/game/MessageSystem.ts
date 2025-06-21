@@ -282,12 +282,12 @@ export class MessageSystem {
         canvasHeight: number
     ): void {
         const friendlyNames: Record<string, string> = {
-            fuel_refill: "Fuel Refill: Tank Full!",
-            extra_life: "Extra Life: +1 Life!",
-            weapon_bullets: "Bullets: Basic Pew Pew!",
-            weapon_missiles: "Missiles: Big Boom!",
-            weapon_laser: "Laser: Continuous Zap!",
-            weapon_lightning: "Lightning: Chain Zap!",
+            fuel_refill: "Fuel",
+            extra_life: "+1 Up",
+            weapon_bullets: "Bullets",
+            weapon_missiles: "Missiles",
+            weapon_laser: "Laser Zap!",
+            weapon_lightning: "Lightning Zap!",
             upgrade_bullets_fire_rate: "Bullets: Fire Rate +25%!",
             upgrade_bullets_size: "Bullets: Size +50%!",
             upgrade_missiles_speed: "Missiles: Speed +50%!",
@@ -297,7 +297,7 @@ export class MessageSystem {
             upgrade_laser_efficiency: "Laser: Efficiency +50%!",
             upgrade_lightning_radius: "Lightning: Radius +20%!",
             upgrade_lightning_chain: "Lightning: Chain Lightning!",
-            ai_companion: "AI Companion: Helper Acquired!",
+            ai_companion: "AI Companion (Psychotic)",
         };
 
         const displayText = friendlyNames[giftType] || `Gift: ${giftType}`;

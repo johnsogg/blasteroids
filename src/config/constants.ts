@@ -574,6 +574,21 @@ export const MESSAGE = {
 } as const;
 
 // =============================================================================
+// DEBUG SYSTEM
+// =============================================================================
+export const DEBUG = {
+    // Visual debugging colors
+    COLLISION_CIRCLE_COLOR: "#ff00ff", // Magenta
+    WEAPON_RANGE_COLOR: "#00ffff", // Cyan
+
+    // Line thickness for debug visuals
+    LINE_WIDTH: 1, // Thin lines as specified
+
+    // Transparency for debug visuals
+    ALPHA: 0.8, // Slightly transparent to not obstruct gameplay
+} as const;
+
+// =============================================================================
 // PERFORMANCE
 // =============================================================================
 export const PERFORMANCE = {

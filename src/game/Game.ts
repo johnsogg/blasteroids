@@ -31,6 +31,7 @@ import { GiftSystem } from "./GiftSystem";
 import { InputHandler } from "./InputHandler";
 import { AISystem } from "./AISystem";
 import { MessageSystem } from "./MessageSystem";
+import { DebugRenderer } from "./DebugRenderer";
 
 export class Game {
     private canvas: HTMLCanvasElement;
@@ -53,6 +54,7 @@ export class Game {
     private inputHandler: InputHandler;
     private aiSystem: AISystem;
     private messageSystem: MessageSystem;
+    private debugRenderer: DebugRenderer;
 
     // Game state
     private levelAnimationStarted = false;
@@ -60,6 +62,7 @@ export class Game {
     private lastTime = 0;
     private running = false;
     private gameOverSoundPlayed = false;
+    private debugMode = false;
 
     constructor(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
         this.canvas = canvas;
@@ -116,6 +119,10 @@ export class Game {
             this.levelCompleteAnimation
         );
         this.aiSystem = new AISystem(this.entityManager, this.gameState);
+        this.debugRenderer = new DebugRenderer(
+            this.entityManager,
+            this.gameState
+        );
 
         // Listen for canvas resize events
         this.canvasManager.onResize(() => this.handleCanvasResize());
@@ -303,6 +310,11 @@ export class Game {
             () => this.showGameOver(),
             () => this.restart()
         );
+
+        // Handle debug mode toggle
+        if (this.input.debugToggle) {
+            this.debugMode = !this.debugMode;
+        }
 
         // Update level completion animation
         this.levelCompleteAnimation.update(currentTime);
@@ -693,6 +705,9 @@ export class Game {
 
         // Draw particles
         this.particles.render(this.ctx);
+
+        // Draw debug visuals if enabled
+        this.debugRenderer.render(this.ctx, this.debugMode);
 
         // Draw fuel gauge
         this.renderFuelGauge();

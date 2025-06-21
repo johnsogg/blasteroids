@@ -4,93 +4,45 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Blasteroids is a web-based Asteroids-style game built with TypeScript and HTML5 Canvas, featuring authentic vector graphics and classic arcade gameplay mechanics.
+Blasteroids is a sophisticated web-based Asteroids game built with TypeScript and HTML5 Canvas. It has evolved into a comprehensive game with multiple weapon systems, AI companions, shields, power-ups, and multiplayer support.
 
 ## Development Commands
 
-- `npm run dev`: Start development server with hot module reloading
-- `npm run build`: Production build with TypeScript compilation and Vite optimization
-- `npm run lint:fix`: Run ESLint with auto-fix (includes Prettier formatting)
-- `npm run preview`: Preview production build locally
+- `npm run dev`: Start development server
+- `npm run build`: Production build  
+- `npm run lint:fix`: Run ESLint with auto-fix
+- `npm run test:run`: Run unit tests with vitest
 
-## Architecture
+## Architecture Essentials
 
 ### Core Systems
+- **EntityManager**: Centralized entity management and queries
+- **WeaponSystem**: Multi-weapon support (bullets, missiles, laser, lightning) with upgrades
+- **ShieldSystem**: Active defense with fuel consumption and bouncing physics
+- **GiftSystem**: Power-ups through animated warp bubble portals
+- **AISystem**: Computer players + AI companions with behavioral states
+- **GameState**: Player state management via playerIds (fuel, weapons, lives)
 
-- **Game Loop**: Fixed timestep game loop using requestAnimationFrame
-- **Physics**: Vector2-based position/velocity system with realistic momentum
-- **Input**: Keyboard input manager supporting Arrow keys and WASD
-- **Collision**: Circle-based collision detection for all game objects
-- **Rendering**: Vector graphics using Canvas 2D context, authentic Asteroids styling
+### Key Directories
+- `game/`: Core game systems
+- `config/constants.ts`: ALL configuration values (no magic numbers)
+- `entities/`: Game objects with typed interfaces
+- `*.test.ts`: vitest tests (co-located with source)
 
-### Key Classes
+## Development Approach
 
-- `Game`: Main game controller managing entities and game loop
-- `GameState`: Score tracking, lives management, and game over handling
-- `Vector2`: Immutable 2D vector math utilities
-- `InputManager`: Keyboard input handling with convenient game key mappings
-- `Collision`: Circle collision detection utilities
-- `Shapes`: Vector graphics rendering for ship, asteroids, and bullets
-
-### Project Structure
-
-```
-src/
-├── game/          # Core game classes (Game, GameState)
-├── entities/      # Game object classes (planned for refactoring)
-├── physics/       # Physics and collision systems
-├── input/         # Input handling
-├── render/        # Graphics and shape rendering
-└── utils/         # Utility classes (Vector2, math helpers)
-```
-
-## Game Mechanics
-
-### Controls
-
-- Arrow Keys/WASD: Ship rotation and main thrust (2 fuel/sec)
-- Q/E: Port/starboard strafing thrusters (50% power, 1 fuel/sec each)
-- Spacebar: Fire bullets (150ms rate limit)
-
-### Fuel System
-
-- Fuel capacity: 100 units displayed in top-center gauge
-- Main thruster consumes 2 fuel per second
-- Strafe thrusters consume 1 fuel per second each
-- Fuel refills to 100% upon level completion
-- Ship cannot move without sufficient fuel
-
-### Physics
-
-- Ships have momentum and inertia like classic Asteroids
-- Bullets inherit ship velocity for realistic ballistics
-- Screen wrapping for ships and asteroids (bullets disappear off-screen)
-
-### Scoring (Classic Asteroids Values)
-
-- Large asteroids: 20 points
-- Medium asteroids: 50 points
-- Small asteroids: 100 points
-
-## Development Notes
-
-- Game uses authentic vector graphics matching original 1979 Asteroids
-- Collision detection is circle-based for performance
-- All TypeScript with strict mode enabled
-- ESLint configuration optimized for game development patterns
-- 4-space indentation, import ordering enforced
-
-## Current Status
-
-See [TODO.md](./TODO.md) for current development tasks and roadmap.
+- **Use TDD by default**: Write tests first, then implement
+- **Use vitest** (not Jest) for all testing
+- **Use EntityManager** for entity queries and lifecycle
+- **Use GameState** for player state, not Ship entities directly
+- **Check constants.ts** for configuration before hardcoding values
+- **Explore existing patterns** before creating new systems
 
 ## Memories
 
-- When the user says "update the TODOs" they mean update the TODO.md file to reflect completed work, not the internal TodoWrite system
-- Keep the TODO.md file up to date with the current status, but always ask the user before writing to it to avoid conflicts
-- Always run formatting and linting before commits
-- Use descriptive commit messages that explain the "why" not just the "what"
-- When committing to git, group changes into meaningful sets so their commits are logical
-- Keep the README.md up to date before pushing to remote
-- Leave TODOs formatted like `// TODO(claude): <comment>` when making temporary
-  changes to make it easier to find and fix later
+- "update the TODOs" = update TODO.md file, not internal TodoWrite system
+- Always ask before writing to TODO.md to avoid conflicts
+- Run `npm run lint:fix` before commits
+- Use descriptive commit messages explaining "why" not "what"
+- Leave temporary TODOs as `// TODO(claude): <comment>`
+- This codebase is complex - understand existing systems before adding new features

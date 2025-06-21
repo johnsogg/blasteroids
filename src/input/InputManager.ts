@@ -189,4 +189,14 @@ export class InputManager {
         if (!this.isInputAllowed("weapon4")) return false;
         return this.wasKeyPressed("Digit4");
     }
+
+    // Debug methods
+    get debugToggle(): boolean {
+        if (!this.isInputAllowed("debugToggle")) return false;
+        const pressed = this.wasKeyPressed("Backquote"); // ~ key
+        if (pressed) {
+            this.consumeInput("debugToggle");
+        }
+        return pressed;
+    }
 }
