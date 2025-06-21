@@ -1019,7 +1019,7 @@ export class Game {
         shieldInfo: { isActive: boolean; isRecharging: boolean }
     ): void {
         const shipRadius = Math.max(ship.size.x, ship.size.y) / 2;
-        const shieldRadius = shipRadius + 5; // 5 pixels larger than ship
+        const shieldRadius = shipRadius + SHIELD.RADIUS_OFFSET;
 
         // Determine shield color based on state
         const baseColor = SHIELD.COLOR; // "#00bfff" (bright light blue)
@@ -1070,11 +1070,16 @@ export class Game {
             );
         }
 
+        // Determine stroke width based on shield state
+        const strokeWidth = shieldInfo.isRecharging
+            ? SHIELD.STROKE_WIDTH_RECHARGING
+            : SHIELD.STROKE_WIDTH_CHARGED;
+
         // Draw shield circle at all calculated positions
         for (const pos of positions) {
             this.ctx.save();
             this.ctx.strokeStyle = shieldColor;
-            this.ctx.lineWidth = 2;
+            this.ctx.lineWidth = strokeWidth;
             this.ctx.beginPath();
             this.ctx.arc(pos.x, pos.y, shieldRadius, 0, Math.PI * 2);
             this.ctx.stroke();

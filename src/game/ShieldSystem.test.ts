@@ -6,6 +6,7 @@ import { AudioManager } from "~/audio/AudioManager";
 import { Vector2 } from "~/utils/Vector2";
 import type { Ship, GameEntity } from "~/entities";
 import { InputContext } from "~/input/InputContext";
+import { SHIELD } from "~/config/constants";
 
 // Mock dependencies
 vi.mock("~/audio/AudioManager", () => ({
@@ -837,6 +838,23 @@ describe("ShieldSystem", () => {
             // The CollisionSystem should check BOTH conditions:
             // isShieldActive() AND !isShieldRecharging()
             // Currently it only checks isShieldActive(), which is the bug
+        });
+    });
+
+    describe("Shield Visual Configuration", () => {
+        it("should have correct radius offset constant", () => {
+            // Test that the shield radius offset is increased from the original 5 pixels
+            expect(SHIELD.RADIUS_OFFSET).toBe(20);
+            expect(SHIELD.RADIUS_OFFSET).toBeGreaterThan(5); // Much bigger than original
+        });
+
+        it("should have different stroke widths for charged vs recharging", () => {
+            // Test that stroke widths are different for visual feedback
+            expect(SHIELD.STROKE_WIDTH_CHARGED).toBe(5);
+            expect(SHIELD.STROKE_WIDTH_RECHARGING).toBe(3);
+            expect(SHIELD.STROKE_WIDTH_CHARGED).toBeGreaterThan(
+                SHIELD.STROKE_WIDTH_RECHARGING
+            );
         });
     });
 });

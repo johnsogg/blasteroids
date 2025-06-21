@@ -123,6 +123,9 @@ export const SHIELD = {
     // Visual
     COLOR: "#00bfff", // bright light blue
     ALPHA: 0.4, // transparency for shield circle
+    RADIUS_OFFSET: 20, // pixels added to ship radius (dramatically larger for visibility)
+    STROKE_WIDTH_CHARGED: 5, // thick stroke when fully charged
+    STROKE_WIDTH_RECHARGING: 3, // thin stroke when recharging
 } as const;
 
 // =============================================================================
