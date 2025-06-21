@@ -11,6 +11,7 @@ vi.mock("~/audio/AudioManager", () => ({
     AudioManager: vi.fn().mockImplementation(() => ({
         playWarpBubbleOpening: vi.fn().mockResolvedValue(undefined),
         playWarpBubbleClosing: vi.fn().mockResolvedValue(undefined),
+        playGiftAmbientWubwub: vi.fn().mockResolvedValue({ stop: vi.fn() }),
     })),
 }));
 

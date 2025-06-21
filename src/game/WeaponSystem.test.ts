@@ -60,8 +60,8 @@ describe("WeaponSystem", () => {
             trail: [],
         };
 
-        // Initialize game state with full fuel
-        gameState.init();
+        // Initialize game state with full fuel (already done in constructor)
+        gameState.refillFuel();
     });
 
     describe("Weapon Input Handling", () => {
@@ -445,7 +445,7 @@ describe("WeaponSystem", () => {
             );
 
             // Drain fuel completely
-            gameState.consumeFuel(100);
+            gameState.consumeFuel(gameState.fuel);
 
             // Try to continue laser
             weaponSystem.handleWeaponInput(
