@@ -14,6 +14,7 @@ import {
     GIFT,
     WARP_BUBBLE,
     AI,
+    SHIELD,
     type GeometryMode,
     type GiftType,
 } from "~/config/constants";
@@ -24,6 +25,7 @@ import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
 import { GameState } from "./GameState";
 import { EntityManager } from "./EntityManager";
 import { WeaponSystem } from "./WeaponSystem";
+import { ShieldSystem } from "./ShieldSystem";
 import { CollisionSystem } from "./CollisionSystem";
 import { GiftSystem } from "./GiftSystem";
 import { InputHandler } from "./InputHandler";
@@ -44,6 +46,7 @@ export class Game {
     // Extracted systems
     private entityManager: EntityManager;
     private weaponSystem: WeaponSystem;
+    private shieldSystem: ShieldSystem;
     private collisionSystem: CollisionSystem;
     private giftSystem: GiftSystem;
     private inputHandler: InputHandler;
@@ -80,12 +83,18 @@ export class Game {
             this.gameState,
             this.entityManager
         );
+        this.shieldSystem = new ShieldSystem(
+            this.audio,
+            this.gameState,
+            this.entityManager
+        );
         this.collisionSystem = new CollisionSystem(
             this.audio,
             this.particles,
             this.gameState,
             this.entityManager,
-            this.weaponSystem
+            this.weaponSystem,
+            this.shieldSystem
         );
         this.giftSystem = new GiftSystem(
             this.audio,
@@ -97,6 +106,7 @@ export class Game {
             this.input,
             this.gameState,
             this.weaponSystem,
+            this.shieldSystem,
             this.entityManager,
             this.menuManager,
             this.levelCompleteAnimation
@@ -299,6 +309,9 @@ export class Game {
         // Update gift system
         this.giftSystem.update(currentTime);
 
+        // Update shield system
+        this.shieldSystem.update(currentTime);
+
         // Update all entities through EntityManager
         this.entityManager.updateEntities(deltaTime, currentTime);
 
@@ -326,7 +339,7 @@ export class Game {
         this.particles.update(deltaTime);
 
         // Check all collisions through CollisionSystem
-        this.collisionSystem.checkAllCollisions();
+        this.collisionSystem.checkAllCollisions(currentTime);
 
         // Remove expired entities through EntityManager
         this.entityManager.filterExpiredEntities(currentTime);
@@ -387,6 +400,7 @@ export class Game {
 
         // Reset systems
         this.weaponSystem.reset();
+        this.shieldSystem.resetShieldState();
         this.giftSystem.reset();
         this.inputHandler.reset();
 
@@ -650,6 +664,9 @@ export class Game {
         allEntities.forEach((entity) => {
             this.drawObjectWithWrapAround(entity);
         });
+
+        // Draw shields for all ships
+        this.renderShields();
 
         // Draw particles
         this.particles.render(this.ctx);
@@ -950,5 +967,92 @@ export class Game {
             WEAPONS.HUD.ICON_SIZE,
             WEAPONS.HUD.ICON_SPACING
         );
+    }
+
+    /**
+     * Render shields for all ships
+     */
+    private renderShields(): void {
+        const ships = this.entityManager.getShips();
+
+        for (const ship of ships) {
+            const shieldInfo = this.shieldSystem.getShieldRenderInfo(
+                ship.playerId
+            );
+            if (shieldInfo?.isActive) {
+                this.drawShieldWithWrapAround(ship, shieldInfo);
+            }
+        }
+    }
+
+    /**
+     * Draw a shield with wrap-around support
+     */
+    private drawShieldWithWrapAround(
+        ship: Ship,
+        shieldInfo: { isActive: boolean; isRecharging: boolean }
+    ): void {
+        const shipRadius = Math.max(ship.size.x, ship.size.y) / 2;
+        const shieldRadius = shipRadius + 5; // 5 pixels larger than ship
+
+        // Determine shield color based on state
+        const baseColor = SHIELD.COLOR; // "#00bfff" (bright light blue)
+        const alpha = shieldInfo.isRecharging
+            ? SHIELD.ALPHA * 0.5
+            : SHIELD.ALPHA; // Dimmer when recharging
+
+        // Convert hex color to rgba
+        const r = parseInt(baseColor.slice(1, 3), 16);
+        const g = parseInt(baseColor.slice(3, 5), 16);
+        const b = parseInt(baseColor.slice(5, 7), 16);
+        const shieldColor = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+
+        // Calculate positions where shield should be drawn (including wrap-around)
+        const positions: Vector2[] = [ship.position];
+
+        // Check if shield is near edges and add wrap-around positions
+        if (ship.position.x - shieldRadius < 0) {
+            positions.push(
+                new Vector2(
+                    ship.position.x + this.canvas.width,
+                    ship.position.y
+                )
+            );
+        }
+        if (ship.position.x + shieldRadius > this.canvas.width) {
+            positions.push(
+                new Vector2(
+                    ship.position.x - this.canvas.width,
+                    ship.position.y
+                )
+            );
+        }
+        if (ship.position.y - shieldRadius < 0) {
+            positions.push(
+                new Vector2(
+                    ship.position.x,
+                    ship.position.y + this.canvas.height
+                )
+            );
+        }
+        if (ship.position.y + shieldRadius > this.canvas.height) {
+            positions.push(
+                new Vector2(
+                    ship.position.x,
+                    ship.position.y - this.canvas.height
+                )
+            );
+        }
+
+        // Draw shield circle at all calculated positions
+        for (const pos of positions) {
+            this.ctx.save();
+            this.ctx.strokeStyle = shieldColor;
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.arc(pos.x, pos.y, shieldRadius, 0, Math.PI * 2);
+            this.ctx.stroke();
+            this.ctx.restore();
+        }
     }
 }

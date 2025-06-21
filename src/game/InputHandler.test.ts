@@ -4,6 +4,7 @@ import { InputManager } from "~/input/InputManager";
 import { InputContext } from "~/input/InputContext";
 import { GameState } from "./GameState";
 import { WeaponSystem } from "./WeaponSystem";
+import { ShieldSystem } from "./ShieldSystem";
 import { EntityManager } from "./EntityManager";
 import { MenuManager } from "~/menu/MenuManager";
 import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
@@ -13,12 +14,19 @@ import type { Game } from "~/game/Game";
 vi.mock("~/input/InputManager");
 vi.mock("~/menu/MenuManager");
 vi.mock("~/animations/LevelCompleteAnimation");
+vi.mock("./ShieldSystem", () => ({
+    ShieldSystem: vi.fn().mockImplementation(() => ({
+        handleShieldInput: vi.fn(),
+        getMovementSlowdownFactor: vi.fn().mockReturnValue(1.0),
+    })),
+}));
 
 describe("InputHandler", () => {
     let inputHandler: InputHandler;
     let inputManager: InputManager;
     let gameState: GameState;
     let weaponSystem: WeaponSystem;
+    let shieldSystem: ShieldSystem;
     let menuManager: MenuManager;
     let levelCompleteAnimation: LevelCompleteAnimation;
     let mockCanvas: HTMLCanvasElement;
@@ -32,6 +40,12 @@ describe("InputHandler", () => {
         weaponSystem = {
             handleWeaponInput: vi.fn(),
         } as unknown as WeaponSystem;
+
+        // Create minimal shield system for testing
+        shieldSystem = {
+            handleShieldInput: vi.fn(),
+            getMovementSlowdownFactor: vi.fn().mockReturnValue(1.0),
+        } as unknown as ShieldSystem;
 
         const mockGame = {} as Game;
         const mockCtx = {} as CanvasRenderingContext2D;
@@ -51,6 +65,7 @@ describe("InputHandler", () => {
             inputManager,
             gameState,
             weaponSystem,
+            shieldSystem,
             entityManager,
             menuManager,
             levelCompleteAnimation

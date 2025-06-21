@@ -119,6 +119,21 @@ export class InputManager {
         return this.isKeyPressed("KeyE");
     }
 
+    get shield(): boolean {
+        if (!this.isInputAllowed("shield")) return false;
+        return this.isKeyPressed("KeyS") || this.isKeyPressed("ArrowDown");
+    }
+
+    get shieldPressed(): boolean {
+        if (!this.isInputAllowed("shieldPressed")) return false;
+        const pressed =
+            this.wasKeyPressed("KeyS") || this.wasKeyPressed("ArrowDown");
+        if (pressed) {
+            this.consumeInput("shieldPressed"); // Consume to prevent bleeding
+        }
+        return pressed;
+    }
+
     // Menu navigation methods (single press)
     get menuToggle(): boolean {
         if (!this.isInputAllowed("menuToggle")) return false;

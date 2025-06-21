@@ -99,6 +99,33 @@ export const FUEL = {
 } as const;
 
 // =============================================================================
+// SHIELD SYSTEM
+// =============================================================================
+export const SHIELD = {
+    // Timing
+    RECHARGE_DURATION: 10000, // milliseconds (10 seconds)
+
+    // Movement effects
+    MOVEMENT_SLOWDOWN_FACTOR: 0.99, // 50% slowdown when shield active
+
+    // Fuel consumption on collision (per asteroid size)
+    FUEL_CONSUMPTION: {
+        large: 20,
+        medium: 10,
+        small: 5,
+        default: 10,
+    },
+
+    // Physics
+    BOUNCE_IMPULSE_STRENGTH: 200, // impulse applied during bouncing
+    ASTEROID_BOUNCE_MULTIPLIER: 0.5, // asteroids receive less impulse than ship
+
+    // Visual
+    COLOR: "#00bfff", // bright light blue
+    ALPHA: 0.4, // transparency for shield circle
+} as const;
+
+// =============================================================================
 // AI SYSTEM
 // =============================================================================
 export const AI = {

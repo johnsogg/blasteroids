@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { CollisionSystem } from "./CollisionSystem";
 import { EntityManager } from "./EntityManager";
 import { WeaponSystem } from "./WeaponSystem";
+import { ShieldSystem } from "./ShieldSystem";
 import { GameState } from "./GameState";
 import { AudioManager } from "~/audio/AudioManager";
 import { ParticleSystem } from "~/render/ParticleSystem";
@@ -28,10 +29,19 @@ vi.mock("~/render/ParticleSystem", () => ({
     })),
 }));
 
+vi.mock("./ShieldSystem", () => ({
+    ShieldSystem: vi.fn().mockImplementation(() => ({
+        isShieldActive: vi.fn().mockReturnValue(false),
+        isShieldRecharging: vi.fn().mockReturnValue(false),
+        handleShieldCollision: vi.fn(),
+    })),
+}));
+
 describe("CollisionSystem", () => {
     let collisionSystem: CollisionSystem;
     let entityManager: EntityManager;
     let weaponSystem: WeaponSystem;
+    let shieldSystem: ShieldSystem;
     let gameState: GameState;
     let audioManager: AudioManager;
     let particleSystem: ParticleSystem;
@@ -49,13 +59,15 @@ describe("CollisionSystem", () => {
             gameState,
             entityManager
         );
+        shieldSystem = new ShieldSystem(audioManager, gameState, entityManager);
 
         collisionSystem = new CollisionSystem(
             audioManager,
             particleSystem,
             gameState,
             entityManager,
-            weaponSystem
+            weaponSystem,
+            shieldSystem
         );
 
         // Initialize game state
@@ -607,6 +619,119 @@ describe("CollisionSystem", () => {
             // Player fuel should be refilled
             const finalFuel = gameState.getPlayerState("player")?.fuel || 0;
             expect(finalFuel).toBe(100); // Fuel refill should set to 100
+        });
+    });
+
+    describe("Shield Collision Behavior", () => {
+        it("should destroy ship when shield is recharging", () => {
+            // Create ship with shield system
+            const ship: Ship = {
+                position: new Vector2(100, 100),
+                velocity: Vector2.zero(),
+                size: new Vector2(20, 10),
+                rotation: 0,
+                color: "#00ff00",
+                type: "ship",
+                playerId: "player",
+                age: 0,
+                isAI: false,
+                invulnerable: false,
+                thrusting: false,
+                strafingLeft: false,
+                strafingRight: false,
+                isLaserActive: false,
+                trail: [],
+            };
+
+            // Create asteroid for collision
+            const asteroid: GameEntity = {
+                position: new Vector2(100, 100), // Same position for collision
+                velocity: Vector2.zero(),
+                size: new Vector2(20, 20),
+                rotation: 0,
+                color: "#ffffff",
+                type: "asteroid",
+                age: 0,
+            };
+
+            entityManager.addEntity(ship);
+            entityManager.addEntity(asteroid);
+
+            // Mock shield system to return active but recharging
+            vi.spyOn(shieldSystem, "isShieldActive").mockReturnValue(true);
+            vi.spyOn(shieldSystem, "isShieldRecharging").mockReturnValue(true);
+
+            // Mock destroyShip to verify it was called
+            const destroyShipSpy = vi.spyOn(
+                collisionSystem as { destroyShip: (ship: Ship) => void },
+                "destroyShip"
+            );
+
+            collisionSystem.checkAllCollisions();
+
+            // Ship should be destroyed when shield is recharging
+            expect(destroyShipSpy).toHaveBeenCalledWith(ship);
+        });
+
+        it("should handle shield collision when shield is active and not recharging", () => {
+            // Create ship with shield system
+            const ship: Ship = {
+                position: new Vector2(100, 100),
+                velocity: Vector2.zero(),
+                size: new Vector2(20, 10),
+                rotation: 0,
+                color: "#00ff00",
+                type: "ship",
+                playerId: "player",
+                age: 0,
+                isAI: false,
+                invulnerable: false,
+                thrusting: false,
+                strafingLeft: false,
+                strafingRight: false,
+                isLaserActive: false,
+                trail: [],
+            };
+
+            // Create asteroid for collision
+            const asteroid: GameEntity = {
+                position: new Vector2(100, 100), // Same position for collision
+                velocity: Vector2.zero(),
+                size: new Vector2(20, 20),
+                rotation: 0,
+                color: "#ffffff",
+                type: "asteroid",
+                age: 0,
+            };
+
+            entityManager.addEntity(ship);
+            entityManager.addEntity(asteroid);
+
+            // Mock shield system to return active and not recharging
+            vi.spyOn(shieldSystem, "isShieldActive").mockReturnValue(true);
+            vi.spyOn(shieldSystem, "isShieldRecharging").mockReturnValue(false);
+
+            // Mock handleShieldCollision to verify it was called
+            const handleShieldCollisionSpy = vi.spyOn(
+                shieldSystem,
+                "handleShieldCollision"
+            );
+
+            // Mock destroyShip to verify it was NOT called
+            const destroyShipSpy = vi.spyOn(
+                collisionSystem as { destroyShip: (ship: Ship) => void },
+                "destroyShip"
+            );
+
+            collisionSystem.checkAllCollisions();
+
+            // Shield collision should be handled, ship should not be destroyed
+            expect(handleShieldCollisionSpy).toHaveBeenCalledWith(
+                ship,
+                asteroid,
+                expect.any(Number)
+            );
+            expect(destroyShipSpy).not.toHaveBeenCalled();
         });
     });
 });

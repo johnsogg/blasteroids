@@ -911,4 +911,189 @@ export class AudioManager {
             },
         };
     }
+
+    async playShieldLoop(): Promise<{ stop: () => void }> {
+        await this.ensureAudioContext();
+
+        // Create a crackly "btzz btzz" looping sound for active shield
+        const oscillator = this.audioContext.createOscillator();
+        const noiseOscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        const noiseGain = this.audioContext.createGain();
+        const filter = this.audioContext.createBiquadFilter();
+
+        // Connect audio graph
+        oscillator.connect(filter);
+        noiseOscillator.connect(noiseGain);
+        noiseGain.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(this.masterGain);
+
+        // Main oscillator for the "btzz" base tone
+        oscillator.type = "sawtooth";
+        oscillator.frequency.setValueAtTime(180, this.audioContext.currentTime);
+
+        // Add some noise for crackling effect
+        noiseOscillator.type = "square";
+        noiseOscillator.frequency.setValueAtTime(
+            2400,
+            this.audioContext.currentTime
+        );
+        noiseGain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+
+        // High-pass filter for electric crackling effect
+        filter.type = "highpass";
+        filter.frequency.setValueAtTime(150, this.audioContext.currentTime);
+        filter.Q.setValueAtTime(3, this.audioContext.currentTime);
+
+        // Pulsing volume for "btzz btzz" rhythm
+        gainNode.gain.setValueAtTime(0.0, this.audioContext.currentTime);
+
+        // Create a repeating pattern using exponential ramps
+        const schedulePattern = (startTime: number) => {
+            const patternDuration = 0.8; // 800ms per "btzz btzz" cycle
+
+            // First "btzz" (100ms on, 100ms off)
+            gainNode.gain.setValueAtTime(0.0, startTime);
+            gainNode.gain.linearRampToValueAtTime(0.15, startTime + 0.02);
+            gainNode.gain.setValueAtTime(0.15, startTime + 0.1);
+            gainNode.gain.linearRampToValueAtTime(0.0, startTime + 0.12);
+
+            // Gap (100ms)
+            gainNode.gain.setValueAtTime(0.0, startTime + 0.2);
+
+            // Second "btzz" (100ms on, 500ms off)
+            gainNode.gain.linearRampToValueAtTime(0.15, startTime + 0.22);
+            gainNode.gain.setValueAtTime(0.15, startTime + 0.3);
+            gainNode.gain.linearRampToValueAtTime(0.0, startTime + 0.32);
+
+            // Long gap until next cycle
+            gainNode.gain.setValueAtTime(0.0, startTime + patternDuration);
+        };
+
+        // Schedule initial pattern
+        schedulePattern(this.audioContext.currentTime);
+
+        // Start oscillators
+        oscillator.start(this.audioContext.currentTime);
+        noiseOscillator.start(this.audioContext.currentTime);
+
+        // Keep scheduling patterns every 800ms
+        const intervalId = setInterval(() => {
+            schedulePattern(this.audioContext.currentTime);
+        }, 800);
+
+        // Return control object to stop the sound
+        return {
+            stop: () => {
+                clearInterval(intervalId);
+                // Fade out quickly when stopped
+                gainNode.gain.linearRampToValueAtTime(
+                    0.0,
+                    this.audioContext.currentTime + 0.1
+                );
+                // Stop oscillators after fade out
+                oscillator.stop(this.audioContext.currentTime + 0.1);
+                noiseOscillator.stop(this.audioContext.currentTime + 0.1);
+            },
+        };
+    }
+
+    async playShieldRecharging(): Promise<void> {
+        await this.ensureAudioContext();
+
+        // Create "click click" sound for shield recharging mode
+        const createClick = (startTime: number) => {
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+            const filter = this.audioContext.createBiquadFilter();
+
+            oscillator.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(this.masterGain);
+
+            // Sharp click sound
+            oscillator.type = "square";
+            oscillator.frequency.setValueAtTime(800, startTime);
+            oscillator.frequency.exponentialRampToValueAtTime(
+                400,
+                startTime + 0.05
+            );
+
+            // High-pass filter for crisp click
+            filter.type = "highpass";
+            filter.frequency.setValueAtTime(200, startTime);
+
+            // Sharp attack, quick decay
+            gainNode.gain.setValueAtTime(0.0, startTime);
+            gainNode.gain.linearRampToValueAtTime(0.2, startTime + 0.01);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.05);
+
+            oscillator.start(startTime);
+            oscillator.stop(startTime + 0.05);
+        };
+
+        // Create two clicks with short gap
+        const now = this.audioContext.currentTime;
+        createClick(now);
+        createClick(now + 0.1); // Second click 100ms later
+    }
+
+    async playShieldCollision(): Promise<void> {
+        await this.ensureAudioContext();
+
+        // Create "BONK" sound for shield-asteroid collision
+        const oscillator1 = this.audioContext.createOscillator();
+        const oscillator2 = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        const filter = this.audioContext.createBiquadFilter();
+
+        oscillator1.connect(gainNode);
+        oscillator2.connect(gainNode);
+        gainNode.connect(filter);
+        filter.connect(this.masterGain);
+
+        // Low-pitched "bonk" using two oscillators for richness
+        oscillator1.type = "triangle";
+        oscillator1.frequency.setValueAtTime(
+            120,
+            this.audioContext.currentTime
+        );
+        oscillator1.frequency.exponentialRampToValueAtTime(
+            80,
+            this.audioContext.currentTime + 0.3
+        );
+
+        oscillator2.type = "sine";
+        oscillator2.frequency.setValueAtTime(
+            200,
+            this.audioContext.currentTime
+        );
+        oscillator2.frequency.exponentialRampToValueAtTime(
+            100,
+            this.audioContext.currentTime + 0.3
+        );
+
+        // Low-pass filter for muffled bonking effect
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(600, this.audioContext.currentTime);
+        filter.Q.setValueAtTime(2, this.audioContext.currentTime);
+
+        // Sharp attack, gradual decay like a rubber ball bouncing
+        gainNode.gain.setValueAtTime(0.0, this.audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(
+            0.3,
+            this.audioContext.currentTime + 0.02
+        );
+        gainNode.gain.exponentialRampToValueAtTime(
+            0.01,
+            this.audioContext.currentTime + 0.3
+        );
+
+        const duration = 0.3;
+        oscillator1.start(this.audioContext.currentTime);
+        oscillator2.start(this.audioContext.currentTime);
+        oscillator1.stop(this.audioContext.currentTime + duration);
+        oscillator2.stop(this.audioContext.currentTime + duration);
+    }
 }

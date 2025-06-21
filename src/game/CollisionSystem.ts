@@ -7,6 +7,7 @@ import { ParticleSystem } from "~/render/ParticleSystem";
 import { GameState } from "./GameState";
 import { EntityManager } from "./EntityManager";
 import { WeaponSystem } from "./WeaponSystem";
+import { ShieldSystem } from "./ShieldSystem";
 import { WEAPONS, SCORING, ASTEROID } from "~/config/constants";
 
 /**
@@ -18,25 +19,28 @@ export class CollisionSystem {
     private gameState: GameState;
     private entityManager: EntityManager;
     private weaponSystem: WeaponSystem;
+    private shieldSystem: ShieldSystem;
 
     constructor(
         audio: AudioManager,
         particles: ParticleSystem,
         gameState: GameState,
         entityManager: EntityManager,
-        weaponSystem: WeaponSystem
+        weaponSystem: WeaponSystem,
+        shieldSystem: ShieldSystem
     ) {
         this.audio = audio;
         this.particles = particles;
         this.gameState = gameState;
         this.entityManager = entityManager;
         this.weaponSystem = weaponSystem;
+        this.shieldSystem = shieldSystem;
     }
 
     /**
      * Check all collision types
      */
-    checkAllCollisions(): void {
+    checkAllCollisions(currentTime: number = performance.now()): void {
         const bullets = this.entityManager.getBullets();
         const missiles = this.entityManager.getMissiles();
         const asteroids = this.entityManager.getAsteroids();
@@ -56,7 +60,7 @@ export class CollisionSystem {
         // Check ship-asteroid collisions for all ships (only if not invulnerable)
         for (const ship of ships) {
             if (!ship.invulnerable) {
-                this.checkShipAsteroidCollisions(ship, asteroids);
+                this.checkShipAsteroidCollisions(ship, asteroids, currentTime);
             }
 
             // Check ship-gift collisions
@@ -173,11 +177,26 @@ export class CollisionSystem {
      */
     private checkShipAsteroidCollisions(
         ship: Ship,
-        asteroids: GameEntity[]
+        asteroids: GameEntity[],
+        currentTime: number
     ): void {
         for (const asteroid of asteroids) {
             if (Collision.checkCircleCollision(ship, asteroid)) {
-                this.destroyShip(ship);
+                // Check if ship has an active shield that is not recharging
+                if (
+                    this.shieldSystem.isShieldActive(ship.playerId) &&
+                    !this.shieldSystem.isShieldRecharging(ship.playerId)
+                ) {
+                    // Handle shield collision (bouncing, fuel consumption, recharging)
+                    this.shieldSystem.handleShieldCollision(
+                        ship,
+                        asteroid,
+                        currentTime
+                    );
+                } else {
+                    // No shield or shield is recharging - destroy the ship
+                    this.destroyShip(ship);
+                }
                 break; // Only one collision per frame
             }
         }

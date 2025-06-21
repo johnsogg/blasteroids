@@ -9,6 +9,8 @@ export type InputName =
     | "strafeRight"
     | "shoot"
     | "shootPressed"
+    | "shield"
+    | "shieldPressed"
     | "weapon1"
     | "weapon2"
     | "weapon3"
@@ -52,6 +54,9 @@ export const INPUT_CONTEXT_PERMISSIONS: Record<InputContext, InputName[]> = {
         "right",
         "strafeLeft",
         "strafeRight",
+        // Shield
+        "shield",
+        "shieldPressed",
         // Shooting
         "shoot",
         "shootPressed",

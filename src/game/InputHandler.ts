@@ -3,6 +3,7 @@ import { InputManager } from "~/input/InputManager";
 import { InputContext } from "~/input/InputContext";
 import { GameState } from "./GameState";
 import { WeaponSystem } from "./WeaponSystem";
+import { ShieldSystem } from "./ShieldSystem";
 import { EntityManager } from "./EntityManager";
 import { MenuManager } from "~/menu/MenuManager";
 import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
@@ -16,6 +17,7 @@ export class InputHandler {
     private input: InputManager;
     private gameState: GameState;
     private weaponSystem: WeaponSystem;
+    private shieldSystem: ShieldSystem;
     private entityManager: EntityManager;
     private menuManager: MenuManager;
     private levelCompleteAnimation: LevelCompleteAnimation;
@@ -27,6 +29,7 @@ export class InputHandler {
         input: InputManager,
         gameState: GameState,
         weaponSystem: WeaponSystem,
+        shieldSystem: ShieldSystem,
         entityManager: EntityManager,
         menuManager: MenuManager,
         levelCompleteAnimation: LevelCompleteAnimation
@@ -34,6 +37,7 @@ export class InputHandler {
         this.input = input;
         this.gameState = gameState;
         this.weaponSystem = weaponSystem;
+        this.shieldSystem = shieldSystem;
         this.entityManager = entityManager;
         this.menuManager = menuManager;
         this.levelCompleteAnimation = levelCompleteAnimation;
@@ -130,6 +134,17 @@ export class InputHandler {
             currentTime,
             InputContext.GAMEPLAY
         );
+
+        // Handle shield input
+        this.shieldSystem.handleShieldInput(
+            playerShip,
+            {
+                shield: this.input.shield,
+                shieldPressed: this.input.shieldPressed,
+            },
+            currentTime,
+            InputContext.GAMEPLAY
+        );
     }
 
     /**
@@ -181,6 +196,11 @@ export class InputHandler {
         const maxSpeed = SHIP.MAX_SPEED; // pixels per second
         const friction = SHIP.FRICTION; // velocity damping multiplier
 
+        // Apply shield slowdown factor if shield is active
+        const shieldSlowdownFactor =
+            this.shieldSystem.getMovementSlowdownFactor(ship.playerId);
+        const effectiveThrustPower = thrustPower * shieldSlowdownFactor;
+
         // Rotation
         if (this.input.left) {
             ship.rotation -= rotationSpeed * deltaTime;
@@ -196,7 +216,7 @@ export class InputHandler {
             if (this.gameState.consumeFuel(fuelNeeded)) {
                 const thrustVector = Vector2.fromAngle(
                     ship.rotation,
-                    thrustPower * deltaTime
+                    effectiveThrustPower * deltaTime
                 );
                 ship.velocity = ship.velocity.add(thrustVector);
             } else {
@@ -205,7 +225,7 @@ export class InputHandler {
         }
 
         // Strafe thrusters (50% power, 1x fuel consumption each)
-        const strafePower = thrustPower * 0.5;
+        const strafePower = effectiveThrustPower * 0.5;
 
         ship.strafingLeft = this.input.strafeLeft;
         if (this.input.strafeLeft) {
@@ -245,8 +265,9 @@ export class InputHandler {
             return; // Don't continue processing this frame
         }
 
-        // Apply friction
-        ship.velocity = ship.velocity.multiply(friction);
+        // Apply friction (and additional shield friction if shield is active)
+        const effectiveFriction = friction * shieldSlowdownFactor;
+        ship.velocity = ship.velocity.multiply(effectiveFriction);
 
         // Limit max speed
         const speed = Math.sqrt(
