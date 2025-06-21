@@ -153,7 +153,7 @@ export class WeaponSystem {
         }
 
         if (
-            currentTime !== this.lastShotTime &&
+            this.lastShotTime > 0 &&
             currentTime - this.lastShotTime < fireRate
         ) {
             return; // Too soon to fire again
@@ -240,7 +240,7 @@ export class WeaponSystem {
         }
 
         if (
-            currentTime !== this.lastShotTime &&
+            this.lastShotTime > 0 &&
             currentTime - this.lastShotTime < fireRate
         ) {
             // Play cooldown sound effect
@@ -336,7 +336,7 @@ export class WeaponSystem {
     private shootLightning(ship: Ship, currentTime: number): void {
         // Check cooldown
         if (
-            currentTime !== this.lastLightningTime &&
+            this.lastLightningTime > 0 &&
             currentTime - this.lastLightningTime < WEAPONS.LIGHTNING.FIRE_RATE
         ) {
             return; // Too soon to fire again

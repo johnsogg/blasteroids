@@ -420,7 +420,7 @@ describe("ShieldSystem", () => {
                 ship.playerId
             );
             expect(slowdownFactor).toBeLessThan(1.0);
-            expect(slowdownFactor).toBe(0.5); // 50% slowdown
+            expect(slowdownFactor).toBe(0.99); // Per-frame multiplier
         });
 
         it("should return normal factor when shield is not active", () => {
@@ -458,7 +458,7 @@ describe("ShieldSystem", () => {
             const slowdownFactor = shieldSystem.getMovementSlowdownFactor(
                 ship.playerId
             );
-            expect(slowdownFactor).toBe(0.5);
+            expect(slowdownFactor).toBe(0.99);
         });
     });
 
@@ -663,8 +663,8 @@ describe("ShieldSystem", () => {
                 ship.playerId
             );
 
-            // Should be slowed down (0.5 = 50% speed)
-            expect(slowdownFactor).toBe(0.5);
+            // Should be slowed down (0.99 per-frame multiplier)
+            expect(slowdownFactor).toBe(0.99);
             expect(slowdownFactor).toBeLessThan(1.0);
 
             // Deactivate shield

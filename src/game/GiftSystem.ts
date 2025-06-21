@@ -194,10 +194,21 @@ export class GiftSystem {
         // Gift spawns at EXACT warp bubble location
         const giftPosition = warpBubble.position.copy();
 
-        // Create completely random movement direction
-        const angle = Math.random() * Math.PI * 2; // Random angle 0-2π
-        const speed = 30 + Math.random() * 30; // Slower: 30-60 pixels per second
-        const velocity = Vector2.fromAngle(angle, speed);
+        // Create movement direction toward center with some randomness
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        const toCenter = new Vector2(
+            centerX - giftPosition.x,
+            centerY - giftPosition.y
+        ).normalize();
+
+        // Add some randomness to the direction (±30 degrees)
+        const baseAngle = Math.atan2(toCenter.y, toCenter.x);
+        const randomOffset = (Math.random() - 0.5) * (Math.PI / 3); // ±30 degrees
+        const finalAngle = baseAngle + randomOffset;
+
+        const speed = 30 + Math.random() * 30; // 30-60 pixels per second
+        const velocity = Vector2.fromAngle(finalAngle, speed);
 
         // Get gift type from warp bubble, fallback to fuel_refill
         const giftType = warpBubble.giftType || "fuel_refill";

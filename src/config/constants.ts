@@ -106,7 +106,7 @@ export const SHIELD = {
     RECHARGE_DURATION: 10000, // milliseconds (10 seconds)
 
     // Movement effects
-    MOVEMENT_SLOWDOWN_FACTOR: 0.99, // 50% slowdown when shield active
+    MOVEMENT_SLOWDOWN_FACTOR: 0.99, // Per-frame multiplier when shield active (0.99^60 ≈ 0.55 after 1 second)
 
     // Fuel consumption on collision (per asteroid size)
     FUEL_CONSUMPTION: {
