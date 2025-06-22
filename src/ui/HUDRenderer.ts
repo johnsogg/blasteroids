@@ -70,13 +70,13 @@ export class HUDRenderer {
         this.ctx.save();
         this.ctx.font = font;
         this.ctx.textAlign = align;
-        
+
         // Add glow effect for certain elements
         if (withGlow) {
             this.ctx.shadowColor = color;
             this.ctx.shadowBlur = 10;
         }
-        
+
         this.ctx.fillStyle = color;
         this.ctx.fillText(text, x, y);
         this.ctx.restore();
@@ -118,7 +118,13 @@ export class HUDRenderer {
         const rotation = UI.LIVES_ROTATION;
 
         // Label with retro styling
-        this.renderText("LIVES", startX, y, "#888888", '18px "Orbitron", "Courier New", monospace');
+        this.renderText(
+            "LIVES",
+            startX,
+            y,
+            "#888888",
+            '18px "Orbitron", "Courier New", monospace'
+        );
 
         // Ship icons
         for (let i = 0; i < maxLives; i++) {
@@ -150,7 +156,13 @@ export class HUDRenderer {
 
         // Combined label and value with spacing
         const text = `Level: ${level}`;
-        this.renderText(text, x, y, "#888888", '18px "Orbitron", "Courier New", monospace');
+        this.renderText(
+            text,
+            x,
+            y,
+            "#888888",
+            '18px "Orbitron", "Courier New", monospace'
+        );
     }
 
     /**
@@ -185,7 +197,13 @@ export class HUDRenderer {
         const x = 20; // Left side with padding
         const y = canvasHeight - 65; // Above level display with spacing
 
-        this.renderText(text, x, y, "#888888", '18px "Orbitron", "Courier New", monospace');
+        this.renderText(
+            text,
+            x,
+            y,
+            "#888888",
+            '18px "Orbitron", "Courier New", monospace'
+        );
     }
 
     /**
