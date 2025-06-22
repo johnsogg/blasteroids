@@ -50,24 +50,14 @@ export class MenuItem {
      * Execute the menu item's action
      */
     execute(): void {
-        console.log(
-            `MenuItem: execute() called for item "${this.id}" (${this.label})`
-        );
-        console.log(`MenuItem: enabled=${this.enabled}, type=${this.type}`);
-
         if (!this.enabled) {
-            console.log("MenuItem: Item is disabled, not executing");
+            console.warn("MenuItem: Item is disabled, not executing");
             return;
         }
-
         if (this.action) {
-            console.log("MenuItem: Executing action function");
             this.action();
         } else if (this.onChange) {
-            console.log("MenuItem: Executing onChange function");
             this.onChange(this.value);
-        } else {
-            console.log("MenuItem: No action or onChange function defined");
         }
     }
 

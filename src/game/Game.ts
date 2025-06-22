@@ -1374,18 +1374,26 @@ export class Game {
      * Show shop UI for debugging purposes (does not affect game state when closed)
      */
     showShopUIForDebugging(): void {
+        // eslint-disable-next-line no-console
         console.log("Game: showShopUIForDebugging() called");
+        // eslint-disable-next-line no-console
         console.log(
             "Game: shopUI active status before show:",
             this.shopUI.active
         );
         this.shopUI.show(() => {
+            // eslint-disable-next-line no-console
             console.log("Game: shopUI callback executed - closing shop");
             // For debugging, simply close the shop without affecting game state
             // This allows testing the shop without needing to complete zones
             this.shopUI.hide();
-            console.log("Game: shopUI hide() called, active status:", this.shopUI.active);
+            // eslint-disable-next-line no-console
+            console.log(
+                "Game: shopUI hide() called, active status:",
+                this.shopUI.active
+            );
         });
+        // eslint-disable-next-line no-console
         console.log(
             "Game: shopUI active status after show:",
             this.shopUI.active

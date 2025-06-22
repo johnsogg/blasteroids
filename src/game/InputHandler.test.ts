@@ -66,10 +66,11 @@ describe("InputHandler", () => {
         const entityManager = new EntityManager(mockCanvas);
         vi.spyOn(entityManager, "getShip").mockReturnValue(null);
 
-        const shopUI = {
-            active: false,
-            handleInput: vi.fn(),
-        } as any;
+        const shopUI: { active: boolean; handleInput: (key: string) => void } =
+            {
+                active: false,
+                handleInput: vi.fn(),
+            };
 
         inputHandler = new InputHandler(
             inputManager,

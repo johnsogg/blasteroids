@@ -41,7 +41,32 @@ describe("ShopUI", () => {
             font: "",
             textAlign: "",
             fillStyleSetter: fillStyleSetter,
-        } as any;
+        } as Pick<
+            CanvasRenderingContext2D,
+            | "fillRect"
+            | "strokeRect"
+            | "clearRect"
+            | "fillText"
+            | "measureText"
+            | "save"
+            | "restore"
+            | "translate"
+            | "scale"
+            | "setTransform"
+            | "beginPath"
+            | "closePath"
+            | "moveTo"
+            | "lineTo"
+            | "arc"
+            | "fill"
+            | "stroke"
+            | "clip"
+            | "fillStyle"
+            | "strokeStyle"
+            | "lineWidth"
+            | "font"
+            | "textAlign"
+        > & { fillStyleSetter: (color: string) => void };
 
         // Mock GameState
         mockGameState = {
@@ -49,7 +74,10 @@ describe("ShopUI", () => {
             spendCurrency: vi.fn(() => true),
             hasUpgrade: vi.fn(() => false),
             hasWeapon: vi.fn((weapon: string) => weapon === "bullets"),
-        } as any;
+        } as Pick<
+            GameState,
+            "currency" | "spendCurrency" | "hasUpgrade" | "hasWeapon"
+        >;
 
         // Mock ShopSystem with many items to enable scrolling
         const mockItems = [];
@@ -73,7 +101,10 @@ describe("ShopUI", () => {
                 upgrades: mockItems.slice(5, 12),
                 other: mockItems.slice(12, 15),
             })),
-        } as any;
+        } as Pick<
+            ShopSystem,
+            "canPurchase" | "purchaseItem" | "getItemsByCategory"
+        >;
 
         shopUI = new ShopUI(mockCanvas, mockCtx, mockGameState, mockShopSystem);
     });
@@ -136,7 +167,7 @@ describe("ShopUI", () => {
         it("should wrap to Done Shopping button when navigating up from first item", () => {
             // Should start at index 0 (first item)
             expect(shopUI.selectedIndex).toBe(0);
-            
+
             // Navigate up from first item should wrap to Done Shopping button (-1)
             shopUI.handleInput("ArrowUp");
             expect(shopUI.selectedIndex).toBe(-1);
@@ -149,7 +180,7 @@ describe("ShopUI", () => {
                 shopUI.handleInput("ArrowDown");
             }
             expect(shopUI.selectedIndex).toBe(maxIndex);
-            
+
             // One more down should go to Done Shopping button (-1)
             shopUI.handleInput("ArrowDown");
             expect(shopUI.selectedIndex).toBe(-1);

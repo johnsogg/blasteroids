@@ -25,7 +25,15 @@ describe("ShopSystem", () => {
             hasWeapon: (weapon: string) => weapon === "bullets", // Default: only has bullets
             unlockWeapon: () => {},
             addLife: () => {},
-        } as any;
+        } as Pick<
+            GameState,
+            | "currency"
+            | "spendCurrency"
+            | "hasUpgrade"
+            | "hasWeapon"
+            | "unlockWeapon"
+            | "addLife"
+        >;
 
         shopSystem = new ShopSystem(mockGameState);
     });
@@ -96,7 +104,15 @@ describe("ShopSystem", () => {
                 get currency() {
                     return mockCurrency.value;
                 },
-            } as any;
+            } as Pick<
+                GameState,
+                | "currency"
+                | "spendCurrency"
+                | "hasUpgrade"
+                | "hasWeapon"
+                | "unlockWeapon"
+                | "addLife"
+            >;
             shopSystem = new ShopSystem(mockGameState);
             const missilesItem = shopSystem.getItem("missiles");
             expect(shopSystem.canPurchase(missilesItem)).toBe(false);
@@ -151,7 +167,15 @@ describe("ShopSystem", () => {
                     }
                     return false;
                 },
-            } as any;
+            } as Pick<
+                GameState,
+                | "currency"
+                | "spendCurrency"
+                | "hasUpgrade"
+                | "hasWeapon"
+                | "unlockWeapon"
+                | "addLife"
+            >;
             shopSystem = new ShopSystem(mockGameState);
             const missilesItem = shopSystem.getItem("missiles");
             const initialCurrency = mockGameState.currency;

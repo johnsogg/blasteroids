@@ -446,12 +446,15 @@ export class MenuManager {
      * Open merchant store for debugging
      */
     private handleMerchantStoreDebug(): void {
+        // eslint-disable-next-line no-console
         console.log("MenuManager: handleMerchantStoreDebug() called");
         this.hide(); // Hide the escape menu first
+        // eslint-disable-next-line no-console
         console.log(
             "MenuManager: Menu hidden, calling game.showShopUIForDebugging()"
         );
         this.game.showShopUIForDebugging();
+        // eslint-disable-next-line no-console
         console.log("MenuManager: showShopUIForDebugging() completed");
     }
 
