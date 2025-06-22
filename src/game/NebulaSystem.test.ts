@@ -186,18 +186,33 @@ describe("NebulaSystem", () => {
 
         test("should wrap particles around screen edges", () => {
             const particles = nebulaSystem.getParticles();
+            const particle = particles[0];
 
-            // Move a particle beyond screen edge
-            particles[0].position.x = -50;
-            particles[0].position.y = canvasHeight + 50;
+            // Store original velocity to reset it
+            const originalVelocity = {
+                x: particle.velocity.x,
+                y: particle.velocity.y,
+            };
+
+            // Set velocity to zero to avoid movement during update
+            particle.velocity.x = 0;
+            particle.velocity.y = 0;
+
+            // Move particle beyond screen edges (past the wrapping threshold)
+            particle.position.x = -particle.size - 1; // Beyond left edge
+            particle.position.y = canvasHeight + particle.size + 1; // Beyond bottom edge
 
             nebulaSystem.update(0.1, 1000);
 
             // Should wrap around
-            expect(particles[0].position.x).toBeGreaterThan(
-                canvasWidth - particles[0].size
-            );
-            expect(particles[0].position.y).toBeLessThan(particles[0].size);
+            // When wrapping from left (position < -particle.size), should appear on right at canvasWidth + particle.size
+            expect(particles[0].position.x).toBe(canvasWidth + particle.size);
+            // When wrapping from bottom (position > canvasHeight + particle.size), should appear on top at -particle.size
+            expect(particles[0].position.y).toBe(-particle.size);
+
+            // Restore original velocity
+            particle.velocity.x = originalVelocity.x;
+            particle.velocity.y = originalVelocity.y;
         });
 
         test("should not update particles for non-nebula zones", () => {

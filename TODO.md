@@ -53,3 +53,10 @@
           graphic debug toggle, or which zone to play
 
 ## Known Bugs
+
+- [x] Keyboard input does not work in the Zone Complete dialog. This includes
+      all available options: W, S, Up, Down, Enter, Escape. ✨
+- [ ] See `history/screenshots/2025-06-21-overlapping-text.png` - The text shown
+      here is all redundant. The score is already shown at top right. The number of
+      lives is shown graphically and is being obscured by the score text you see
+      here. The zone and level are already shown at the bottom left.

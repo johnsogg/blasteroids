@@ -129,7 +129,8 @@ export class Game {
             this.shieldSystem,
             this.entityManager,
             this.menuManager,
-            this.levelCompleteAnimation
+            this.levelCompleteAnimation,
+            this.zoneChoiceScreen
         );
         this.aiSystem = new AISystem(this.entityManager, this.gameState);
         this.debugRenderer = new DebugRenderer(
@@ -332,29 +333,12 @@ export class Game {
     private update(deltaTime: number): void {
         const currentTime = performance.now();
 
-        // Handle zone choice screen input first
-        if (this.zoneChoiceScreen.active) {
-            // Check for zone choice screen input
-            if (this.input.keys.ArrowUp || this.input.keys.w) {
-                this.zoneChoiceScreen.handleInput("ArrowUp");
-            }
-            if (this.input.keys.ArrowDown || this.input.keys.s) {
-                this.zoneChoiceScreen.handleInput("ArrowDown");
-            }
-            if (this.input.space || this.input.keys.Enter) {
-                this.zoneChoiceScreen.handleInput("Enter");
-            }
-            if (this.input.keys.Escape) {
-                this.zoneChoiceScreen.handleInput("Escape");
-            }
-        } else {
-            // Handle regular input processing through InputHandler
-            this.inputHandler.processInput(
-                currentTime,
-                () => this.showGameOver(),
-                () => this.restart()
-            );
-        }
+        // Handle input processing through InputHandler (including zone choice screen)
+        this.inputHandler.processInput(
+            currentTime,
+            () => this.showGameOver(),
+            () => this.restart()
+        );
 
         // Handle debug mode toggle
         if (this.input.debugToggle) {

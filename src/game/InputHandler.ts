@@ -7,6 +7,7 @@ import { ShieldSystem } from "./ShieldSystem";
 import { EntityManager } from "./EntityManager";
 import { MenuManager } from "~/menu/MenuManager";
 import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
+import { ZoneChoiceScreen } from "~/ui/ZoneChoiceScreen";
 import { Vector2 } from "~/utils/Vector2";
 import { FUEL, SHIP } from "~/config/constants";
 
@@ -21,6 +22,7 @@ export class InputHandler {
     private entityManager: EntityManager;
     private menuManager: MenuManager;
     private levelCompleteAnimation: LevelCompleteAnimation;
+    private zoneChoiceScreen: ZoneChoiceScreen;
 
     // Input state
     private isPaused = false;
@@ -32,7 +34,8 @@ export class InputHandler {
         shieldSystem: ShieldSystem,
         entityManager: EntityManager,
         menuManager: MenuManager,
-        levelCompleteAnimation: LevelCompleteAnimation
+        levelCompleteAnimation: LevelCompleteAnimation,
+        zoneChoiceScreen: ZoneChoiceScreen
     ) {
         this.input = input;
         this.gameState = gameState;
@@ -41,6 +44,7 @@ export class InputHandler {
         this.entityManager = entityManager;
         this.menuManager = menuManager;
         this.levelCompleteAnimation = levelCompleteAnimation;
+        this.zoneChoiceScreen = zoneChoiceScreen;
     }
 
     /**
@@ -67,7 +71,9 @@ export class InputHandler {
      * Update input context based on current game state
      */
     private updateInputContext(): void {
-        if (this.levelCompleteAnimation.active) {
+        if (this.zoneChoiceScreen.active) {
+            this.input.setContext(InputContext.ZONE_CHOICE);
+        } else if (this.levelCompleteAnimation.active) {
             this.input.setContext(InputContext.LEVEL_COMPLETE);
         } else if (this.gameState.gameOver) {
             this.input.setContext(InputContext.GAME_OVER);
@@ -99,6 +105,9 @@ export class InputHandler {
                 break;
             case InputContext.LEVEL_COMPLETE:
                 this.handleLevelCompleteInput();
+                break;
+            case InputContext.ZONE_CHOICE:
+                this.handleZoneChoiceInput();
                 break;
             case InputContext.GAME_OVER:
                 this.handleGameOverInput(restartCallback);
@@ -184,6 +193,24 @@ export class InputHandler {
      */
     private handlePausedInput(): void {
         // Only menu toggle (escape) is allowed, handled globally
+    }
+
+    /**
+     * Handle zone choice screen input
+     */
+    private handleZoneChoiceInput(): void {
+        if (this.input.menuUp) {
+            this.zoneChoiceScreen.handleInput("ArrowUp");
+        }
+        if (this.input.menuDown) {
+            this.zoneChoiceScreen.handleInput("ArrowDown");
+        }
+        if (this.input.menuSelect) {
+            this.zoneChoiceScreen.handleInput("Enter");
+        }
+        if (this.input.menuToggle) {
+            this.zoneChoiceScreen.handleInput("Escape");
+        }
     }
 
     /**

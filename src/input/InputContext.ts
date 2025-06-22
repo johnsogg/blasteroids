@@ -37,6 +37,9 @@ export enum InputContext {
     /** Level complete screen - only space for dismissal */
     LEVEL_COMPLETE = "level_complete",
 
+    /** Zone choice screen - navigation and selection */
+    ZONE_CHOICE = "zone_choice",
+
     /** Game over screen - only 'R' for restart */
     GAME_OVER = "game_over",
 
@@ -82,6 +85,13 @@ export const INPUT_CONTEXT_PERMISSIONS: Record<InputContext, InputName[]> = {
 
     [InputContext.LEVEL_COMPLETE]: [
         "shootPressed", // Only space for dismissal
+    ],
+
+    [InputContext.ZONE_CHOICE]: [
+        "menuUp",
+        "menuDown",
+        "menuSelect",
+        "menuToggle", // Escape to cancel
     ],
 
     [InputContext.GAME_OVER]: ["restart"],

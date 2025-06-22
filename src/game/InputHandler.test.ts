@@ -8,12 +8,14 @@ import { ShieldSystem } from "./ShieldSystem";
 import { EntityManager } from "./EntityManager";
 import { MenuManager } from "~/menu/MenuManager";
 import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
+import { ZoneChoiceScreen } from "~/ui/ZoneChoiceScreen";
 import type { Game } from "~/game/Game";
 
 // Mock dependencies
 vi.mock("~/input/InputManager");
 vi.mock("~/menu/MenuManager");
 vi.mock("~/animations/LevelCompleteAnimation");
+vi.mock("~/ui/ZoneChoiceScreen");
 vi.mock("./ShieldSystem", () => ({
     ShieldSystem: vi.fn().mockImplementation(() => ({
         handleShieldInput: vi.fn(),
@@ -29,6 +31,7 @@ describe("InputHandler", () => {
     let shieldSystem: ShieldSystem;
     let menuManager: MenuManager;
     let levelCompleteAnimation: LevelCompleteAnimation;
+    let zoneChoiceScreen: ZoneChoiceScreen;
     let mockCanvas: HTMLCanvasElement;
 
     beforeEach(() => {
@@ -57,6 +60,8 @@ describe("InputHandler", () => {
             gameState
         );
 
+        zoneChoiceScreen = new ZoneChoiceScreen(mockCanvas, mockCtx, gameState);
+
         // Create proper mock EntityManager using actual class
         const entityManager = new EntityManager(mockCanvas);
         vi.spyOn(entityManager, "getShip").mockReturnValue(null);
@@ -68,7 +73,8 @@ describe("InputHandler", () => {
             shieldSystem,
             entityManager,
             menuManager,
-            levelCompleteAnimation
+            levelCompleteAnimation,
+            zoneChoiceScreen
         );
 
         // Initialize game state
@@ -83,6 +89,8 @@ describe("InputHandler", () => {
         vi.spyOn(menuManager, "toggle");
         vi.spyOn(menuManager, "show");
         vi.spyOn(menuManager, "hide");
+        vi.spyOn(zoneChoiceScreen, "active", "get").mockReturnValue(false);
+        vi.spyOn(zoneChoiceScreen, "handleInput");
     });
 
     describe("Context Management", () => {
@@ -194,6 +202,29 @@ describe("InputHandler", () => {
                 InputContext.PAUSED
             );
         });
+
+        it("should set correct context for zone choice", () => {
+            // Mock game state for zone choice screen active
+            vi.spyOn(gameState, "gameOver", "get").mockReturnValue(false);
+            vi.spyOn(levelCompleteAnimation, "active", "get").mockReturnValue(
+                false
+            );
+            vi.spyOn(menuManager, "visible", "get").mockReturnValue(false);
+            vi.spyOn(zoneChoiceScreen, "active", "get").mockReturnValue(true);
+
+            const mockGameOverCallback = vi.fn();
+            const mockRestartCallback = vi.fn();
+
+            inputHandler.processInput(
+                0,
+                mockGameOverCallback,
+                mockRestartCallback
+            );
+
+            expect(inputManager.setContext).toHaveBeenCalledWith(
+                InputContext.ZONE_CHOICE
+            );
+        });
     });
 
     describe("Menu Input Handling", () => {
@@ -273,6 +304,74 @@ describe("InputHandler", () => {
             );
 
             expect(menuManager.handleInput).toHaveBeenCalledWith("select");
+        });
+    });
+
+    describe("Zone Choice Input Handling", () => {
+        beforeEach(() => {
+            // Set context to zone choice
+            vi.spyOn(inputManager, "getContext").mockReturnValue(
+                InputContext.ZONE_CHOICE
+            );
+        });
+
+        it("should handle zone choice navigation input", () => {
+            // Mock input states for navigation
+            vi.spyOn(inputManager, "menuUp", "get").mockReturnValue(true);
+            vi.spyOn(inputManager, "menuDown", "get").mockReturnValue(false);
+            vi.spyOn(inputManager, "menuSelect", "get").mockReturnValue(false);
+            vi.spyOn(inputManager, "menuToggle", "get").mockReturnValue(false);
+
+            const mockGameOverCallback = vi.fn();
+            const mockRestartCallback = vi.fn();
+
+            inputHandler.processInput(
+                0,
+                mockGameOverCallback,
+                mockRestartCallback
+            );
+
+            expect(zoneChoiceScreen.handleInput).toHaveBeenCalledWith(
+                "ArrowUp"
+            );
+        });
+
+        it("should handle zone choice selection input", () => {
+            // Mock input states for selection
+            vi.spyOn(inputManager, "menuUp", "get").mockReturnValue(false);
+            vi.spyOn(inputManager, "menuDown", "get").mockReturnValue(false);
+            vi.spyOn(inputManager, "menuSelect", "get").mockReturnValue(true);
+            vi.spyOn(inputManager, "menuToggle", "get").mockReturnValue(false);
+
+            const mockGameOverCallback = vi.fn();
+            const mockRestartCallback = vi.fn();
+
+            inputHandler.processInput(
+                0,
+                mockGameOverCallback,
+                mockRestartCallback
+            );
+
+            expect(zoneChoiceScreen.handleInput).toHaveBeenCalledWith("Enter");
+        });
+
+        it("should handle zone choice escape input", () => {
+            // Mock input states for escape
+            vi.spyOn(inputManager, "menuUp", "get").mockReturnValue(false);
+            vi.spyOn(inputManager, "menuDown", "get").mockReturnValue(false);
+            vi.spyOn(inputManager, "menuSelect", "get").mockReturnValue(false);
+            vi.spyOn(inputManager, "menuToggle", "get").mockReturnValue(true);
+
+            const mockGameOverCallback = vi.fn();
+            const mockRestartCallback = vi.fn();
+
+            inputHandler.processInput(
+                0,
+                mockGameOverCallback,
+                mockRestartCallback
+            );
+
+            expect(zoneChoiceScreen.handleInput).toHaveBeenCalledWith("Escape");
         });
     });
 

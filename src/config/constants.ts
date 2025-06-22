@@ -652,10 +652,10 @@ export const DEBUG = {
 // =============================================================================
 export const NEBULA = {
     // Particle configuration
-    PARTICLE_COUNT: 40, // Number of nebula particles
-    PARTICLE_MIN_SIZE: 10, // Minimum particle radius
-    PARTICLE_MAX_SIZE: 40, // Maximum particle radius
-    PARTICLE_MIN_OPACITY: 0.1, // Minimum particle opacity
+    PARTICLE_COUNT: 200, // Number of nebula particles
+    PARTICLE_MIN_SIZE: 40, // Minimum particle radius
+    PARTICLE_MAX_SIZE: 140, // Maximum particle radius
+    PARTICLE_MIN_OPACITY: 0.2, // Minimum particle opacity
     PARTICLE_MAX_OPACITY: 0.4, // Maximum particle opacity
 
     // Animation
