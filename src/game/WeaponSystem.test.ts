@@ -26,11 +26,16 @@ describe("WeaponSystem", () => {
             playAsteroidHit: vi.fn().mockResolvedValue(undefined),
             playAsteroidDestroy: vi.fn().mockResolvedValue(undefined),
             playGiftDestroyed: vi.fn().mockResolvedValue(undefined),
+            playMissileLaunch: vi.fn().mockResolvedValue(undefined),
+            playBulletFire: vi.fn().mockResolvedValue(undefined),
+            playShoot: vi.fn().mockResolvedValue(undefined),
+            playMissileCooldown: vi.fn().mockResolvedValue(undefined),
         } as unknown as AudioManager;
 
         particleSystem = {
             createAsteroidExplosion: vi.fn(),
             createGiftExplosion: vi.fn(),
+            createMissileTrail: vi.fn(),
         } as unknown as ParticleSystem;
 
         gameState = new GameState();
@@ -193,6 +198,154 @@ describe("WeaponSystem", () => {
             // Verify no additional fuel was consumed
             const finalFuel = gameState.getPlayerState("player")!.fuel;
             expect(finalFuel).toBe(initialFuel);
+        });
+    });
+
+    describe("Missile Trajectory", () => {
+        it("should fire missiles in a straight line like bullets", () => {
+            // Switch to missiles
+            gameState.unlockWeapon("missiles", "player");
+            gameState.switchWeapon("missiles", "player");
+
+            // Fire missile at 0 degrees (pointing right)
+            mockShip.rotation = 0;
+            weaponSystem.handleWeaponInput(
+                mockShip,
+                {
+                    weapon1: false,
+                    weapon2: false,
+                    weapon3: false,
+                    weapon4: false,
+                    shoot: false,
+                    shootPressed: true,
+                },
+                1000,
+                InputContext.GAMEPLAY
+            );
+
+            const missiles = entityManager.getMissiles();
+            expect(missiles).toHaveLength(1);
+
+            const missile = missiles[0];
+            const initialDirection = missile.velocity.normalize();
+            const initialPosition = missile.position.copy();
+
+            // Update missile physics over several frames
+            for (let i = 0; i < 10; i++) {
+                weaponSystem.updateMissilePhysics(0.016); // 16ms = ~60fps
+                entityManager.updateEntities(0.016, 1000 + i * 16);
+            }
+
+            // Check that missile is still traveling in the same direction
+            const currentDirection = missile.velocity.normalize();
+            const directionDiff = Math.abs(
+                Math.atan2(currentDirection.y, currentDirection.x) -
+                    Math.atan2(initialDirection.y, initialDirection.x)
+            );
+
+            // Direction should not have changed significantly (within 0.01 radians)
+            expect(directionDiff).toBeLessThan(0.01);
+
+            // Check missile moved in its original direction (allowing for small floating point error)
+            const actualDisplacement =
+                missile.position.subtract(initialPosition);
+            const expectedDirection = initialDirection;
+            const actualDirection = actualDisplacement.normalize();
+
+            // The direction should be very close to the initial direction
+            const directionDotProduct = expectedDirection.dot(actualDirection);
+            expect(directionDotProduct).toBeGreaterThan(0.999); // Very close to 1.0 (parallel)
+
+            // Cross product should be near zero (no perpendicular component)
+            const crossProduct = Math.abs(
+                expectedDirection.x * actualDirection.y -
+                    expectedDirection.y * actualDirection.x
+            );
+            expect(crossProduct).toBeLessThan(0.01);
+        });
+
+        it("should maintain straight trajectory like bullets", () => {
+            // Test bullets first
+            gameState.unlockWeapon("bullets", "player");
+            gameState.switchWeapon("bullets", "player");
+
+            mockShip.rotation = Math.PI / 4; // 45 degrees
+            weaponSystem.handleWeaponInput(
+                mockShip,
+                {
+                    weapon1: false,
+                    weapon2: false,
+                    weapon3: false,
+                    weapon4: false,
+                    shoot: true, // Set shoot to true for bullets
+                    shootPressed: false,
+                },
+                1000,
+                InputContext.GAMEPLAY
+            );
+
+            const bullets = entityManager.getBullets();
+            expect(bullets).toHaveLength(1);
+            const bullet = bullets[0];
+            const bulletInitialDirection = bullet.velocity.normalize();
+
+            // Update bullet physics
+            for (let i = 0; i < 10; i++) {
+                entityManager.updateEntities(0.016, 1000 + i * 16);
+            }
+
+            const bulletFinalDirection = bullet.velocity.normalize();
+            const bulletDirectionDiff = Math.abs(
+                Math.atan2(bulletFinalDirection.y, bulletFinalDirection.x) -
+                    Math.atan2(
+                        bulletInitialDirection.y,
+                        bulletInitialDirection.x
+                    )
+            );
+
+            // Now test missiles with fresh entity manager setup
+            gameState.unlockWeapon("missiles", "player");
+            gameState.switchWeapon("missiles", "player");
+
+            mockShip.rotation = Math.PI / 4; // Same 45 degrees
+            weaponSystem.handleWeaponInput(
+                mockShip,
+                {
+                    weapon1: false,
+                    weapon2: false,
+                    weapon3: false,
+                    weapon4: false,
+                    shoot: false,
+                    shootPressed: true,
+                },
+                5000, // Different time to avoid cooldown (missiles have 4s cooldown)
+                InputContext.GAMEPLAY
+            );
+
+            const missiles = entityManager.getMissiles();
+            expect(missiles).toHaveLength(1);
+            const missile = missiles[0];
+            const missileInitialDirection = missile.velocity.normalize();
+
+            // Update missile physics (without homing)
+            for (let i = 0; i < 10; i++) {
+                weaponSystem.updateMissilePhysics(0.016);
+                entityManager.updateEntities(0.016, 2000 + i * 16);
+            }
+
+            const missileFinalDirection = missile.velocity.normalize();
+            const missileDirectionDiff = Math.abs(
+                Math.atan2(missileFinalDirection.y, missileFinalDirection.x) -
+                    Math.atan2(
+                        missileInitialDirection.y,
+                        missileInitialDirection.x
+                    )
+            );
+
+            // Missiles should maintain direction as well as bullets
+            expect(missileDirectionDiff).toBeLessThanOrEqual(
+                bulletDirectionDiff + 0.001
+            );
         });
     });
 });

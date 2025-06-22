@@ -267,6 +267,9 @@ export class WeaponSystem {
         // Add ship's velocity to missile for realistic physics
         const finalVelocity = ship.velocity.add(missileVelocity);
 
+        // Store the original direction for consistent acceleration
+        const originalDirection = finalVelocity.normalize();
+
         // Position missile slightly in front of ship
         const missileOffset = Vector2.fromAngle(ship.rotation, ship.size.x);
         const missilePosition = ship.position.add(missileOffset);
@@ -278,6 +281,7 @@ export class WeaponSystem {
             rotation: ship.rotation, // Missiles have rotation for visual
             color: WEAPONS.MISSILES.COLOR,
             type: "missile",
+            originalDirection,
             age: 0,
         });
 
@@ -490,6 +494,15 @@ export class WeaponSystem {
         missile: GameEntity,
         deltaTime: number
     ): void {
+        // Only apply acceleration to missiles that have originalDirection property
+        if (missile.type !== "missile" || !("originalDirection" in missile)) {
+            return;
+        }
+
+        const missileEntity = missile as typeof missile & {
+            originalDirection: Vector2;
+        };
+
         // Calculate current speed
         const currentSpeed = Math.sqrt(
             missile.velocity.x * missile.velocity.x +
@@ -506,14 +519,14 @@ export class WeaponSystem {
         if (currentSpeed < maxSpeed) {
             const accelerationAmount =
                 WEAPONS.MISSILES.ACCELERATION * deltaTime;
-            const direction = missile.velocity.normalize();
             const newSpeed = Math.min(
                 currentSpeed + accelerationAmount,
                 maxSpeed
             );
 
-            // Update velocity with new speed in same direction
-            missile.velocity = direction.multiply(newSpeed);
+            // Use original direction to prevent drift during acceleration
+            missile.velocity =
+                missileEntity.originalDirection.multiply(newSpeed);
         }
     }
 
