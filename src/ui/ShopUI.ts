@@ -1,7 +1,7 @@
 import type { GameState } from "../game/GameState";
 import type { ShopSystem, ShopItem } from "../game/ShopSystem";
 import type { WeaponType, UpgradeType } from "../entities/Weapons";
-import { SHOP } from "../config/constants";
+import { SHOP, CURRENCY } from "../config/constants";
 
 interface ShopCategory {
     title: string;
@@ -18,6 +18,7 @@ export class ShopUI {
     private categories: ShopCategory[] = [];
     private flatItems: ShopItem[] = [];
     private onClose?: () => void;
+    private _scrollOffset: number = 0;
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -39,11 +40,17 @@ export class ShopUI {
         return this._selectedIndex;
     }
 
+    get scrollOffset(): number {
+        return this._scrollOffset;
+    }
+
     show(onClose: () => void): void {
         this.isActive = true;
-        this._selectedIndex = 0;
         this.onClose = onClose;
         this.initializeCategories();
+        this._selectedIndex = this.findFirstSelectableItem();
+        this._scrollOffset = 0;
+        this.ensureSelectedItemVisible();
     }
 
     hide(): void {
@@ -91,23 +98,48 @@ export class ShopUI {
         switch (key) {
             case "ArrowUp":
             case "w":
-                this._selectedIndex = Math.max(0, this._selectedIndex - 1);
+                if (this._selectedIndex === -1) {
+                    // If on "Done Shopping" button, go to last item
+                    this._selectedIndex = this.flatItems.length - 1;
+                } else {
+                    this._selectedIndex = Math.max(0, this._selectedIndex - 1);
+                }
+                this.ensureSelectedItemVisible();
                 return true;
             case "ArrowDown":
             case "s":
-                this._selectedIndex = Math.min(
-                    this.flatItems.length - 1,
-                    this._selectedIndex + 1
-                );
+                if (this._selectedIndex >= this.flatItems.length - 1) {
+                    // If at last item, go to "Done Shopping" button
+                    this._selectedIndex = -1;
+                } else {
+                    this._selectedIndex = Math.min(
+                        this.flatItems.length - 1,
+                        this._selectedIndex + 1
+                    );
+                    this.ensureSelectedItemVisible();
+                }
                 return true;
             case "Enter":
             case " ":
-                this.purchaseCurrentItem();
+                if (this._selectedIndex === -1) {
+                    // "Done Shopping" button selected
+                    if (this.onClose) {
+                        this.onClose();
+                    }
+                } else {
+                    this.purchaseCurrentItem();
+                }
                 return true;
             case "Escape":
                 if (this.onClose) {
                     this.onClose();
                 }
+                return true;
+            case "PageDown":
+                this.scrollDown();
+                return true;
+            case "PageUp":
+                this.scrollUp();
                 return true;
         }
         return false;
@@ -215,6 +247,95 @@ export class ShopUI {
         }
     }
 
+    private scrollUp(): void {
+        this._scrollOffset = Math.max(
+            0,
+            this._scrollOffset - SHOP.UI.SCROLL_AMOUNT
+        );
+    }
+
+    private scrollDown(): void {
+        const maxScroll = this.calculateMaxScrollOffset();
+        this._scrollOffset = Math.min(
+            maxScroll,
+            this._scrollOffset + SHOP.UI.SCROLL_AMOUNT
+        );
+    }
+
+    private calculateMaxScrollOffset(): number {
+        const panelHeight = SHOP.UI.PANEL_HEIGHT;
+        const headerHeight = SHOP.UI.HEADER_HEIGHT;
+        const footerHeight = SHOP.UI.FOOTER_HEIGHT;
+        const availableHeight = panelHeight - headerHeight - footerHeight;
+
+        // Calculate total content height
+        let contentHeight = 0;
+        for (const category of this.categories) {
+            contentHeight += SHOP.UI.CATEGORY_SPACING; // Category header
+            contentHeight +=
+                category.items.length *
+                (SHOP.UI.ITEM_HEIGHT + SHOP.UI.ITEM_SPACING);
+            contentHeight += SHOP.UI.ITEM_SPACING; // Category spacing
+        }
+
+        return Math.max(0, contentHeight - availableHeight);
+    }
+
+    private findFirstSelectableItem(): number {
+        for (let i = 0; i < this.flatItems.length; i++) {
+            if (this.shopSystem.canPurchase(this.flatItems[i])) {
+                return i;
+            }
+        }
+        // If no item is purchasable, return first item (or 0 if no items)
+        return this.flatItems.length > 0 ? 0 : -1;
+    }
+
+    private ensureSelectedItemVisible(): void {
+        if (this._selectedIndex === -1 || this.flatItems.length === 0) {
+            return;
+        }
+
+        // Calculate the Y position of the selected item
+        const itemY = this.calculateItemY(this._selectedIndex);
+        const itemHeight = SHOP.UI.ITEM_HEIGHT;
+
+        const panelHeight = SHOP.UI.PANEL_HEIGHT;
+        const headerHeight = SHOP.UI.HEADER_HEIGHT;
+        const footerHeight = SHOP.UI.FOOTER_HEIGHT;
+        const visibleAreaHeight = panelHeight - headerHeight - footerHeight;
+
+        // Check if item is above the visible area
+        if (itemY < this._scrollOffset) {
+            this._scrollOffset = Math.max(0, itemY - SHOP.UI.ITEM_SPACING);
+        }
+        // Check if item is below the visible area
+        else if (itemY + itemHeight > this._scrollOffset + visibleAreaHeight) {
+            this._scrollOffset =
+                itemY + itemHeight - visibleAreaHeight + SHOP.UI.ITEM_SPACING;
+        }
+    }
+
+    private calculateItemY(itemIndex: number): number {
+        let currentY = 0;
+        let currentItemIndex = 0;
+
+        for (const category of this.categories) {
+            currentY += SHOP.UI.CATEGORY_SPACING; // Category header height
+
+            for (const _item of category.items) {
+                if (currentItemIndex === itemIndex) {
+                    return currentY;
+                }
+                currentY += SHOP.UI.ITEM_HEIGHT + SHOP.UI.ITEM_SPACING;
+                currentItemIndex++;
+            }
+            currentY += SHOP.UI.ITEM_SPACING; // Category spacing
+        }
+
+        return currentY;
+    }
+
     render(): void {
         if (!this.isActive) return;
 
@@ -247,16 +368,38 @@ export class ShopUI {
         this.ctx.fillStyle = "#ffff00";
         this.ctx.font = '400 16px Orbitron, "Courier New", monospace';
         this.ctx.fillText(
-            `Current Credits: ${this.gameState.currency}`,
+            `Current ${CURRENCY.NAME}: ${this.gameState.currency}`,
             this.canvas.width / 2,
             panelY + 70
         );
 
-        // Render items by category
-        this.renderCategories(panelX, panelY + 120, panelWidth);
+        // Set up clipping for scrollable content area
+        const contentStartY = panelY + SHOP.UI.HEADER_HEIGHT;
+        const contentHeight =
+            panelHeight - SHOP.UI.HEADER_HEIGHT - SHOP.UI.FOOTER_HEIGHT;
+
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.rect(panelX, contentStartY, panelWidth, contentHeight);
+        this.ctx.clip();
+
+        // Render items by category with scroll offset
+        this.renderCategories(
+            panelX,
+            contentStartY - this._scrollOffset,
+            panelWidth
+        );
+
+        this.ctx.restore();
 
         // Done Shopping button
-        this.renderDoneButton(panelX, panelY, panelWidth, panelHeight);
+        this.renderDoneButton(
+            panelX,
+            panelY,
+            panelWidth,
+            panelHeight,
+            this._selectedIndex === -1
+        );
 
         // Instructions
         this.ctx.fillStyle = "#aaaaaa";
@@ -344,19 +487,61 @@ export class ShopUI {
             );
         }
 
+        // Determine item availability state and colors
+        let textColor: string;
+        let descriptionColor: string;
+        let priceColor: string;
+
+        if (canPurchase) {
+            // Green: Can afford and purchase
+            textColor = isSelected ? "#00ffff" : "#00ff00";
+            descriptionColor = "#cccccc";
+            priceColor = "#00ff00";
+        } else {
+            // Check why item cannot be purchased
+            const isAlreadyOwned =
+                (item.type === "weapon" &&
+                    this.gameState.hasWeapon(item.id as WeaponType)) ||
+                (item.type === "upgrade" &&
+                    this.gameState.hasUpgrade(item.id as UpgradeType));
+
+            const hasUnmetPrerequisites = item.dependencies.some(
+                (dep) =>
+                    dep !== "bullets" &&
+                    !this.gameState.hasWeapon(dep as WeaponType)
+            );
+
+            if (isAlreadyOwned) {
+                // White: Already owned
+                textColor = "#ffffff";
+                descriptionColor = "#cccccc";
+                priceColor = "#ffffff";
+            } else if (this.gameState.currency < item.price) {
+                // Yellow: Can't afford (insufficient currency)
+                textColor = "#ffff00";
+                descriptionColor = "#cccc88";
+                priceColor = "#ffff00";
+            } else if (hasUnmetPrerequisites) {
+                // Gray: Prerequisites not met
+                textColor = "#666666";
+                descriptionColor = "#555555";
+                priceColor = "#666666";
+            } else {
+                // Fallback gray for other reasons
+                textColor = "#666666";
+                descriptionColor = "#555555";
+                priceColor = "#666666";
+            }
+        }
+
         // Item name
-        const textColor = canPurchase
-            ? isSelected
-                ? "#00ffff"
-                : "#ffffff"
-            : "#666666";
         this.ctx.fillStyle = textColor;
         this.ctx.font = '700 14px Orbitron, "Courier New", monospace';
         this.ctx.textAlign = "left";
         this.ctx.fillText(item.name, startX + 30, startY + 20);
 
         // Item description
-        this.ctx.fillStyle = canPurchase ? "#cccccc" : "#555555";
+        this.ctx.fillStyle = descriptionColor;
         this.ctx.font = '400 12px Orbitron, "Courier New", monospace';
         this.ctx.fillText(item.description, startX + 30, startY + 35);
 
@@ -369,13 +554,11 @@ export class ShopUI {
         }
 
         // Price
-        const priceColor =
-            this.gameState.currency >= item.price ? "#00ff00" : "#ff0000";
         this.ctx.fillStyle = priceColor;
         this.ctx.font = '700 14px Orbitron, "Courier New", monospace';
         this.ctx.textAlign = "right";
         this.ctx.fillText(
-            `${item.price} Credits`,
+            `${item.price} ${CURRENCY.NAME}`,
             startX + panelWidth - 30,
             startY + 20
         );
@@ -388,7 +571,7 @@ export class ShopUI {
 
             if (this.gameState.currency < item.price) {
                 this.ctx.fillText(
-                    "Insufficient Credits",
+                    `Insufficient ${CURRENCY.NAME}`,
                     startX + panelWidth - 30,
                     startY + 35
                 );
@@ -430,7 +613,8 @@ export class ShopUI {
         panelX: number,
         panelY: number,
         panelWidth: number,
-        panelHeight: number
+        panelHeight: number,
+        isSelected: boolean = false
     ): void {
         const buttonWidth = 150;
         const buttonHeight = 30;
@@ -438,14 +622,14 @@ export class ShopUI {
         const buttonY = panelY + panelHeight - buttonHeight - 20;
 
         // Button background
-        this.ctx.fillStyle = "#003366";
-        this.ctx.strokeStyle = "#00ffff";
-        this.ctx.lineWidth = 1;
+        this.ctx.fillStyle = isSelected ? "#005588" : "#003366";
+        this.ctx.strokeStyle = isSelected ? "#ffffff" : "#00ffff";
+        this.ctx.lineWidth = isSelected ? 2 : 1;
         this.ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
         this.ctx.strokeRect(buttonX, buttonY, buttonWidth, buttonHeight);
 
         // Button text
-        this.ctx.fillStyle = "#00ffff";
+        this.ctx.fillStyle = isSelected ? "#ffffff" : "#00ffff";
         this.ctx.font = '700 14px Orbitron, "Courier New", monospace';
         this.ctx.textAlign = "center";
         this.ctx.fillText(

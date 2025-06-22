@@ -53,7 +53,10 @@
 
 ### 🛠️ Development & Testing Tools
 
-- [ ] Escape Menu ✨
+- [x] Escape Menu ✨
+    - [x] Added merchant store access for debugging without completing levels
+    - [x] Fixed merchant store button activation and keyboard navigation
+    - [x] Implemented proper scrolling and item selection
     - [ ] Debugging option to add +50 credits, one per click
 
 ### 🎨 UI Enhancements

@@ -92,10 +92,10 @@ describe("ZoneChoiceScreen keyboard input", () => {
 
             zoneChoiceScreen.handleInput("s"); // Move to option 1 (next_zone)
             zoneChoiceScreen.handleInput("s"); // Move to option 2 (shop)
-            zoneChoiceScreen.handleInput(" "); // Try to select shop (should be disabled)
+            zoneChoiceScreen.handleInput(" "); // Select shop
 
-            // Shop is disabled by default, so no callback should be made
-            expect(onChoiceMock).not.toHaveBeenCalled();
+            // Shop is now enabled, so callback should be made
+            expect(onChoiceMock).toHaveBeenCalledWith("shop");
         });
     });
 

@@ -90,13 +90,10 @@ export class MenuManager {
             }),
 
             new MenuItem({
-                id: "audio_settings",
-                label: "Audio Settings",
+                id: "debug_merchant_store",
+                label: "Merchant Store",
                 type: "action",
-                enabled: false, // TODO(claude): Implement audio settings menu
-                action: () => {
-                    // TODO(claude): Implement audio settings functionality
-                },
+                action: () => this.handleMerchantStoreDebug(),
             }),
 
             new MenuItem({
@@ -443,6 +440,19 @@ export class MenuManager {
     private handleDebugGraphicsChange(enabled: boolean): void {
         this.game.setDebugMode(enabled);
         LocalStorage.setDebugGraphics(enabled);
+    }
+
+    /**
+     * Open merchant store for debugging
+     */
+    private handleMerchantStoreDebug(): void {
+        console.log("MenuManager: handleMerchantStoreDebug() called");
+        this.hide(); // Hide the escape menu first
+        console.log(
+            "MenuManager: Menu hidden, calling game.showShopUIForDebugging()"
+        );
+        this.game.showShopUIForDebugging();
+        console.log("MenuManager: showShopUIForDebugging() completed");
     }
 
     /**

@@ -345,6 +345,9 @@ export const SHOP = {
         ITEM_HEIGHT: 50,
         CATEGORY_SPACING: 30,
         ITEM_SPACING: 5,
+        HEADER_HEIGHT: 120,
+        FOOTER_HEIGHT: 80,
+        SCROLL_AMOUNT: 100, // Pixels to scroll per page
     },
 } as const;
 

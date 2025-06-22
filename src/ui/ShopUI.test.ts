@@ -17,6 +17,7 @@ describe("ShopUI", () => {
             height: 600,
         } as HTMLCanvasElement;
 
+        const fillStyleSetter = vi.fn();
         mockCtx = {
             save: vi.fn(),
             restore: vi.fn(),
@@ -24,11 +25,22 @@ describe("ShopUI", () => {
             strokeRect: vi.fn(),
             fillText: vi.fn(),
             measureText: vi.fn(() => ({ width: 100 })),
-            fillStyle: "",
+            beginPath: vi.fn(),
+            rect: vi.fn(),
+            clip: vi.fn(),
+            _fillStyle: "",
+            get fillStyle() {
+                return this._fillStyle;
+            },
+            set fillStyle(value) {
+                this._fillStyle = value;
+                fillStyleSetter(value);
+            },
             strokeStyle: "",
             lineWidth: 0,
             font: "",
             textAlign: "",
+            fillStyleSetter: fillStyleSetter,
         } as any;
 
         // Mock GameState
@@ -39,67 +51,27 @@ describe("ShopUI", () => {
             hasWeapon: vi.fn((weapon: string) => weapon === "bullets"),
         } as any;
 
-        // Mock ShopSystem
+        // Mock ShopSystem with many items to enable scrolling
+        const mockItems = [];
+        for (let i = 0; i < 15; i++) {
+            mockItems.push({
+                id: `item_${i}`,
+                name: `Test Item ${i}`,
+                description: `Description for item ${i}`,
+                type: "upgrade",
+                price: 30 + i,
+                dependencies: ["bullets"],
+            });
+        }
+
         mockShopSystem = {
-            getAllItems: vi.fn(() => [
-                {
-                    id: "missiles",
-                    name: "Missile Launcher",
-                    description: "Powerful homing missiles",
-                    type: "weapon",
-                    price: 50,
-                    dependencies: [],
-                },
-                {
-                    id: "upgrade_bullets_fire_rate",
-                    name: "Bullet Fire Rate",
-                    description: "Increases bullet firing speed",
-                    type: "upgrade",
-                    price: 30,
-                    dependencies: ["bullets"],
-                },
-                {
-                    id: "extra_life",
-                    name: "Extra Life",
-                    description: "Gain an additional life",
-                    type: "life",
-                    price: 80,
-                    dependencies: [],
-                },
-            ]),
+            getAllItems: vi.fn(() => mockItems),
             canPurchase: vi.fn(() => true),
             purchaseItem: vi.fn(() => true),
             getItemsByCategory: vi.fn(() => ({
-                weapons: [
-                    {
-                        id: "missiles",
-                        name: "Missile Launcher",
-                        description: "Powerful homing missiles",
-                        type: "weapon",
-                        price: 50,
-                        dependencies: [],
-                    },
-                ],
-                upgrades: [
-                    {
-                        id: "upgrade_bullets_fire_rate",
-                        name: "Bullet Fire Rate",
-                        description: "Increases bullet firing speed",
-                        type: "upgrade",
-                        price: 30,
-                        dependencies: ["bullets"],
-                    },
-                ],
-                other: [
-                    {
-                        id: "extra_life",
-                        name: "Extra Life",
-                        description: "Gain an additional life",
-                        type: "life",
-                        price: 80,
-                        dependencies: [],
-                    },
-                ],
+                weapons: mockItems.slice(0, 5),
+                upgrades: mockItems.slice(5, 12),
+                other: mockItems.slice(12, 15),
             })),
         } as any;
 
@@ -268,12 +240,12 @@ describe("ShopUI", () => {
             );
         });
 
-        it("should render currency display", () => {
+        it("should render currency display using CURRENCY.NAME constant", () => {
             const onClose = vi.fn();
             shopUI.show(onClose);
             shopUI.render();
             expect(mockCtx.fillText).toHaveBeenCalledWith(
-                expect.stringContaining("Credits"),
+                expect.stringContaining("Spacebucks"),
                 expect.any(Number),
                 expect.any(Number)
             );
@@ -286,7 +258,18 @@ describe("ShopUI", () => {
 
             // Should render item names
             expect(mockCtx.fillText).toHaveBeenCalledWith(
-                "Missile Launcher",
+                "Test Item 0",
+                expect.any(Number),
+                expect.any(Number)
+            );
+        });
+
+        it("should render item prices using CURRENCY.NAME constant", () => {
+            const onClose = vi.fn();
+            shopUI.show(onClose);
+            shopUI.render();
+            expect(mockCtx.fillText).toHaveBeenCalledWith(
+                expect.stringContaining("Spacebucks"),
                 expect.any(Number),
                 expect.any(Number)
             );
@@ -315,6 +298,114 @@ describe("ShopUI", () => {
                 expect.any(Number),
                 expect.any(Number)
             );
+        });
+    });
+
+    describe("Color-Coded Availability States", () => {
+        beforeEach(() => {
+            const onClose = vi.fn();
+            shopUI.show(onClose);
+        });
+
+        it("should use green color for affordable items", () => {
+            // Set up game state where player can afford item
+            mockGameState.currency = 100;
+            mockShopSystem.canPurchase = vi.fn(() => true);
+
+            shopUI.render();
+
+            // Should have green price color
+            expect(mockCtx.fillStyleSetter).toHaveBeenCalledWith("#00ff00");
+        });
+
+        it("should use red color for unaffordable items", () => {
+            // Set up game state where player cannot afford item
+            mockGameState.currency = 10; // Less than item price
+            mockShopSystem.canPurchase = vi.fn(() => false);
+
+            shopUI.render();
+
+            // Should have red price color
+            expect(mockCtx.fillStyleSetter).toHaveBeenCalledWith("#ff0000");
+        });
+
+        it("should use white color for already owned items", () => {
+            // Set up game state where upgrade is already owned
+            mockGameState.currency = 100;
+            mockGameState.hasUpgrade = vi.fn(() => true); // Already has upgrade
+            mockShopSystem.canPurchase = vi.fn(() => false);
+
+            shopUI.render();
+
+            // Should use white color for already owned items
+            expect(mockCtx.fillStyleSetter).toHaveBeenCalledWith("#ffffff");
+        });
+
+        it("should use yellow color for insufficient currency", () => {
+            // Set up game state where player cannot afford item but has prerequisites
+            mockGameState.currency = 10; // Less than any item price
+            mockGameState.hasWeapon = vi.fn(() => false); // No weapons owned (prerequisites met for basic items)
+            mockShopSystem.canPurchase = vi.fn(() => false);
+
+            shopUI.render();
+
+            // Should use yellow color for insufficient currency
+            expect(mockCtx.fillStyleSetter).toHaveBeenCalledWith("#ffff00");
+        });
+
+        it("should use gray color for items with unmet prerequisites", () => {
+            // Set up game state where prerequisites are not met
+            mockGameState.currency = 100;
+            mockGameState.hasWeapon = vi.fn(
+                (weapon: string) => weapon !== "missiles"
+            ); // Missing prerequisites
+            mockShopSystem.canPurchase = vi.fn(() => false);
+
+            shopUI.render();
+
+            // Should use gray color for items with unmet prerequisites
+            expect(mockCtx.fillStyleSetter).toHaveBeenCalledWith("#666666");
+        });
+    });
+
+    describe("Scrollable Interface", () => {
+        beforeEach(() => {
+            const onClose = vi.fn();
+            shopUI.show(onClose);
+        });
+
+        it("should initialize with zero scroll offset", () => {
+            expect(shopUI.scrollOffset).toBe(0);
+        });
+
+        it("should handle page down scrolling", () => {
+            const initialOffset = shopUI.scrollOffset;
+            const handled = shopUI.handleInput("PageDown");
+            expect(handled).toBe(true);
+            expect(shopUI.scrollOffset).toBeGreaterThan(initialOffset);
+        });
+
+        it("should handle page up scrolling", () => {
+            // First scroll down, then up
+            shopUI.handleInput("PageDown");
+            const currentOffset = shopUI.scrollOffset;
+            shopUI.handleInput("PageUp");
+            expect(shopUI.scrollOffset).toBeLessThan(currentOffset);
+        });
+
+        it("should not scroll below zero", () => {
+            shopUI.handleInput("PageUp");
+            expect(shopUI.scrollOffset).toBe(0);
+        });
+
+        it("should not scroll beyond content bounds", () => {
+            // Scroll down many times to test bounds
+            for (let i = 0; i < 20; i++) {
+                shopUI.handleInput("PageDown");
+            }
+            const maxOffset = shopUI.scrollOffset;
+            shopUI.handleInput("PageDown");
+            expect(shopUI.scrollOffset).toBe(maxOffset);
         });
     });
 });
