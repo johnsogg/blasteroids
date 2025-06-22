@@ -614,4 +614,100 @@ describe("InputHandler", () => {
             expect(weaponSystem.handleWeaponInput).not.toHaveBeenCalled();
         });
     });
+
+    describe("Screenshot Input Handling", () => {
+        it("should call screenshot callback when screenshot input is pressed in gameplay", () => {
+            // Set context to gameplay
+            vi.spyOn(inputManager, "getContext").mockReturnValue(
+                InputContext.GAMEPLAY
+            );
+            vi.spyOn(gameState, "gameOver", "get").mockReturnValue(false);
+            vi.spyOn(levelCompleteAnimation, "active", "get").mockReturnValue(
+                false
+            );
+            vi.spyOn(menuManager, "visible", "get").mockReturnValue(false);
+
+            // Mock screenshot input
+            Object.defineProperty(inputManager, "screenshot", {
+                value: true,
+                configurable: true,
+            });
+
+            const mockScreenshotCallback = vi.fn();
+            const mockGameOverCallback = vi.fn();
+            const mockRestartCallback = vi.fn();
+
+            // Add screenshot callback to processInput method
+            inputHandler.processInput(
+                1000,
+                mockGameOverCallback,
+                mockRestartCallback,
+                mockScreenshotCallback
+            );
+
+            expect(mockScreenshotCallback).toHaveBeenCalled();
+        });
+
+        it("should not call screenshot callback when not in gameplay context", () => {
+            // Set context to menu
+            vi.spyOn(inputManager, "getContext").mockReturnValue(
+                InputContext.MENU
+            );
+            vi.spyOn(gameState, "gameOver", "get").mockReturnValue(false);
+            vi.spyOn(levelCompleteAnimation, "active", "get").mockReturnValue(
+                false
+            );
+            vi.spyOn(menuManager, "visible", "get").mockReturnValue(true);
+
+            // Mock screenshot input
+            Object.defineProperty(inputManager, "screenshot", {
+                value: false, // Should be false in menu context anyway
+                configurable: true,
+            });
+
+            const mockScreenshotCallback = vi.fn();
+            const mockGameOverCallback = vi.fn();
+            const mockRestartCallback = vi.fn();
+
+            inputHandler.processInput(
+                1000,
+                mockGameOverCallback,
+                mockRestartCallback,
+                mockScreenshotCallback
+            );
+
+            expect(mockScreenshotCallback).not.toHaveBeenCalled();
+        });
+
+        it("should not call screenshot callback when screenshot input is false", () => {
+            // Set context to gameplay
+            vi.spyOn(inputManager, "getContext").mockReturnValue(
+                InputContext.GAMEPLAY
+            );
+            vi.spyOn(gameState, "gameOver", "get").mockReturnValue(false);
+            vi.spyOn(levelCompleteAnimation, "active", "get").mockReturnValue(
+                false
+            );
+            vi.spyOn(menuManager, "visible", "get").mockReturnValue(false);
+
+            // Mock screenshot input as false
+            Object.defineProperty(inputManager, "screenshot", {
+                value: false,
+                configurable: true,
+            });
+
+            const mockScreenshotCallback = vi.fn();
+            const mockGameOverCallback = vi.fn();
+            const mockRestartCallback = vi.fn();
+
+            inputHandler.processInput(
+                1000,
+                mockGameOverCallback,
+                mockRestartCallback,
+                mockScreenshotCallback
+            );
+
+            expect(mockScreenshotCallback).not.toHaveBeenCalled();
+        });
+    });
 });

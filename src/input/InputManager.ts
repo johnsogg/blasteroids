@@ -199,4 +199,14 @@ export class InputManager {
         }
         return pressed;
     }
+
+    // Screenshot method
+    get screenshot(): boolean {
+        if (!this.isInputAllowed("screenshot")) return false;
+        const pressed = this.wasKeyPressed("KeyT"); // T key
+        if (pressed) {
+            this.consumeInput("screenshot");
+        }
+        return pressed;
+    }
 }

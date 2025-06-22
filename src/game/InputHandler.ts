@@ -53,13 +53,19 @@ export class InputHandler {
     processInput(
         currentTime: number,
         gameOverCallback: () => void,
-        restartCallback: () => void
+        restartCallback: () => void,
+        screenshotCallback?: () => void
     ): void {
         // Set input context based on current game state
         this.updateInputContext();
 
         // Handle context-specific input
-        this.handleContextInput(currentTime, gameOverCallback, restartCallback);
+        this.handleContextInput(
+            currentTime,
+            gameOverCallback,
+            restartCallback,
+            screenshotCallback
+        );
 
         // Menu toggle is handled globally since it can be used in multiple contexts
         if (this.input.menuToggle) {
@@ -92,13 +98,14 @@ export class InputHandler {
     private handleContextInput(
         currentTime: number,
         _gameOverCallback: () => void,
-        restartCallback: () => void
+        restartCallback: () => void,
+        screenshotCallback?: () => void
     ): void {
         const context = this.input.getContext();
 
         switch (context) {
             case InputContext.GAMEPLAY:
-                this.handleGameplayInput(currentTime);
+                this.handleGameplayInput(currentTime, screenshotCallback);
                 break;
             case InputContext.MENU:
                 this.handleMenuInput();
@@ -121,7 +128,15 @@ export class InputHandler {
     /**
      * Handle gameplay input (normal game state)
      */
-    private handleGameplayInput(currentTime: number): void {
+    private handleGameplayInput(
+        currentTime: number,
+        screenshotCallback?: () => void
+    ): void {
+        // Handle screenshot input
+        if (this.input.screenshot && screenshotCallback) {
+            screenshotCallback();
+        }
+
         // Get the player ship for movement and weapon input
         const playerShip = this.entityManager.getPlayerShip();
         if (!playerShip) return;

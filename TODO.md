@@ -16,7 +16,7 @@
 
 ### 🎮 Gameplay Features
 
-- [ ] Screenshot keyboard shortcut: defaults to T
+- [x] Screenshot keyboard shortcut: defaults to T
 
 ### 🔧 Technical Improvements
 

@@ -22,7 +22,8 @@ export type InputName =
     | "menuRight"
     | "menuSelect"
     | "restart"
-    | "debugToggle";
+    | "debugToggle"
+    | "screenshot";
 
 /**
  * Input contexts for managing different game states and preventing input bleeding
@@ -72,6 +73,7 @@ export const INPUT_CONTEXT_PERMISSIONS: Record<InputContext, InputName[]> = {
         // System
         "menuToggle",
         "debugToggle",
+        "screenshot",
     ],
 
     [InputContext.MENU]: [

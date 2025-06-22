@@ -37,6 +37,7 @@ import { ZoneSystem } from "./ZoneSystem";
 import { NebulaSystem } from "./NebulaSystem";
 import { LocalStorage } from "~/utils/LocalStorage";
 import { HUDRenderer } from "~/ui/HUDRenderer";
+import { generateScreenshotFilename } from "~/utils/screenshot";
 
 export class Game {
     private canvas: HTMLCanvasElement;
@@ -347,7 +348,8 @@ export class Game {
         this.inputHandler.processInput(
             currentTime,
             () => this.showGameOver(),
-            () => this.restart()
+            () => this.restart(),
+            () => this.handleScreenshotInput()
         );
 
         // Handle debug mode toggle
@@ -1401,5 +1403,76 @@ export class Game {
             this.canvas.width,
             this.canvas.height
         );
+    }
+
+    /**
+     * Screenshot functionality
+     */
+
+    /**
+     * Capture the current game canvas as a data URL
+     */
+    captureScreenshot(format: string = "image/png", quality?: number): string {
+        if (quality !== undefined) {
+            return this.canvas.toDataURL(format, quality);
+        }
+        return this.canvas.toDataURL(format);
+    }
+
+    /**
+     * Generate timestamp string for filenames
+     */
+    generateTimestamp(): string {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
+        const hours = String(now.getHours()).padStart(2, "0");
+        const minutes = String(now.getMinutes()).padStart(2, "0");
+        const seconds = String(now.getSeconds()).padStart(2, "0");
+
+        return `${year}-${month}-${day}-${hours}-${minutes}-${seconds}`;
+    }
+
+    /**
+     * Download screenshot with automatic filename generation
+     */
+    downloadScreenshot(
+        filename?: string,
+        format: string = "image/png",
+        quality?: number
+    ): void {
+        try {
+            const dataURL = this.captureScreenshot(format, quality);
+
+            // Generate filename if not provided
+            if (!filename) {
+                filename = generateScreenshotFilename(
+                    format,
+                    this.gameState.score,
+                    this.gameState.zoneLevel
+                );
+            }
+
+            // Create download link
+            const link = document.createElement("a");
+            link.style.display = "none";
+            link.download = filename;
+            link.href = dataURL;
+
+            // Add to DOM, click, and remove
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error("Failed to download screenshot:", error);
+        }
+    }
+
+    /**
+     * Handle screenshot input - capture and download
+     */
+    handleScreenshotInput(): void {
+        this.downloadScreenshot(undefined, "image/png");
     }
 }
