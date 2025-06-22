@@ -297,6 +297,13 @@ export class Game {
         return this.gameState.debugNextGift;
     }
 
+    /**
+     * Get the current game state (for testing)
+     */
+    getGameState(): GameState {
+        return this.gameState;
+    }
+
     // Pause toggling is now handled by InputHandler
 
     start(): void {
@@ -458,8 +465,16 @@ export class Game {
     }
 
     restart(): void {
+        // Check if we have a debug zone preference before resetting
+        const debugZone = LocalStorage.getDebugZone();
+
         // Reset game state
         this.gameState.reset();
+
+        // If debug zone is set, immediately set it instead of starting at zone 1
+        if (debugZone) {
+            this.gameState.setZoneAndLevel(debugZone, 1);
+        }
 
         // Clear all entities and reinitialize
         this.entityManager.clearAllEntities();
@@ -472,7 +487,7 @@ export class Game {
         this.inputHandler.reset();
         this.messageSystem.clearAllMessages();
 
-        // Initialize nebula for starting zone
+        // Initialize nebula for starting zone (which could be debug zone now)
         this.nebulaSystem.initializeForZone(this.gameState.zone);
 
         // Reset timing and flags
@@ -1396,6 +1411,7 @@ export class Game {
         }
 
         // Load debug zone preference and apply if set
+        // Note: If we're already in the debug zone (e.g., after restart), no need to reload
         const debugZone = LocalStorage.getDebugZone();
         if (debugZone && debugZone !== this.gameState.zone) {
             // Use setTimeout to delay zone loading until after game initialization
