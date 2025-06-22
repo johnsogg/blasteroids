@@ -46,3 +46,5 @@ Blasteroids is a sophisticated web-based Asteroids game built with TypeScript an
 - Use descriptive commit messages explaining "why" not "what"
 - Leave temporary TODOs as `// TODO(claude): <comment>`
 - This codebase is complex - understand existing systems before adding new features
+- Use console.warn for console statements that we intend to keep
+- Use console.log statements for temporary debugging. If the log statements are part of a debugging function that we might use again, use eslint-disable-next-line no-console to silence linter warnings
