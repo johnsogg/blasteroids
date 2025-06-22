@@ -36,6 +36,7 @@ import { DebugRenderer } from "./DebugRenderer";
 import { ZoneSystem } from "./ZoneSystem";
 import { NebulaSystem } from "./NebulaSystem";
 import { LocalStorage } from "~/utils/LocalStorage";
+import { HUDRenderer } from "~/ui/HUDRenderer";
 
 export class Game {
     private canvas: HTMLCanvasElement;
@@ -62,6 +63,7 @@ export class Game {
     private debugRenderer: DebugRenderer;
     private zoneSystem: ZoneSystem;
     private nebulaSystem: NebulaSystem;
+    private hudRenderer: HUDRenderer;
 
     // Game state
     private levelAnimationStarted = false;
@@ -140,6 +142,7 @@ export class Game {
         );
         this.zoneSystem = new ZoneSystem(this.gameState);
         this.nebulaSystem = new NebulaSystem(canvas.width, canvas.height);
+        this.hudRenderer = new HUDRenderer(ctx);
 
         // Listen for canvas resize events
         this.canvasManager.onResize(() => this.handleCanvasResize());
@@ -825,11 +828,11 @@ export class Game {
         // Draw weapon HUD
         this.renderWeaponHUD();
 
-        // Draw score and status HUD
-        this.renderStatusHUD();
-
         // Draw animated messages
         this.renderMessages();
+
+        // Draw main HUD elements
+        this.renderMainHUD();
 
         // Draw game over screen if needed
         if (this.gameState.gameOver) {
@@ -1276,64 +1279,7 @@ export class Game {
         }
     }
 
-    /**
-     * Render score, lives, and level information with nebula-aware backgrounds
-     */
-    private renderStatusHUD(): void {
-        this.ctx.save();
-
-        const isNebulaZone = this.zoneSystem.hasNebulaEffects();
-        const textPadding = 8;
-        const fontSize = 20;
-        const lineHeight = 30;
-        const topOffset = 15;
-        const leftOffset = 15;
-
-        // Set font
-        this.ctx.font = `${fontSize}px Orbitron, "Courier New", monospace`;
-
-        // Define HUD items
-        const hudItems = [
-            `Score: ${this.gameState.score.toLocaleString()}`,
-            `Lives: ${this.gameState.lives}`,
-            `Zone ${this.gameState.zone} - Level ${this.gameState.level}`,
-        ];
-
-        // Calculate background size if needed
-        if (isNebulaZone) {
-            // Measure text width for background sizing
-            this.ctx.textAlign = "left";
-            const maxWidth = Math.max(
-                ...hudItems.map((item) => this.ctx.measureText(item).width)
-            );
-            const backgroundWidth = maxWidth + textPadding * 2;
-            const backgroundHeight =
-                hudItems.length * lineHeight + textPadding * 2 - 10;
-
-            // Draw semi-transparent background
-            this.ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-            this.ctx.beginPath();
-            this.ctx.roundRect(
-                leftOffset - textPadding,
-                topOffset - textPadding,
-                backgroundWidth,
-                backgroundHeight,
-                4
-            );
-            this.ctx.fill();
-        }
-
-        // Draw text
-        this.ctx.fillStyle = "#ffffff";
-        this.ctx.textAlign = "left";
-        this.ctx.textBaseline = "top";
-
-        hudItems.forEach((item, index) => {
-            this.ctx.fillText(item, leftOffset, topOffset + index * lineHeight);
-        });
-
-        this.ctx.restore();
-    }
+    // NOTE: renderStatusHUD removed - HUD is now rendered via HUDRenderer
 
     /**
      * Get MessageSystem for external access
@@ -1433,5 +1379,27 @@ export class Game {
 
         // Record level start time
         this.levelStartTime = performance.now();
+    }
+
+    /**
+     * Render main HUD elements using the HUDRenderer
+     */
+    private renderMainHUD(): void {
+        const playerState = this.gameState.getPlayerState("player");
+        if (!playerState) return;
+
+        this.hudRenderer.renderHUD(
+            {
+                score: this.gameState.score,
+                scoreStatus: this.gameState.scoreStatus,
+                lives: playerState.lives,
+                zoneLevel: this.gameState.zoneLevel,
+                levelTimeRemaining: this.gameState.levelTimeRemaining,
+                currency: this.gameState.currency,
+                highScore: this.gameState.highScore,
+            },
+            this.canvas.width,
+            this.canvas.height
+        );
     }
 }

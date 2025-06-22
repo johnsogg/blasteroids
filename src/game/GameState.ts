@@ -1,7 +1,5 @@
-import { Shapes } from "~/render/Shapes";
-import { Vector2 } from "~/utils/Vector2";
+// Removed Shapes and Vector2 imports - no longer using DOM/separate canvas for UI
 import {
-    UI,
     GAME_STATE,
     LEVEL_TIMER,
     SCORING,
@@ -158,7 +156,7 @@ export class GameState {
                 this.saveHighScore();
             }
         }
-        this.updateUI();
+        // UI now updated via canvas rendering in Game.ts
     }
 
     loseLife(playerId: string = "player"): void {
@@ -171,7 +169,7 @@ export class GameState {
         if (playerId === "player" && playerState.lives === 0) {
             this._gameOver = true;
         }
-        this.updateUI();
+        // UI now updated via canvas rendering in Game.ts
     }
 
     addLife(playerId: string = "player"): void {
@@ -182,7 +180,7 @@ export class GameState {
             GAME_STATE.MAX_EXTRA_LIVES,
             playerState.lives + 1
         );
-        this.updateUI();
+        // UI now updated via canvas rendering in Game.ts
     }
 
     nextLevel(): void {
@@ -194,7 +192,7 @@ export class GameState {
         }
         this._levelTimeRemaining = LEVEL_TIMER.INITIAL_TIME; // Reset timer for new level
         this.saveZoneProgress();
-        this.updateUI();
+        // UI now updated via canvas rendering in Game.ts
     }
 
     continueCurrentZone(): void {
@@ -207,14 +205,14 @@ export class GameState {
         }
         this._levelTimeRemaining = LEVEL_TIMER.INITIAL_TIME;
         this.saveZoneProgress();
-        this.updateUI();
+        // UI now updated via canvas rendering in Game.ts
     }
 
     advanceToNextZone(): void {
         this._zone++;
         this._level = 1;
         this.saveZoneProgress();
-        this.updateUI();
+        // UI now updated via canvas rendering in Game.ts
     }
 
     /**
@@ -230,7 +228,7 @@ export class GameState {
         }
         this._levelTimeRemaining = LEVEL_TIMER.INITIAL_TIME;
         this.saveZoneProgress();
-        this.updateUI();
+        // UI now updated via canvas rendering in Game.ts
     }
 
     shouldShowChoiceScreen(): boolean {
@@ -240,14 +238,14 @@ export class GameState {
     addCurrency(amount: number): void {
         this._currency += amount;
         this.saveCurrency();
-        this.updateUI();
+        // UI now updated via canvas rendering in Game.ts
     }
 
     spendCurrency(amount: number): boolean {
         if (this._currency >= amount) {
             this._currency -= amount;
             this.saveCurrency();
-            this.updateUI();
+            // UI now updated via canvas rendering in Game.ts
             return true;
         }
         return false;
@@ -280,7 +278,7 @@ export class GameState {
                 }
             }
 
-            this.updateUI();
+            // UI now updated via canvas rendering in Game.ts
         }
     }
 
@@ -318,7 +316,7 @@ export class GameState {
 
         if (playerState.fuel >= amount) {
             playerState.fuel = Math.max(0, playerState.fuel - amount);
-            this.updateUI();
+            // UI now updated via canvas rendering in Game.ts
             return true;
         }
         return false;
@@ -329,7 +327,7 @@ export class GameState {
         if (!playerState) return;
 
         playerState.fuel = 100;
-        this.updateUI();
+        // UI now updated via canvas rendering in Game.ts
     }
 
     reset(): void {
@@ -348,7 +346,7 @@ export class GameState {
         this.loadHighScore(); // Preserve high score across resets
         this.loadCurrency(); // Preserve currency across resets
         // Note: Zone progress is reset to 1-1, not loaded from storage on game reset
-        this.updateUI();
+        // UI now updated via canvas rendering in Game.ts
     }
 
     switchWeapon(weaponType: WeaponType, playerId: string = "player"): boolean {
@@ -450,109 +448,7 @@ export class GameState {
         return giftType;
     }
 
-    private updateUI(): void {
-        const scoreElement = document.getElementById("scoreValue");
-        const levelElement = document.getElementById("levelValue");
-        const highScoreElement = document.getElementById("highScoreValue");
-        const currencyElement = document.getElementById("currencyValue");
-
-        if (scoreElement) {
-            const formattedScore = this.formatRetroNumber(
-                this.score.toString()
-            );
-            scoreElement.innerHTML = formattedScore;
-
-            // Update score color based on status
-            const status = this.scoreStatus;
-            scoreElement.classList.remove("new-high");
-            if (status === "new-high") {
-                scoreElement.style.color = "#00ff00"; // Green
-                scoreElement.classList.add("new-high");
-            } else if (status === "near-high") {
-                scoreElement.style.color = "#ffff00"; // Yellow
-            } else {
-                scoreElement.style.color = "#ffffff"; // White
-            }
-        }
-
-        // Update lives display with ship icons
-        this.updateLivesDisplay();
-
-        if (levelElement) {
-            levelElement.textContent = this.zoneLevel;
-        }
-
-        if (highScoreElement) {
-            const formattedHighScore = this.formatRetroNumber(
-                this._highScore.toString()
-            );
-            highScoreElement.innerHTML = formattedHighScore;
-        }
-
-        if (currencyElement) {
-            const formattedCurrency = this.formatRetroNumber(
-                this._currency.toString()
-            );
-            currencyElement.innerHTML = `${CURRENCY.SYMBOL} ${formattedCurrency}`;
-        }
-
-        // Update level timer display
-        const timerElement = document.getElementById("timerValue");
-        if (timerElement) {
-            const minutes = Math.floor(this._levelTimeRemaining / 60);
-            const seconds = Math.floor(this._levelTimeRemaining % 60);
-            const formattedTime = `${minutes}:${seconds.toString().padStart(2, "0")}`;
-            timerElement.textContent = formattedTime;
-
-            // Change color based on remaining time
-            if (this._levelTimeRemaining <= 10) {
-                timerElement.style.color = "#ff0000"; // Red for critical time
-            } else if (this._levelTimeRemaining <= 20) {
-                timerElement.style.color = "#ffff00"; // Yellow for warning
-            } else {
-                timerElement.style.color = "#ffffff"; // White for normal
-            }
-        }
-    }
-
-    private updateLivesDisplay(): void {
-        const livesCanvas = document.getElementById(
-            "livesCanvas"
-        ) as HTMLCanvasElement;
-        if (!livesCanvas) return;
-
-        const ctx = livesCanvas.getContext("2d");
-        if (!ctx) return;
-
-        // Clear the canvas
-        ctx.clearRect(0, 0, livesCanvas.width, livesCanvas.height);
-
-        const maxLives = UI.MAX_LIVES_DISPLAY;
-        const spacing = UI.LIVES_SPACING;
-        const rotation = UI.LIVES_ROTATION;
-
-        for (let i = 0; i < maxLives; i++) {
-            const x = UI.LIVES_X_OFFSET + i * spacing;
-            const y = UI.LIVES_Y_OFFSET;
-            const position = new Vector2(x, y);
-
-            // Active lives in green, lost lives in gray
-            const playerLives = this.getPlayerState("player")?.lives ?? 0;
-            const color = i < playerLives ? "#00ff00" : "#888888";
-
-            // Draw ship icon at 50% size facing up-right
-            Shapes.drawShip({
-                ctx,
-                position,
-                rotation,
-                color,
-                invulnerable: false,
-                invulnerableTime: 0,
-                showThrust: false,
-                scale: UI.LIVES_ICON_SIZE,
-            });
-        }
-    }
+    // NOTE: DOM UI methods removed - UI is now rendered via HUDRenderer in Game.ts
 
     /**
      * Add an AI companion to the active companions list
@@ -592,10 +488,7 @@ export class GameState {
         return Array.from(this._activeCompanions);
     }
 
-    private formatRetroNumber(numStr: string): string {
-        // Add retro styling to zeros with diagonal lines
-        return numStr.replace(/0/g, '<span class="retro-zero">0</span>');
-    }
+    // NOTE: formatRetroNumber removed - now handled by HUDRenderer
 
     private loadHighScore(): void {
         try {
@@ -696,7 +589,7 @@ export class GameState {
         this.loadDebugGift();
         this.loadCurrency();
         this.loadZoneProgress();
-        this.updateUI();
+        // UI now updated via canvas rendering in Game.ts
     }
 
     // Scoring based on original Asteroids

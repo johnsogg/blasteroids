@@ -16,16 +16,6 @@
 
 ### 🎮 Gameplay Features
 
-- [x] Nebula Gameplay mechanic ✨
-    - This is a mechanic that applies to an entire zone
-    - In the game, a nebula adds a groovy cloud visual effect to the entire
-      board. It is rendered as dozens of simple shapes with various levels of
-      opacity. They are drawn on top of the rest of the board, so the ship and
-      asteroids and other game elements are somewhat harder to see.
-    - The HUD should be drawn on top of the nebula, and since there will now be
-      colors below, we should draw HUD items with a black and semi-transparent
-      background so we can read them easier.
-    - This will likely require the use of graphical layering.
 - [ ] Screenshot keyboard shortcut: defaults to T
 
 ### 🔧 Technical Improvements
@@ -44,19 +34,7 @@
 
 ### 🛠️ Development & Testing Tools
 
-- [x] Escape Menu ✨
-    - [x] Debugging option to let player choose which zone to load - it should
-          load the zone immediately
+- [ ] Escape Menu ✨
     - [ ] Debugging option to add +50 credits, one per click
-- [x] Persistent debugging state ✨
-    - [x] Use local storage to retain things like requested gifts, or the
-          graphic debug toggle, or which zone to play
 
 ## Known Bugs
-
-- [x] Keyboard input does not work in the Zone Complete dialog. This includes
-      all available options: W, S, Up, Down, Enter, Escape. ✨
-- [ ] See `history/screenshots/2025-06-21-overlapping-text.png` - The text shown
-      here is all redundant. The score is already shown at top right. The number of
-      lives is shown graphically and is being obscured by the score text you see
-      here. The zone and level are already shown at the bottom left.
