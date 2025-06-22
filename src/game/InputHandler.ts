@@ -8,6 +8,7 @@ import { EntityManager } from "./EntityManager";
 import { MenuManager } from "~/menu/MenuManager";
 import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
 import { ZoneChoiceScreen } from "~/ui/ZoneChoiceScreen";
+import { ShopUI } from "~/ui/ShopUI";
 import { Vector2 } from "~/utils/Vector2";
 import { FUEL, SHIP } from "~/config/constants";
 
@@ -23,6 +24,7 @@ export class InputHandler {
     private menuManager: MenuManager;
     private levelCompleteAnimation: LevelCompleteAnimation;
     private zoneChoiceScreen: ZoneChoiceScreen;
+    private shopUI: ShopUI;
 
     // Input state
     private isPaused = false;
@@ -35,7 +37,8 @@ export class InputHandler {
         entityManager: EntityManager,
         menuManager: MenuManager,
         levelCompleteAnimation: LevelCompleteAnimation,
-        zoneChoiceScreen: ZoneChoiceScreen
+        zoneChoiceScreen: ZoneChoiceScreen,
+        shopUI: ShopUI
     ) {
         this.input = input;
         this.gameState = gameState;
@@ -45,6 +48,7 @@ export class InputHandler {
         this.menuManager = menuManager;
         this.levelCompleteAnimation = levelCompleteAnimation;
         this.zoneChoiceScreen = zoneChoiceScreen;
+        this.shopUI = shopUI;
     }
 
     /**
@@ -79,6 +83,8 @@ export class InputHandler {
     private updateInputContext(): void {
         if (this.zoneChoiceScreen.active) {
             this.input.setContext(InputContext.ZONE_CHOICE);
+        } else if (this.shopUI.active) {
+            this.input.setContext(InputContext.SHOP);
         } else if (this.levelCompleteAnimation.active) {
             this.input.setContext(InputContext.LEVEL_COMPLETE);
         } else if (this.gameState.gameOver) {
@@ -115,6 +121,9 @@ export class InputHandler {
                 break;
             case InputContext.ZONE_CHOICE:
                 this.handleZoneChoiceInput();
+                break;
+            case InputContext.SHOP:
+                this.handleShopInput();
                 break;
             case InputContext.GAME_OVER:
                 this.handleGameOverInput(restartCallback);
@@ -225,6 +234,27 @@ export class InputHandler {
         }
         if (this.input.menuToggle) {
             this.zoneChoiceScreen.handleInput("Escape");
+        }
+    }
+
+    /**
+     * Handle shop UI input
+     */
+    private handleShopInput(): void {
+        if (this.input.menuUp) {
+            this.shopUI.handleInput("ArrowUp");
+        }
+        if (this.input.menuDown) {
+            this.shopUI.handleInput("ArrowDown");
+        }
+        if (this.input.menuSelect) {
+            this.shopUI.handleInput("Enter");
+        }
+        if (this.input.shootPressed) {
+            this.shopUI.handleInput(" ");
+        }
+        if (this.input.menuToggle) {
+            this.shopUI.handleInput("Escape");
         }
     }
 

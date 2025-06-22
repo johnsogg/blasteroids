@@ -41,6 +41,9 @@ export enum InputContext {
     /** Zone choice screen - navigation and selection */
     ZONE_CHOICE = "zone_choice",
 
+    /** Shop interface - navigation, selection, and purchase */
+    SHOP = "shop",
+
     /** Game over screen - only 'R' for restart */
     GAME_OVER = "game_over",
 
@@ -94,6 +97,14 @@ export const INPUT_CONTEXT_PERMISSIONS: Record<InputContext, InputName[]> = {
         "menuDown",
         "menuSelect",
         "menuToggle", // Escape to cancel
+    ],
+
+    [InputContext.SHOP]: [
+        "menuUp",
+        "menuDown",
+        "menuSelect",
+        "shootPressed", // Space to purchase
+        "menuToggle", // Escape to close
     ],
 
     [InputContext.GAME_OVER]: ["restart"],

@@ -173,12 +173,12 @@ export class ZoneChoiceScreen {
             available: !!nextZoneConfig,
         });
 
-        // Option 3: Shop (placeholder for future)
+        // Option 3: Shop
         this.options.push({
             type: "shop",
             title: "Upgrade Shop",
-            description: "Purchase upgrades with your credits (coming soon)",
-            available: false,
+            description: "Purchase upgrades with your credits",
+            available: true,
         });
     }
 

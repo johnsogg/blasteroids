@@ -22,6 +22,7 @@ import { CanvasManager } from "~/display/CanvasManager";
 import { MenuManager } from "~/menu/MenuManager";
 import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
 import { ZoneChoiceScreen } from "~/ui/ZoneChoiceScreen";
+import { ShopUI } from "~/ui/ShopUI";
 
 import { GameState } from "./GameState";
 import { EntityManager } from "./EntityManager";
@@ -29,6 +30,7 @@ import { WeaponSystem } from "./WeaponSystem";
 import { ShieldSystem } from "./ShieldSystem";
 import { CollisionSystem } from "./CollisionSystem";
 import { GiftSystem } from "./GiftSystem";
+import { ShopSystem } from "./ShopSystem";
 import { InputHandler } from "./InputHandler";
 import { AISystem } from "./AISystem";
 import { MessageSystem } from "./MessageSystem";
@@ -50,6 +52,7 @@ export class Game {
     private menuManager: MenuManager;
     private levelCompleteAnimation: LevelCompleteAnimation;
     private zoneChoiceScreen: ZoneChoiceScreen;
+    private shopUI: ShopUI;
     private scaleManager: ScaleManager;
 
     // Extracted systems
@@ -58,6 +61,7 @@ export class Game {
     private shieldSystem: ShieldSystem;
     private collisionSystem: CollisionSystem;
     private giftSystem: GiftSystem;
+    private shopSystem: ShopSystem;
     private inputHandler: InputHandler;
     private aiSystem: AISystem;
     private messageSystem: MessageSystem;
@@ -125,6 +129,8 @@ export class Game {
             this.entityManager,
             canvas
         );
+        this.shopSystem = new ShopSystem(this.gameState);
+        this.shopUI = new ShopUI(canvas, ctx, this.gameState, this.shopSystem);
         this.inputHandler = new InputHandler(
             this.input,
             this.gameState,
@@ -133,7 +139,8 @@ export class Game {
             this.entityManager,
             this.menuManager,
             this.levelCompleteAnimation,
-            this.zoneChoiceScreen
+            this.zoneChoiceScreen,
+            this.shopUI
         );
         this.aiSystem = new AISystem(this.entityManager, this.gameState);
         this.debugRenderer = new DebugRenderer(
@@ -566,6 +573,22 @@ export class Game {
         });
     }
 
+    private showShopUI(): void {
+        this.shopUI.show(() => {
+            // When shop is closed, continue with current zone
+            this.gameState.continueCurrentZone();
+
+            // Initialize nebula for the zone
+            this.nebulaSystem.initializeForZone(this.gameState.zone);
+
+            // Spawn asteroids for the new level
+            this.spawnLevelAsteroids();
+
+            // Start timing the new level
+            this.levelStartTime = performance.now();
+        });
+    }
+
     private handleZoneChoice(choice: "continue" | "next_zone" | "shop"): void {
         switch (choice) {
             case "continue":
@@ -577,10 +600,9 @@ export class Game {
                 this.gameState.advanceToNextZone();
                 break;
             case "shop":
-                // TODO: Open shop interface (future feature)
-                // For now, just continue current zone
-                this.gameState.continueCurrentZone();
-                break;
+                // Open shop interface
+                this.showShopUI();
+                return; // Don't proceed with zone initialization yet
         }
 
         // Initialize nebula for the new zone
@@ -849,6 +871,9 @@ export class Game {
 
         // Draw zone choice screen if active
         this.zoneChoiceScreen.render();
+
+        // Draw shop UI if active
+        this.shopUI.render();
     }
 
     private drawObjectWithWrapAround(obj: GameEntity): void {

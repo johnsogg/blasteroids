@@ -66,6 +66,11 @@ describe("InputHandler", () => {
         const entityManager = new EntityManager(mockCanvas);
         vi.spyOn(entityManager, "getShip").mockReturnValue(null);
 
+        const shopUI = {
+            active: false,
+            handleInput: vi.fn(),
+        } as any;
+
         inputHandler = new InputHandler(
             inputManager,
             gameState,
@@ -74,7 +79,8 @@ describe("InputHandler", () => {
             entityManager,
             menuManager,
             levelCompleteAnimation,
-            zoneChoiceScreen
+            zoneChoiceScreen,
+            shopUI
         );
 
         // Initialize game state

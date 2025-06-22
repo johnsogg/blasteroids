@@ -303,6 +303,52 @@ export const CURRENCY = {
 } as const;
 
 // =============================================================================
+// SHOP SYSTEM
+// =============================================================================
+export const SHOP = {
+    // Weapon prices
+    WEAPON_PRICES: {
+        MISSILES: 50,
+        LASER: 75,
+        LIGHTNING: 100,
+    },
+
+    // Upgrade prices
+    UPGRADE_PRICES: {
+        // Bullet upgrades
+        BULLETS_FIRE_RATE: 30,
+        BULLETS_SIZE: 25,
+
+        // Missile upgrades
+        MISSILES_SPEED: 40,
+        MISSILES_FIRE_RATE: 45,
+        MISSILES_HOMING: 60,
+
+        // Laser upgrades
+        LASER_RANGE: 50,
+        LASER_EFFICIENCY: 55,
+
+        // Lightning upgrades
+        LIGHTNING_RADIUS: 65,
+        LIGHTNING_CHAIN: 70,
+    },
+
+    // Other item prices
+    OTHER_PRICES: {
+        EXTRA_LIFE: 80,
+    },
+
+    // UI configuration
+    UI: {
+        PANEL_WIDTH: 700,
+        PANEL_HEIGHT: 500,
+        ITEM_HEIGHT: 50,
+        CATEGORY_SPACING: 30,
+        ITEM_SPACING: 5,
+    },
+} as const;
+
+// =============================================================================
 // GIFT SYSTEM
 // =============================================================================
 export const GIFT = {
