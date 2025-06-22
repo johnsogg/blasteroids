@@ -344,7 +344,7 @@ export const SHOP = {
         PANEL_HEIGHT: 500,
         ITEM_HEIGHT: 50,
         CATEGORY_SPACING: 30,
-        ITEM_SPACING: 5,
+        ITEM_SPACING: 15, // Increased from 5 to 15 for better legibility
         HEADER_HEIGHT: 120,
         FOOTER_HEIGHT: 80,
         SCROLL_AMOUNT: 100, // Pixels to scroll per page

@@ -133,18 +133,26 @@ describe("ShopUI", () => {
             expect(shopUI.selectedIndex).toBe(initialIndex);
         });
 
-        it("should not go below 0 when navigating up", () => {
-            shopUI.handleInput("ArrowUp");
+        it("should wrap to Done Shopping button when navigating up from first item", () => {
+            // Should start at index 0 (first item)
             expect(shopUI.selectedIndex).toBe(0);
+            
+            // Navigate up from first item should wrap to Done Shopping button (-1)
+            shopUI.handleInput("ArrowUp");
+            expect(shopUI.selectedIndex).toBe(-1);
         });
 
-        it("should not exceed max index when navigating down", () => {
+        it("should navigate to Done Shopping button when at last item", () => {
             const maxIndex = mockShopSystem.getAllItems().length - 1;
-            // Navigate to max
-            for (let i = 0; i < maxIndex + 5; i++) {
+            // Navigate to max item
+            for (let i = 0; i < maxIndex; i++) {
                 shopUI.handleInput("ArrowDown");
             }
             expect(shopUI.selectedIndex).toBe(maxIndex);
+            
+            // One more down should go to Done Shopping button (-1)
+            shopUI.handleInput("ArrowDown");
+            expect(shopUI.selectedIndex).toBe(-1);
         });
 
         it("should handle space key purchase", () => {
@@ -264,12 +272,12 @@ describe("ShopUI", () => {
             );
         });
 
-        it("should render item prices using CURRENCY.NAME constant", () => {
+        it("should render item prices using CURRENCY.SYMBOL constant", () => {
             const onClose = vi.fn();
             shopUI.show(onClose);
             shopUI.render();
             expect(mockCtx.fillText).toHaveBeenCalledWith(
-                expect.stringContaining("Spacebucks"),
+                expect.stringContaining("🪙"),
                 expect.any(Number),
                 expect.any(Number)
             );

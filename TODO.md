@@ -69,3 +69,10 @@
     - [ ] Animated connection lines showing upgrade paths
 
 ## Known Bugs
+
+- [x] In Merchant UI. For all of these, please consult the ![Figma Mock](<history/2025-06-22/Merchant Shop.png>) as to what it should look like. The emojis, text, and colors are mostly right. Please use existing colors from the codebase that are close to what the mock has.
+    - [x] Text spacing issues ![Exhibit A](history/screenshots/2025-06-22-spacing-1.png) ![Exhibit B](history/screenshots/2025-06-22-spacing-2.png) The items should only use two lines of text and items should be separated by a gap to support legibility
+    - [x] Text overlapping the Done Shopping button. Make sure the help text to the left of the button is constrained horizontally and does not overlap button. ![Exhibit D](history/screenshots/2025-06-22-overlap.png)
+    - [x] Item tiles should only use two lines of text, but this one uses three. ![Exhibit D](history/screenshots/2025-06-22-requires-to-right.png)
+    - [x] Prices should be listed with the currency symbol, not the textual name. ![Exhibit E](history/screenshots/2025-06-22-use-currency-symbol.png)
+    - [x] Also on ![Exhibit E](history/screenshots/2025-06-22-use-currency-symbol.png) the 'insufficient spacebucks' should match the mock

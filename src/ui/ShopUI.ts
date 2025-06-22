@@ -101,8 +101,11 @@ export class ShopUI {
                 if (this._selectedIndex === -1) {
                     // If on "Done Shopping" button, go to last item
                     this._selectedIndex = this.flatItems.length - 1;
+                } else if (this._selectedIndex === 0) {
+                    // If at first item, wrap to "Done Shopping" button
+                    this._selectedIndex = -1;
                 } else {
-                    this._selectedIndex = Math.max(0, this._selectedIndex - 1);
+                    this._selectedIndex = this._selectedIndex - 1;
                 }
                 this.ensureSelectedItemVisible();
                 return true;
@@ -401,19 +404,34 @@ export class ShopUI {
             this._selectedIndex === -1
         );
 
-        // Instructions
+        // Instructions - constrained to not overlap Done Shopping button
         this.ctx.fillStyle = "#aaaaaa";
         this.ctx.font = '400 12px Orbitron, "Courier New", monospace';
-        this.ctx.textAlign = "center";
+        this.ctx.textAlign = "left";
+
+        // Calculate available width for instructions (leave space for Done Shopping button)
+        const instructionX = panelX + 20;
+
+        // Split long instruction text to fit
+        const instruction1 =
+            "Use ↑/↓ or W/S to select, Space/Enter to purchase";
+        const instruction2 = "Esc to exit";
+        const instruction3 = "Mouse: Click to select, Double-click to purchase";
+
         this.ctx.fillText(
-            "Use ↑/↓ or W/S to select, Space/Enter to purchase, Esc to exit",
-            this.canvas.width / 2,
+            instruction1,
+            instructionX,
             panelY + panelHeight - 50
         );
         this.ctx.fillText(
-            "Mouse: Click to select, Double-click to purchase",
-            this.canvas.width / 2,
-            panelY + panelHeight - 35
+            instruction2,
+            instructionX,
+            panelY + panelHeight - 37
+        );
+        this.ctx.fillText(
+            instruction3,
+            instructionX,
+            panelY + panelHeight - 24
         );
 
         this.ctx.restore();
@@ -540,17 +558,17 @@ export class ShopUI {
         this.ctx.textAlign = "left";
         this.ctx.fillText(item.name, startX + 30, startY + 20);
 
-        // Item description
+        // Item description with dependencies combined (two lines max)
         this.ctx.fillStyle = descriptionColor;
         this.ctx.font = '400 12px Orbitron, "Courier New", monospace';
-        this.ctx.fillText(item.description, startX + 30, startY + 35);
 
-        // Dependencies
         if (item.dependencies.length > 0) {
+            // Combine description and dependencies on second line
             const depText = `Requires: ${item.dependencies.join(", ")}`;
-            this.ctx.fillStyle = "#888888";
-            this.ctx.font = '400 10px Orbitron, "Courier New", monospace';
-            this.ctx.fillText(depText, startX + 30, startY + 47);
+            this.ctx.fillText(depText, startX + 30, startY + 35);
+        } else {
+            // Just description if no dependencies
+            this.ctx.fillText(item.description, startX + 30, startY + 35);
         }
 
         // Price
@@ -558,7 +576,7 @@ export class ShopUI {
         this.ctx.font = '700 14px Orbitron, "Courier New", monospace';
         this.ctx.textAlign = "right";
         this.ctx.fillText(
-            `${item.price} ${CURRENCY.NAME}`,
+            `${item.price} ${CURRENCY.SYMBOL}`,
             startX + panelWidth - 30,
             startY + 20
         );
@@ -571,7 +589,7 @@ export class ShopUI {
 
             if (this.gameState.currency < item.price) {
                 this.ctx.fillText(
-                    `Insufficient ${CURRENCY.NAME}`,
+                    "Can't afford 💔",
                     startX + panelWidth - 30,
                     startY + 35
                 );
