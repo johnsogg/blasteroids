@@ -2,7 +2,7 @@
 
 ### 🎨 Visual & Audio Polish
 
-- [ ] Visual elements that are currently rendered with DOM and CSS should
+- [x] Visual elements that are currently rendered with DOM and CSS should
       instead be rendered in HTMLCanvas. This will facilitate taking screenshots
       that involve the entire UI.
 
