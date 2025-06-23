@@ -197,7 +197,7 @@ describe("ShopUI", () => {
         it("should handle escape key to close", () => {
             shopUI.show();
             expect(shopUI.active).toBe(true);
-            
+
             const handled = shopUI.handleInput("Escape");
             expect(handled).toBe(true);
             expect(shopUI.active).toBe(false);

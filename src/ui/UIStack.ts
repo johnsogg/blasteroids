@@ -177,7 +177,10 @@ export class UIStack {
             "onChoice" in entry.data &&
             "choice" in entry.data
         ) {
-            const data = entry.data as { onChoice?: (choice: string) => void; choice?: string };
+            const data = entry.data as {
+                onChoice?: (choice: string) => void;
+                choice?: string;
+            };
             if (typeof data.onChoice === "function" && data.choice) {
                 data.onChoice(data.choice);
             }
@@ -226,7 +229,10 @@ export class UIStack {
             "onChoice" in entry.data &&
             "choice" in entry.data
         ) {
-            const data = entry.data as { onChoice?: (choice: string) => void; choice?: string };
+            const data = entry.data as {
+                onChoice?: (choice: string) => void;
+                choice?: string;
+            };
             if (typeof data.onChoice === "function" && data.choice) {
                 data.onChoice(data.choice);
             }
@@ -340,10 +346,18 @@ export class UIStack {
         // If so, automatically remove it from the stack
         if (!inputEntry.component.active) {
             // Check if component has a choice to store (for ZoneChoiceScreen)
-            if ('getLastChoice' in inputEntry.component && typeof inputEntry.component.getLastChoice === 'function') {
+            if (
+                "getLastChoice" in inputEntry.component &&
+                typeof inputEntry.component.getLastChoice === "function"
+            ) {
                 const choice = inputEntry.component.getLastChoice();
-                if (choice && inputEntry.data && typeof inputEntry.data === 'object') {
-                    (inputEntry.data as any).choice = choice;
+                if (
+                    choice &&
+                    inputEntry.data &&
+                    typeof inputEntry.data === "object"
+                ) {
+                    (inputEntry.data as Record<string, unknown>).choice =
+                        choice;
                 }
             }
             this.popById(inputEntry.id);

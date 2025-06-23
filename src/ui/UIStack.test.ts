@@ -86,6 +86,9 @@ describe("UIStack", () => {
 
         it("should replace existing component with same ID", () => {
             const showSpy = vi.spyOn(mockComponent1, "show");
+            const consoleSpy = vi
+                .spyOn(console, "warn")
+                .mockImplementation(() => {});
 
             // Push same component twice
             stack.push(mockEntry1);
@@ -94,6 +97,8 @@ describe("UIStack", () => {
             // Should be shown twice (once for each push)
             expect(showSpy).toHaveBeenCalledTimes(2);
             expect(stack.getAllEntries()).toHaveLength(1);
+
+            consoleSpy.mockRestore();
         });
 
         it("should maintain insertion order for input handling", () => {

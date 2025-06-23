@@ -34,7 +34,7 @@ describe("InputHandler", () => {
     let levelCompleteAnimation: LevelCompleteAnimation;
     let zoneChoiceScreen: ZoneChoiceScreen;
     let mockCanvas: HTMLCanvasElement;
-    let mockUIStackManager: any;
+    let mockUIStackManager: UIStackManager;
 
     beforeEach(() => {
         mockCanvas = { width: 800, height: 600 } as HTMLCanvasElement;
@@ -161,7 +161,9 @@ describe("InputHandler", () => {
         it("should set correct context for level complete", () => {
             // Mock level complete state - UIStackManager returns LEVEL_COMPLETE context
             vi.spyOn(gameState, "gameOver", "get").mockReturnValue(false);
-            mockUIStackManager.getCurrentInputContext.mockReturnValue(InputContext.LEVEL_COMPLETE);
+            mockUIStackManager.getCurrentInputContext.mockReturnValue(
+                InputContext.LEVEL_COMPLETE
+            );
 
             const mockGameOverCallback = vi.fn();
             const mockRestartCallback = vi.fn();
@@ -180,7 +182,9 @@ describe("InputHandler", () => {
         it("should set correct context for menu", () => {
             // Mock menu state - UIStackManager returns MENU context
             vi.spyOn(gameState, "gameOver", "get").mockReturnValue(false);
-            mockUIStackManager.getCurrentInputContext.mockReturnValue(InputContext.MENU);
+            mockUIStackManager.getCurrentInputContext.mockReturnValue(
+                InputContext.MENU
+            );
 
             const mockGameOverCallback = vi.fn();
             const mockRestartCallback = vi.fn();
@@ -199,7 +203,9 @@ describe("InputHandler", () => {
         it("should set correct context for paused", () => {
             // Mock paused state - UIStackManager returns PAUSED context
             vi.spyOn(gameState, "gameOver", "get").mockReturnValue(false);
-            mockUIStackManager.getCurrentInputContext.mockReturnValue(InputContext.PAUSED);
+            mockUIStackManager.getCurrentInputContext.mockReturnValue(
+                InputContext.PAUSED
+            );
 
             const mockGameOverCallback = vi.fn();
             const mockRestartCallback = vi.fn();
@@ -218,7 +224,9 @@ describe("InputHandler", () => {
         it("should set correct context for zone choice", () => {
             // Mock zone choice state - UIStackManager returns ZONE_CHOICE context
             vi.spyOn(gameState, "gameOver", "get").mockReturnValue(false);
-            mockUIStackManager.getCurrentInputContext.mockReturnValue(InputContext.ZONE_CHOICE);
+            mockUIStackManager.getCurrentInputContext.mockReturnValue(
+                InputContext.ZONE_CHOICE
+            );
 
             const mockGameOverCallback = vi.fn();
             const mockRestartCallback = vi.fn();
@@ -261,7 +269,9 @@ describe("InputHandler", () => {
             );
 
             // Should call UIStackManager.handleInput with "ArrowUp"
-            expect(mockUIStackManager.handleInput).toHaveBeenCalledWith("ArrowUp");
+            expect(mockUIStackManager.handleInput).toHaveBeenCalledWith(
+                "ArrowUp"
+            );
         });
 
         it("should handle escape key when no UI components are active", () => {
@@ -284,10 +294,11 @@ describe("InputHandler", () => {
             );
 
             // Should show menu via UIStackManager
-            expect(mockUIStackManager.showMenu).toHaveBeenCalledWith(menuManager);
+            expect(mockUIStackManager.showMenu).toHaveBeenCalledWith(
+                menuManager
+            );
         });
     });
-
 
     describe("Game Over Input Handling", () => {
         beforeEach(() => {
@@ -352,7 +363,7 @@ describe("InputHandler", () => {
             // Mock UIStackManager having LevelCompleteAnimation component
             mockUIStackManager.getStackSize.mockReturnValue(1);
             mockUIStackManager.handleInput.mockReturnValue(true);
-            
+
             // Mock shoot input being available
             Object.defineProperty(inputManager, "shootPressed", {
                 value: true,
@@ -402,17 +413,17 @@ describe("InputHandler", () => {
         it("should delegate pause state to UIStackManager", () => {
             // Mock UIStackManager pause state
             mockUIStackManager.shouldPauseGame.mockReturnValue(true);
-            
+
             expect(inputHandler.isPausedState()).toBe(true);
-            
+
             mockUIStackManager.shouldPauseGame.mockReturnValue(false);
-            
+
             expect(inputHandler.isPausedState()).toBe(false);
         });
 
         it("should clear UI stack when reset is called", () => {
             inputHandler.reset();
-            
+
             expect(mockUIStackManager.clear).toHaveBeenCalled();
         });
 

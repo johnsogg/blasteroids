@@ -106,11 +106,11 @@ describe("ZoneChoiceScreen keyboard input", () => {
         it("should store choice when component becomes inactive", () => {
             zoneChoiceScreen.show();
             expect(zoneChoiceScreen.active).toBe(true);
-            
+
             // Navigate to next_zone option and select it
             zoneChoiceScreen.handleInput("ArrowDown");
             zoneChoiceScreen.handleInput("Enter");
-            
+
             expect(zoneChoiceScreen.active).toBe(false);
             expect(zoneChoiceScreen.getLastChoice()).toBe("next_zone");
         });
