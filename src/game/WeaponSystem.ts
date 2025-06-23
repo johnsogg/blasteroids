@@ -260,15 +260,12 @@ export class WeaponSystem {
             return; // Not enough fuel
         }
 
-        // Missile initial speed (with upgrade consideration for max speed)
+        // Missile initial speed (no velocity inheritance for better game feel)
         const missileSpeed = WEAPONS.MISSILES.INITIAL_SPEED;
         const missileVelocity = Vector2.fromAngle(ship.rotation, missileSpeed);
 
-        // Add ship's velocity to missile for realistic physics
-        const finalVelocity = ship.velocity.add(missileVelocity);
-
         // Store the original direction for consistent acceleration
-        const originalDirection = finalVelocity.normalize();
+        const originalDirection = missileVelocity.normalize();
 
         // Position missile slightly in front of ship
         const missileOffset = Vector2.fromAngle(ship.rotation, ship.size.x);
@@ -276,7 +273,7 @@ export class WeaponSystem {
 
         this.entityManager.addEntity({
             position: missilePosition,
-            velocity: finalVelocity,
+            velocity: missileVelocity,
             size: new Vector2(WEAPONS.MISSILES.SIZE, WEAPONS.MISSILES.SIZE),
             rotation: ship.rotation, // Missiles have rotation for visual
             color: WEAPONS.MISSILES.COLOR,

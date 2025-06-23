@@ -41,7 +41,7 @@
       re-enter the Merchant menu and press escape, the game is un-stuck. The
       game should never get stuck, and it should always be paused when the user
       is looking at either the game menu or the merchant shop.
-- [ ] Missiles should not inherit the ship's velocity (even though this is not
+- [x] Missiles should not inherit the ship's velocity (even though this is not
       physically correct, it still feels right). When a missile is launched it
       should have zero acceleration or velocity at the instant it is created,
       though it will begin to accelerate on its own right away.

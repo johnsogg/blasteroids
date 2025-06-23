@@ -347,5 +347,165 @@ describe("WeaponSystem", () => {
                 bulletDirectionDiff + 0.001
             );
         });
+
+        it("should not inherit ship velocity when created", () => {
+            // Switch to missiles
+            gameState.unlockWeapon("missiles", "player");
+            gameState.switchWeapon("missiles", "player");
+
+            // Give ship some velocity
+            mockShip.velocity = new Vector2(50, 30);
+            mockShip.rotation = 0; // pointing right
+
+            // Fire missile
+            weaponSystem.handleWeaponInput(
+                mockShip,
+                {
+                    weapon1: false,
+                    weapon2: false,
+                    weapon3: false,
+                    weapon4: false,
+                    shoot: false,
+                    shootPressed: true,
+                },
+                1000,
+                InputContext.GAMEPLAY
+            );
+
+            const missiles = entityManager.getMissiles();
+            expect(missiles).toHaveLength(1);
+
+            const missile = missiles[0];
+
+            // Missile should only have directional velocity, not ship's velocity
+            const expectedVelocity = Vector2.fromAngle(
+                mockShip.rotation,
+                WEAPONS.MISSILES.INITIAL_SPEED
+            );
+            expect(missile.velocity.x).toBeCloseTo(expectedVelocity.x, 2);
+            expect(missile.velocity.y).toBeCloseTo(expectedVelocity.y, 2);
+
+            // Should NOT have ship's velocity added
+            expect(missile.velocity.x).not.toBeCloseTo(
+                expectedVelocity.x + mockShip.velocity.x,
+                2
+            );
+            expect(missile.velocity.y).not.toBeCloseTo(
+                expectedVelocity.y + mockShip.velocity.y,
+                2
+            );
+        });
+
+        it("should begin accelerating immediately after creation", () => {
+            // Switch to missiles
+            gameState.unlockWeapon("missiles", "player");
+            gameState.switchWeapon("missiles", "player");
+
+            mockShip.rotation = Math.PI / 4; // 45 degrees
+
+            // Fire missile
+            weaponSystem.handleWeaponInput(
+                mockShip,
+                {
+                    weapon1: false,
+                    weapon2: false,
+                    weapon3: false,
+                    weapon4: false,
+                    shoot: false,
+                    shootPressed: true,
+                },
+                1000,
+                InputContext.GAMEPLAY
+            );
+
+            const missiles = entityManager.getMissiles();
+            expect(missiles).toHaveLength(1);
+
+            const missile = missiles[0];
+            const initialSpeed = Math.sqrt(
+                missile.velocity.x * missile.velocity.x +
+                    missile.velocity.y * missile.velocity.y
+            );
+
+            // Update missile physics for a small time step
+            const deltaTime = 0.1; // 100ms
+            weaponSystem.updateMissilePhysics(deltaTime);
+
+            // Missile should have accelerated
+            const newSpeed = Math.sqrt(
+                missile.velocity.x * missile.velocity.x +
+                    missile.velocity.y * missile.velocity.y
+            );
+            const expectedNewSpeed =
+                initialSpeed + WEAPONS.MISSILES.ACCELERATION * deltaTime;
+
+            expect(newSpeed).toBeCloseTo(expectedNewSpeed, 1);
+            expect(newSpeed).toBeGreaterThan(initialSpeed);
+        });
+
+        it("should behave identically whether ship is stationary or moving", () => {
+            // Switch to missiles
+            gameState.unlockWeapon("missiles", "player");
+            gameState.switchWeapon("missiles", "player");
+
+            const testRotation = Math.PI / 3; // 60 degrees
+            mockShip.rotation = testRotation;
+
+            // Test 1: Fire missile from stationary ship
+            mockShip.velocity = new Vector2(0, 0);
+            weaponSystem.handleWeaponInput(
+                mockShip,
+                {
+                    weapon1: false,
+                    weapon2: false,
+                    weapon3: false,
+                    weapon4: false,
+                    shoot: false,
+                    shootPressed: true,
+                },
+                1000,
+                InputContext.GAMEPLAY
+            );
+
+            const stationaryMissiles = entityManager.getMissiles();
+            expect(stationaryMissiles).toHaveLength(1);
+            const stationaryMissile = stationaryMissiles[0];
+
+            // Clear missiles and test moving ship
+            const missilesToRemove = entityManager.getMissiles();
+            missilesToRemove.forEach((missile) =>
+                entityManager.removeEntity(missile)
+            );
+
+            // Test 2: Fire missile from moving ship
+            mockShip.velocity = new Vector2(75, -40); // ship has velocity
+            weaponSystem.handleWeaponInput(
+                mockShip,
+                {
+                    weapon1: false,
+                    weapon2: false,
+                    weapon3: false,
+                    weapon4: false,
+                    shoot: false,
+                    shootPressed: true,
+                },
+                1000 + WEAPONS.MISSILES.FIRE_RATE + 100, // different time to avoid cooldown
+                InputContext.GAMEPLAY
+            );
+
+            const movingMissiles = entityManager.getMissiles();
+            expect(movingMissiles).toHaveLength(1);
+            const movingMissile = movingMissiles[0];
+
+            // Both missiles should have identical initial velocity (no inheritance)
+            expect(movingMissile.velocity.x).toBeCloseTo(
+                stationaryMissile.velocity.x,
+                2
+            );
+            expect(movingMissile.velocity.y).toBeCloseTo(
+                stationaryMissile.velocity.y,
+                2
+            );
+        });
     });
 });
