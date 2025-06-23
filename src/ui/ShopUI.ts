@@ -476,6 +476,17 @@ export class ShopUI implements UIComponent {
         }
     }
 
+    private getDependencyDisplayName(dependencyId: string): string {
+        // Map dependency IDs to display names
+        const dependencyNames: Record<string, string> = {
+            bullets: "Bullets",
+            missiles: "Missiles",
+            laser: "Laser",
+            lightning: "Lightning",
+        };
+        return dependencyNames[dependencyId] || dependencyId;
+    }
+
     private renderItem(
         item: ShopItem,
         itemIndex: number,
@@ -588,45 +599,52 @@ export class ShopUI implements UIComponent {
             startY + 20
         );
 
-        // Availability status
-        if (!canPurchase) {
-            this.ctx.fillStyle = "#ff0000";
-            this.ctx.font = '400 10px Orbitron, "Courier New", monospace';
-            this.ctx.textAlign = "right";
+        // Status text below price
+        this.ctx.font = '400 10px Orbitron, "Courier New", monospace';
+        this.ctx.textAlign = "right";
 
-            if (this.gameState.currency < item.price) {
+        if (canPurchase) {
+            // Item is available and affordable
+            this.ctx.fillStyle = "#ff0000";
+            this.ctx.fillText(
+                "Need it ❤️",
+                startX + panelWidth - 30,
+                startY + 35
+            );
+        } else {
+            // Determine why item cannot be purchased
+            const isAlreadyOwned =
+                (item.type === "weapon" &&
+                    this.gameState.hasWeapon(item.id as WeaponType)) ||
+                (item.type === "upgrade" &&
+                    this.gameState.hasUpgrade(item.id as UpgradeType));
+
+            const unmetDependency = item.dependencies.find(
+                (dep) =>
+                    dep !== "bullets" &&
+                    !this.gameState.hasWeapon(dep as WeaponType)
+            );
+
+            if (isAlreadyOwned) {
+                this.ctx.fillStyle = "#00ff00";
+                this.ctx.fillText(
+                    "Got it ✅",
+                    startX + panelWidth - 30,
+                    startY + 35
+                );
+            } else if (this.gameState.currency < item.price) {
+                this.ctx.fillStyle = "#ff0000";
                 this.ctx.fillText(
                     "Can't afford 💔",
                     startX + panelWidth - 30,
                     startY + 35
                 );
-            } else if (
-                item.dependencies.some(
-                    (dep) =>
-                        dep !== "bullets" &&
-                        !this.gameState.hasWeapon(dep as WeaponType)
-                )
-            ) {
+            } else if (unmetDependency) {
+                this.ctx.fillStyle = "#ffff00";
+                const dependencyName =
+                    this.getDependencyDisplayName(unmetDependency);
                 this.ctx.fillText(
-                    "Missing Requirements",
-                    startX + panelWidth - 30,
-                    startY + 35
-                );
-            } else if (
-                item.type === "upgrade" &&
-                this.gameState.hasUpgrade(item.id as UpgradeType)
-            ) {
-                this.ctx.fillText(
-                    "Already Owned",
-                    startX + panelWidth - 30,
-                    startY + 35
-                );
-            } else if (
-                item.type === "weapon" &&
-                this.gameState.hasWeapon(item.id as WeaponType)
-            ) {
-                this.ctx.fillText(
-                    "Already Owned",
+                    `Need ${dependencyName} 🔒`,
                     startX + panelWidth - 30,
                     startY + 35
                 );

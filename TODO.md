@@ -45,7 +45,7 @@
       physically correct, it still feels right). When a missile is launched it
       should have zero acceleration or velocity at the instant it is created,
       though it will begin to accelerate on its own right away.
-- [ ] Merchant menu: the bottom right text below item price should match the
+- [x] Merchant menu: the bottom right text below item price should match the
       mocks in ![this image](<history/2025-06-22/Merchant Shop.png>).
       Specifically four things: 1. "can't afford :broken_heart:" for items that
       are available but you don't have enough money (this is done correctly, you
