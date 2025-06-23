@@ -1,5 +1,6 @@
 import type { GameState } from "~/game/GameState";
 import { ANIMATIONS } from "~/config/constants";
+import { UIComponent } from "~/ui/UIStack";
 
 export interface LevelCompleteStats {
     completedLevel: number;
@@ -9,7 +10,9 @@ export interface LevelCompleteStats {
     completionTime: number; // Time in seconds to complete the level
 }
 
-export class LevelCompleteAnimation {
+export class LevelCompleteAnimation implements UIComponent {
+    public readonly id = "level_complete";
+
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
     private gameState: GameState;
@@ -49,6 +52,35 @@ export class LevelCompleteAnimation {
         if (levelBonus > 0) {
             this.gameState.addScore(levelBonus);
         }
+    }
+
+    /**
+     * Show the animation (UIComponent interface)
+     */
+    show(): void {
+        // This component is shown via the start() method instead
+        // This is here for UIComponent compatibility
+    }
+
+    /**
+     * Hide the animation (UIComponent interface)
+     */
+    hide(): void {
+        this.complete();
+    }
+
+    /**
+     * Handle input for the animation (UIComponent interface)
+     */
+    handleInput(key: string): boolean {
+        if (!this.isActive || !this.canBeDismissed) return false;
+
+        if (key === " " || key === "Space") {
+            this.complete();
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -366,5 +398,15 @@ export class LevelCompleteAnimation {
             this.ctx.lineTo(x, y + (y === borderY ? cornerSize : 0));
             this.ctx.stroke();
         });
+    }
+
+    /**
+     * Cleanup when component is removed from stack
+     */
+    cleanup(): void {
+        this.isActive = false;
+        this.stats = null;
+        this.canDismiss = false;
+        this.startTime = 0;
     }
 }

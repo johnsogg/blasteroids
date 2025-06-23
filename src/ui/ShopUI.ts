@@ -2,13 +2,16 @@ import type { GameState } from "../game/GameState";
 import type { ShopSystem, ShopItem } from "../game/ShopSystem";
 import type { WeaponType, UpgradeType } from "../entities/Weapons";
 import { SHOP, CURRENCY } from "../config/constants";
+import { UIComponent } from "./UIStack";
 
 interface ShopCategory {
     title: string;
     items: ShopItem[];
 }
 
-export class ShopUI {
+export class ShopUI implements UIComponent {
+    public readonly id = "shop";
+
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
     private gameState: GameState;
@@ -17,7 +20,6 @@ export class ShopUI {
     private _selectedIndex: number = 0;
     private categories: ShopCategory[] = [];
     private flatItems: ShopItem[] = [];
-    private onClose?: () => void;
     private _scrollOffset: number = 0;
 
     constructor(
@@ -44,9 +46,8 @@ export class ShopUI {
         return this._scrollOffset;
     }
 
-    show(onClose: () => void): void {
+    show(): void {
         this.isActive = true;
-        this.onClose = onClose;
         this.initializeCategories();
         this._selectedIndex = this.findFirstSelectableItem();
         this._scrollOffset = 0;
@@ -55,7 +56,16 @@ export class ShopUI {
 
     hide(): void {
         this.isActive = false;
-        this.onClose = undefined;
+    }
+
+    /**
+     * Cleanup when component is removed from stack
+     */
+    cleanup(): void {
+        this.categories = [];
+        this.flatItems = [];
+        this._selectedIndex = 0;
+        this._scrollOffset = 0;
     }
 
     private initializeCategories(): void {
@@ -126,17 +136,15 @@ export class ShopUI {
             case " ":
                 if (this._selectedIndex === -1) {
                     // "Done Shopping" button selected
-                    if (this.onClose) {
-                        this.onClose();
-                    }
+                    // Just hide - UIStackManager will handle the rest
+                    this.hide();
                 } else {
                     this.purchaseCurrentItem();
                 }
                 return true;
             case "Escape":
-                if (this.onClose) {
-                    this.onClose();
-                }
+                // Just hide - UIStackManager will handle the rest
+                this.hide();
                 return true;
             case "PageDown":
                 this.scrollDown();
@@ -159,9 +167,8 @@ export class ShopUI {
 
         // Check if clicked on "Done Shopping" button
         if (this.isClickOnDoneButton(x, y)) {
-            if (this.onClose) {
-                this.onClose();
-            }
+            // Just hide - UIStackManager will handle the rest
+            this.hide();
             return true;
         }
 

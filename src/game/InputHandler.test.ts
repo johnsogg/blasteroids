@@ -9,6 +9,7 @@ import { EntityManager } from "./EntityManager";
 import { MenuManager } from "~/menu/MenuManager";
 import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
 import { ZoneChoiceScreen } from "~/ui/ZoneChoiceScreen";
+import { UIStackManager } from "~/ui/UIStackManager";
 import type { Game } from "~/game/Game";
 
 // Mock dependencies
@@ -33,6 +34,7 @@ describe("InputHandler", () => {
     let levelCompleteAnimation: LevelCompleteAnimation;
     let zoneChoiceScreen: ZoneChoiceScreen;
     let mockCanvas: HTMLCanvasElement;
+    let mockUIStackManager: any;
 
     beforeEach(() => {
         mockCanvas = { width: 800, height: 600 } as HTMLCanvasElement;
@@ -72,12 +74,24 @@ describe("InputHandler", () => {
                 handleInput: vi.fn(),
             };
 
+        mockUIStackManager = {
+            getCurrentInputContext: vi.fn(() => "gameplay"),
+            shouldPauseGame: vi.fn(() => false),
+            getStackSize: vi.fn(() => 0),
+            handleInput: vi.fn(() => false),
+            isVisible: vi.fn(() => false),
+            showMenu: vi.fn(),
+            hide: vi.fn(),
+            clear: vi.fn(),
+        };
+
         inputHandler = new InputHandler(
             inputManager,
             gameState,
             weaponSystem,
             shieldSystem,
             entityManager,
+            mockUIStackManager as UIStackManager,
             menuManager,
             levelCompleteAnimation,
             zoneChoiceScreen,
@@ -145,11 +159,9 @@ describe("InputHandler", () => {
         });
 
         it("should set correct context for level complete", () => {
-            // Mock level complete state
+            // Mock level complete state - UIStackManager returns LEVEL_COMPLETE context
             vi.spyOn(gameState, "gameOver", "get").mockReturnValue(false);
-            vi.spyOn(levelCompleteAnimation, "active", "get").mockReturnValue(
-                true
-            );
+            mockUIStackManager.getCurrentInputContext.mockReturnValue(InputContext.LEVEL_COMPLETE);
 
             const mockGameOverCallback = vi.fn();
             const mockRestartCallback = vi.fn();
@@ -166,12 +178,9 @@ describe("InputHandler", () => {
         });
 
         it("should set correct context for menu", () => {
-            // Mock menu state
+            // Mock menu state - UIStackManager returns MENU context
             vi.spyOn(gameState, "gameOver", "get").mockReturnValue(false);
-            vi.spyOn(levelCompleteAnimation, "active", "get").mockReturnValue(
-                false
-            );
-            vi.spyOn(menuManager, "visible", "get").mockReturnValue(true);
+            mockUIStackManager.getCurrentInputContext.mockReturnValue(InputContext.MENU);
 
             const mockGameOverCallback = vi.fn();
             const mockRestartCallback = vi.fn();
@@ -188,13 +197,9 @@ describe("InputHandler", () => {
         });
 
         it("should set correct context for paused", () => {
-            // Mock paused state
+            // Mock paused state - UIStackManager returns PAUSED context
             vi.spyOn(gameState, "gameOver", "get").mockReturnValue(false);
-            vi.spyOn(levelCompleteAnimation, "active", "get").mockReturnValue(
-                false
-            );
-            vi.spyOn(menuManager, "visible", "get").mockReturnValue(false);
-            inputHandler.setPaused(true);
+            mockUIStackManager.getCurrentInputContext.mockReturnValue(InputContext.PAUSED);
 
             const mockGameOverCallback = vi.fn();
             const mockRestartCallback = vi.fn();
@@ -211,13 +216,9 @@ describe("InputHandler", () => {
         });
 
         it("should set correct context for zone choice", () => {
-            // Mock game state for zone choice screen active
+            // Mock zone choice state - UIStackManager returns ZONE_CHOICE context
             vi.spyOn(gameState, "gameOver", "get").mockReturnValue(false);
-            vi.spyOn(levelCompleteAnimation, "active", "get").mockReturnValue(
-                false
-            );
-            vi.spyOn(menuManager, "visible", "get").mockReturnValue(false);
-            vi.spyOn(zoneChoiceScreen, "active", "get").mockReturnValue(true);
+            mockUIStackManager.getCurrentInputContext.mockReturnValue(InputContext.ZONE_CHOICE);
 
             const mockGameOverCallback = vi.fn();
             const mockRestartCallback = vi.fn();
@@ -234,35 +235,19 @@ describe("InputHandler", () => {
         });
     });
 
-    describe("Menu Input Handling", () => {
+    describe("UI Stack Input Handling", () => {
         beforeEach(() => {
-            // Set context to menu
-            vi.spyOn(inputManager, "getContext").mockReturnValue(
-                InputContext.MENU
-            );
-            vi.spyOn(menuManager, "visible", "get").mockReturnValue(true);
+            vi.spyOn(gameState, "gameOver", "get").mockReturnValue(false);
         });
 
-        it("should handle menu navigation input", () => {
-            // Mock menu input
+        it("should delegate input to UIStackManager when components are active", () => {
+            // Mock UIStackManager having components
+            mockUIStackManager.getStackSize.mockReturnValue(1);
+            mockUIStackManager.handleInput.mockReturnValue(true);
+
+            // Mock some input being available
             Object.defineProperty(inputManager, "menuUp", {
                 value: true,
-                configurable: true,
-            });
-            Object.defineProperty(inputManager, "menuDown", {
-                value: false,
-                configurable: true,
-            });
-            Object.defineProperty(inputManager, "menuLeft", {
-                value: false,
-                configurable: true,
-            });
-            Object.defineProperty(inputManager, "menuRight", {
-                value: false,
-                configurable: true,
-            });
-            Object.defineProperty(inputManager, "menuSelect", {
-                value: false,
                 configurable: true,
             });
 
@@ -275,28 +260,16 @@ describe("InputHandler", () => {
                 mockRestartCallback
             );
 
-            expect(menuManager.handleInput).toHaveBeenCalledWith("up");
+            // Should call UIStackManager.handleInput with "ArrowUp"
+            expect(mockUIStackManager.handleInput).toHaveBeenCalledWith("ArrowUp");
         });
 
-        it("should handle menu selection input", () => {
-            // Mock menu select input
-            Object.defineProperty(inputManager, "menuUp", {
-                value: false,
-                configurable: true,
-            });
-            Object.defineProperty(inputManager, "menuDown", {
-                value: false,
-                configurable: true,
-            });
-            Object.defineProperty(inputManager, "menuLeft", {
-                value: false,
-                configurable: true,
-            });
-            Object.defineProperty(inputManager, "menuRight", {
-                value: false,
-                configurable: true,
-            });
-            Object.defineProperty(inputManager, "menuSelect", {
+        it("should handle escape key when no UI components are active", () => {
+            // Mock UIStackManager being empty
+            mockUIStackManager.getStackSize.mockReturnValue(0);
+
+            // Mock escape key being pressed
+            Object.defineProperty(inputManager, "menuToggle", {
                 value: true,
                 configurable: true,
             });
@@ -310,77 +283,11 @@ describe("InputHandler", () => {
                 mockRestartCallback
             );
 
-            expect(menuManager.handleInput).toHaveBeenCalledWith("select");
+            // Should show menu via UIStackManager
+            expect(mockUIStackManager.showMenu).toHaveBeenCalledWith(menuManager);
         });
     });
 
-    describe("Zone Choice Input Handling", () => {
-        beforeEach(() => {
-            // Set context to zone choice
-            vi.spyOn(inputManager, "getContext").mockReturnValue(
-                InputContext.ZONE_CHOICE
-            );
-        });
-
-        it("should handle zone choice navigation input", () => {
-            // Mock input states for navigation
-            vi.spyOn(inputManager, "menuUp", "get").mockReturnValue(true);
-            vi.spyOn(inputManager, "menuDown", "get").mockReturnValue(false);
-            vi.spyOn(inputManager, "menuSelect", "get").mockReturnValue(false);
-            vi.spyOn(inputManager, "menuToggle", "get").mockReturnValue(false);
-
-            const mockGameOverCallback = vi.fn();
-            const mockRestartCallback = vi.fn();
-
-            inputHandler.processInput(
-                0,
-                mockGameOverCallback,
-                mockRestartCallback
-            );
-
-            expect(zoneChoiceScreen.handleInput).toHaveBeenCalledWith(
-                "ArrowUp"
-            );
-        });
-
-        it("should handle zone choice selection input", () => {
-            // Mock input states for selection
-            vi.spyOn(inputManager, "menuUp", "get").mockReturnValue(false);
-            vi.spyOn(inputManager, "menuDown", "get").mockReturnValue(false);
-            vi.spyOn(inputManager, "menuSelect", "get").mockReturnValue(true);
-            vi.spyOn(inputManager, "menuToggle", "get").mockReturnValue(false);
-
-            const mockGameOverCallback = vi.fn();
-            const mockRestartCallback = vi.fn();
-
-            inputHandler.processInput(
-                0,
-                mockGameOverCallback,
-                mockRestartCallback
-            );
-
-            expect(zoneChoiceScreen.handleInput).toHaveBeenCalledWith("Enter");
-        });
-
-        it("should handle zone choice escape input", () => {
-            // Mock input states for escape
-            vi.spyOn(inputManager, "menuUp", "get").mockReturnValue(false);
-            vi.spyOn(inputManager, "menuDown", "get").mockReturnValue(false);
-            vi.spyOn(inputManager, "menuSelect", "get").mockReturnValue(false);
-            vi.spyOn(inputManager, "menuToggle", "get").mockReturnValue(true);
-
-            const mockGameOverCallback = vi.fn();
-            const mockRestartCallback = vi.fn();
-
-            inputHandler.processInput(
-                0,
-                mockGameOverCallback,
-                mockRestartCallback
-            );
-
-            expect(zoneChoiceScreen.handleInput).toHaveBeenCalledWith("Escape");
-        });
-    });
 
     describe("Game Over Input Handling", () => {
         beforeEach(() => {
@@ -441,14 +348,12 @@ describe("InputHandler", () => {
             );
         });
 
-        it("should complete level animation when shoot is pressed and can be dismissed", () => {
-            // Mock level complete state
-            vi.spyOn(
-                levelCompleteAnimation,
-                "canBeDismissed",
-                "get"
-            ).mockReturnValue(true);
-            vi.spyOn(levelCompleteAnimation, "complete");
+        it("should complete level animation when handled by UIStackManager", () => {
+            // Mock UIStackManager having LevelCompleteAnimation component
+            mockUIStackManager.getStackSize.mockReturnValue(1);
+            mockUIStackManager.handleInput.mockReturnValue(true);
+            
+            // Mock shoot input being available
             Object.defineProperty(inputManager, "shootPressed", {
                 value: true,
                 configurable: true,
@@ -463,7 +368,8 @@ describe("InputHandler", () => {
                 mockRestartCallback
             );
 
-            expect(levelCompleteAnimation.complete).toHaveBeenCalled();
+            // Should delegate to UIStackManager which handles the level complete animation
+            expect(mockUIStackManager.handleInput).toHaveBeenCalledWith(" ");
         });
 
         it("should not complete level animation when cannot be dismissed", () => {
@@ -492,74 +398,22 @@ describe("InputHandler", () => {
         });
     });
 
-    describe("Pause Toggle", () => {
-        it("should toggle pause when menu toggle is pressed", () => {
-            // Mock menu toggle input
-            Object.defineProperty(inputManager, "menuToggle", {
-                value: true,
-                configurable: true,
-            });
-
-            const initialPauseState = inputHandler.isPausedState();
-
-            const mockGameOverCallback = vi.fn();
-            const mockRestartCallback = vi.fn();
-
-            inputHandler.processInput(
-                0,
-                mockGameOverCallback,
-                mockRestartCallback
-            );
-
-            expect(inputHandler.isPausedState()).toBe(!initialPauseState);
-            expect(menuManager.toggle).toHaveBeenCalled();
-        });
-
-        it("should not toggle pause when menu toggle is not pressed", () => {
-            // Mock no menu toggle input
-            Object.defineProperty(inputManager, "menuToggle", {
-                value: false,
-                configurable: true,
-            });
-
-            const initialPauseState = inputHandler.isPausedState();
-
-            const mockGameOverCallback = vi.fn();
-            const mockRestartCallback = vi.fn();
-
-            inputHandler.processInput(
-                0,
-                mockGameOverCallback,
-                mockRestartCallback
-            );
-
-            expect(inputHandler.isPausedState()).toBe(initialPauseState);
-            expect(menuManager.toggle).not.toHaveBeenCalled();
-        });
-    });
-
     describe("State Management", () => {
-        it("should reset pause state when reset is called", () => {
-            // Set paused state
-            inputHandler.setPaused(true);
+        it("should delegate pause state to UIStackManager", () => {
+            // Mock UIStackManager pause state
+            mockUIStackManager.shouldPauseGame.mockReturnValue(true);
+            
             expect(inputHandler.isPausedState()).toBe(true);
-
-            // Reset
-            inputHandler.reset();
-
+            
+            mockUIStackManager.shouldPauseGame.mockReturnValue(false);
+            
             expect(inputHandler.isPausedState()).toBe(false);
         });
 
-        it("should set pause state correctly", () => {
-            // Test setting paused
-            inputHandler.setPaused(true);
-            expect(inputHandler.isPausedState()).toBe(true);
-            expect(menuManager.show).toHaveBeenCalled();
-
-            // Test setting unpaused
-            inputHandler.setPaused(false);
-            expect(inputHandler.isPausedState()).toBe(false);
-            expect(menuManager.hide).toHaveBeenCalled();
+        it("should clear UI stack when reset is called", () => {
+            inputHandler.reset();
+            
+            expect(mockUIStackManager.clear).toHaveBeenCalled();
         });
 
         it("should return current input context", () => {

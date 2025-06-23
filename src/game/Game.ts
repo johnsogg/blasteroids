@@ -23,6 +23,7 @@ import { MenuManager } from "~/menu/MenuManager";
 import { LevelCompleteAnimation } from "~/animations/LevelCompleteAnimation";
 import { ZoneChoiceScreen } from "~/ui/ZoneChoiceScreen";
 import { ShopUI } from "~/ui/ShopUI";
+import { UIStackManager } from "~/ui/UIStackManager";
 
 import { GameState } from "./GameState";
 import { EntityManager } from "./EntityManager";
@@ -54,6 +55,7 @@ export class Game {
     private zoneChoiceScreen: ZoneChoiceScreen;
     private shopUI: ShopUI;
     private scaleManager: ScaleManager;
+    private uiStackManager: UIStackManager;
 
     // Extracted systems
     private entityManager: EntityManager;
@@ -98,6 +100,7 @@ export class Game {
             this.gameState
         );
         this.scaleManager = new ScaleManager(canvas.width, canvas.height);
+        this.uiStackManager = new UIStackManager();
 
         // Initialize extracted systems
         this.entityManager = new EntityManager(canvas);
@@ -137,6 +140,7 @@ export class Game {
             this.weaponSystem,
             this.shieldSystem,
             this.entityManager,
+            this.uiStackManager,
             this.menuManager,
             this.levelCompleteAnimation,
             this.zoneChoiceScreen,
@@ -532,6 +536,8 @@ export class Game {
             this.gameState.absoluteLevel,
             completionTime
         );
+        // Add to UI stack
+        this.uiStackManager.showLevelComplete(this.levelCompleteAnimation);
         this.levelAnimationStarted = true;
     }
 
@@ -568,13 +574,17 @@ export class Game {
     }
 
     private showZoneChoiceScreen(): void {
-        this.zoneChoiceScreen.show((choice) => {
-            this.handleZoneChoice(choice);
+        // Add to UI stack with choice callback
+        this.uiStackManager.showZoneChoice(this.zoneChoiceScreen, (choice) => {
+            this.handleZoneChoice(choice as "continue" | "next_zone" | "shop");
         });
     }
 
     private showShopUI(): void {
-        this.shopUI.show(() => {
+        // TODO: Implement proper zone continuation after shop closes
+        // The UIStackManager should handle this via events or callbacks
+        // Add to UI stack with onClose callback for game state changes
+        this.uiStackManager.showShop(this.shopUI, () => {
             // When shop is closed, continue with current zone
             this.gameState.continueCurrentZone();
 
@@ -863,17 +873,8 @@ export class Game {
             this.showGameOver();
         }
 
-        // Draw menu overlay if visible
-        this.menuManager.render();
-
-        // Draw level completion animation if active
-        this.levelCompleteAnimation.render();
-
-        // Draw zone choice screen if active
-        this.zoneChoiceScreen.render();
-
-        // Draw shop UI if active
-        this.shopUI.render();
+        // Draw all UI components via the UI stack
+        this.uiStackManager.render();
     }
 
     private drawObjectWithWrapAround(obj: GameEntity): void {
@@ -1376,23 +1377,10 @@ export class Game {
     showShopUIForDebugging(): void {
         // eslint-disable-next-line no-console
         console.log("Game: showShopUIForDebugging() called");
-        // eslint-disable-next-line no-console
-        console.log(
-            "Game: shopUI active status before show:",
-            this.shopUI.active
-        );
-        this.shopUI.show(() => {
-            // eslint-disable-next-line no-console
-            console.log("Game: shopUI callback executed - closing shop");
-            // For debugging, simply close the shop without affecting game state
-            // This allows testing the shop without needing to complete zones
-            this.shopUI.hide();
-            // eslint-disable-next-line no-console
-            console.log(
-                "Game: shopUI hide() called, active status:",
-                this.shopUI.active
-            );
-        });
+        // For debugging, simply show the shop without affecting game state
+        // This allows testing the shop without needing to complete zones
+        // The UIStackManager will handle closing when user presses escape or "Done"
+        this.uiStackManager.showShop(this.shopUI);
         // eslint-disable-next-line no-console
         console.log(
             "Game: shopUI active status after show:",
@@ -1505,7 +1493,7 @@ export class Game {
                 filename = generateScreenshotFilename(
                     format,
                     this.gameState.score,
-                    this.gameState.zoneLevel
+                    this.gameState.absoluteLevel
                 );
             }
 

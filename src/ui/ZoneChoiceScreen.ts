@@ -1,5 +1,6 @@
 import type { GameState } from "~/game/GameState";
 import { ZONES } from "~/config/constants";
+import { UIComponent } from "./UIStack";
 
 export interface ZoneChoiceOption {
     type: "continue" | "next_zone" | "shop";
@@ -9,14 +10,16 @@ export interface ZoneChoiceOption {
     cost?: number;
 }
 
-export class ZoneChoiceScreen {
+export class ZoneChoiceScreen implements UIComponent {
+    public readonly id = "zone_choice";
+
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
     private gameState: GameState;
     private isActive: boolean = false;
     private selectedOption: number = 0;
     private options: ZoneChoiceOption[] = [];
-    private onChoice?: (choice: "continue" | "next_zone" | "shop") => void;
+    private lastChoice?: string;
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -31,19 +34,30 @@ export class ZoneChoiceScreen {
     /**
      * Show the zone choice screen
      */
-    show(onChoice: (choice: "continue" | "next_zone" | "shop") => void): void {
+    show(): void {
         this.isActive = true;
         this.selectedOption = 0;
-        this.onChoice = onChoice;
         this.generateOptions();
     }
+
+    /**
+     * Show the zone choice screen with a choice callback (for backwards compatibility)
+     */
 
     /**
      * Hide the zone choice screen
      */
     hide(): void {
         this.isActive = false;
+    }
+
+    /**
+     * Cleanup when component is removed from stack
+     */
+    cleanup(): void {
         this.onChoice = undefined;
+        this.options = [];
+        this.selectedOption = 0;
     }
 
     /**
@@ -261,9 +275,16 @@ export class ZoneChoiceScreen {
     }
 
     private makeChoice(choice: "continue" | "next_zone" | "shop"): void {
-        if (this.onChoice) {
-            this.onChoice(choice);
-        }
+        // Store the choice for UIStack to retrieve
+        this.lastChoice = choice;
+        // Hide - UIStackManager will handle the choice callback
         this.hide();
+    }
+
+    /**
+     * Get the last choice made (for UIStack to retrieve)
+     */
+    getLastChoice(): string | undefined {
+        return this.lastChoice;
     }
 }

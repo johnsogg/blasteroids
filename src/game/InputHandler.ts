@@ -11,6 +11,7 @@ import { ZoneChoiceScreen } from "~/ui/ZoneChoiceScreen";
 import { ShopUI } from "~/ui/ShopUI";
 import { Vector2 } from "~/utils/Vector2";
 import { FUEL, SHIP } from "~/config/constants";
+import { UIStackManager } from "~/ui/UIStackManager";
 
 /**
  * Handles context-based input processing for the game
@@ -21,13 +22,12 @@ export class InputHandler {
     private weaponSystem: WeaponSystem;
     private shieldSystem: ShieldSystem;
     private entityManager: EntityManager;
-    private menuManager: MenuManager;
-    private levelCompleteAnimation: LevelCompleteAnimation;
-    private zoneChoiceScreen: ZoneChoiceScreen;
-    private shopUI: ShopUI;
+    private uiStackManager: UIStackManager;
 
-    // Input state
-    private isPaused = false;
+    // Keep references for backwards compatibility during migration
+    private menuManager: MenuManager;
+
+    // Input state - now managed entirely by UIStackManager
 
     constructor(
         input: InputManager,
@@ -35,20 +35,20 @@ export class InputHandler {
         weaponSystem: WeaponSystem,
         shieldSystem: ShieldSystem,
         entityManager: EntityManager,
+        uiStackManager: UIStackManager,
         menuManager: MenuManager,
-        levelCompleteAnimation: LevelCompleteAnimation,
-        zoneChoiceScreen: ZoneChoiceScreen,
-        shopUI: ShopUI
+        _levelCompleteAnimation: LevelCompleteAnimation,
+        _zoneChoiceScreen: ZoneChoiceScreen,
+        _shopUI: ShopUI
     ) {
         this.input = input;
         this.gameState = gameState;
         this.weaponSystem = weaponSystem;
         this.shieldSystem = shieldSystem;
         this.entityManager = entityManager;
+        this.uiStackManager = uiStackManager;
         this.menuManager = menuManager;
-        this.levelCompleteAnimation = levelCompleteAnimation;
-        this.zoneChoiceScreen = zoneChoiceScreen;
-        this.shopUI = shopUI;
+        // LevelCompleteAnimation, ZoneChoiceScreen and ShopUI are now managed by UIStackManager
     }
 
     /**
@@ -71,9 +71,9 @@ export class InputHandler {
             screenshotCallback
         );
 
-        // Menu toggle is handled globally since it can be used in multiple contexts
-        if (this.input.menuToggle) {
-            this.togglePause();
+        // Handle escape key when no UI components are active (for opening menu from gameplay)
+        if (this.input.menuToggle && this.uiStackManager.getStackSize() === 0) {
+            this.uiStackManager.showMenu(this.menuManager);
         }
     }
 
@@ -81,20 +81,16 @@ export class InputHandler {
      * Update input context based on current game state
      */
     private updateInputContext(): void {
-        if (this.zoneChoiceScreen.active) {
-            this.input.setContext(InputContext.ZONE_CHOICE);
-        } else if (this.shopUI.active) {
-            this.input.setContext(InputContext.SHOP);
-        } else if (this.levelCompleteAnimation.active) {
-            this.input.setContext(InputContext.LEVEL_COMPLETE);
-        } else if (this.gameState.gameOver) {
+        // Use UI stack to determine context, with fallbacks for game states not in the stack
+        if (
+            this.gameState.gameOver &&
+            !this.uiStackManager.isVisible("game_over")
+        ) {
             this.input.setContext(InputContext.GAME_OVER);
-        } else if (this.menuManager.visible) {
-            this.input.setContext(InputContext.MENU);
-        } else if (this.isPaused) {
-            this.input.setContext(InputContext.PAUSED);
         } else {
-            this.input.setContext(InputContext.GAMEPLAY);
+            // Get context from UI stack
+            const stackContext = this.uiStackManager.getCurrentInputContext();
+            this.input.setContext(stackContext);
         }
     }
 
@@ -109,21 +105,21 @@ export class InputHandler {
     ): void {
         const context = this.input.getContext();
 
+        // First try to handle input through the UI stack
+        if (this.uiStackManager.getStackSize() > 0) {
+            // Convert raw key inputs to processed inputs for the UI stack
+            const keyInputs = this.getInputKeys();
+            for (const key of keyInputs) {
+                if (this.uiStackManager.handleInput(key)) {
+                    return; // Input was handled by UI stack
+                }
+            }
+        }
+
+        // Fallback to old context-based handling for inputs not handled by UI stack
         switch (context) {
             case InputContext.GAMEPLAY:
                 this.handleGameplayInput(currentTime, screenshotCallback);
-                break;
-            case InputContext.MENU:
-                this.handleMenuInput();
-                break;
-            case InputContext.LEVEL_COMPLETE:
-                this.handleLevelCompleteInput();
-                break;
-            case InputContext.ZONE_CHOICE:
-                this.handleZoneChoiceInput();
-                break;
-            case InputContext.SHOP:
-                this.handleShopInput();
                 break;
             case InputContext.GAME_OVER:
                 this.handleGameOverInput(restartCallback);
@@ -131,7 +127,26 @@ export class InputHandler {
             case InputContext.PAUSED:
                 this.handlePausedInput();
                 break;
+            // Other contexts are now handled by UI stack components
         }
+    }
+
+    /**
+     * Get currently pressed keys for UI input handling
+     */
+    private getInputKeys(): string[] {
+        const keys: string[] = [];
+
+        // Convert InputManager getters to key strings
+        if (this.input.menuUp) keys.push("ArrowUp");
+        if (this.input.menuDown) keys.push("ArrowDown");
+        if (this.input.menuLeft) keys.push("ArrowLeft");
+        if (this.input.menuRight) keys.push("ArrowRight");
+        if (this.input.menuSelect) keys.push("Enter");
+        if (this.input.shootPressed) keys.push(" ");
+        if (this.input.menuToggle) keys.push("Escape");
+
+        return keys;
     }
 
     /**
@@ -180,28 +195,8 @@ export class InputHandler {
         );
     }
 
-    /**
-     * Handle menu input
-     */
-    private handleMenuInput(): void {
-        if (this.input.menuUp) this.menuManager.handleInput("up");
-        if (this.input.menuDown) this.menuManager.handleInput("down");
-        if (this.input.menuLeft) this.menuManager.handleInput("left");
-        if (this.input.menuRight) this.menuManager.handleInput("right");
-        if (this.input.menuSelect) this.menuManager.handleInput("select");
-    }
-
-    /**
-     * Handle level complete screen input
-     */
-    private handleLevelCompleteInput(): void {
-        if (
-            this.levelCompleteAnimation.canBeDismissed &&
-            this.input.shootPressed
-        ) {
-            this.levelCompleteAnimation.complete();
-        }
-    }
+    // Menu input now handled by UI stack components
+    // Level complete input also handled by the UI stack
 
     /**
      * Handle game over input
@@ -219,44 +214,8 @@ export class InputHandler {
         // Only menu toggle (escape) is allowed, handled globally
     }
 
-    /**
-     * Handle zone choice screen input
-     */
-    private handleZoneChoiceInput(): void {
-        if (this.input.menuUp) {
-            this.zoneChoiceScreen.handleInput("ArrowUp");
-        }
-        if (this.input.menuDown) {
-            this.zoneChoiceScreen.handleInput("ArrowDown");
-        }
-        if (this.input.menuSelect) {
-            this.zoneChoiceScreen.handleInput("Enter");
-        }
-        if (this.input.menuToggle) {
-            this.zoneChoiceScreen.handleInput("Escape");
-        }
-    }
-
-    /**
-     * Handle shop UI input
-     */
-    private handleShopInput(): void {
-        if (this.input.menuUp) {
-            this.shopUI.handleInput("ArrowUp");
-        }
-        if (this.input.menuDown) {
-            this.shopUI.handleInput("ArrowDown");
-        }
-        if (this.input.menuSelect) {
-            this.shopUI.handleInput("Enter");
-        }
-        if (this.input.shootPressed) {
-            this.shopUI.handleInput(" ");
-        }
-        if (this.input.menuToggle) {
-            this.shopUI.handleInput("Escape");
-        }
-    }
+    // Zone choice and shop input now handled by UI stack components
+    // These methods removed as they're no longer needed
 
     /**
      * Update ship movement based on input
@@ -362,36 +321,28 @@ export class InputHandler {
     }
 
     /**
-     * Toggle pause state and menu visibility
-     */
-    private togglePause(): void {
-        this.isPaused = !this.isPaused;
-        this.menuManager.toggle();
-    }
-
-    /**
      * Reset input handler state (for game restart)
      */
     reset(): void {
-        this.isPaused = false;
+        // Clear all UI components from stack
+        this.uiStackManager.clear();
     }
 
     /**
      * Check if game is currently paused
      */
     isPausedState(): boolean {
-        return this.isPaused;
+        return this.uiStackManager.shouldPauseGame();
     }
 
     /**
      * Set pause state directly
      */
     setPaused(paused: boolean): void {
-        this.isPaused = paused;
         if (paused) {
-            this.menuManager.show();
+            this.uiStackManager.showMenu(this.menuManager);
         } else {
-            this.menuManager.hide();
+            this.uiStackManager.hide(this.menuManager.id);
         }
     }
 

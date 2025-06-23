@@ -2,8 +2,11 @@ import { MenuItem } from "./MenuItem";
 import type { Game } from "~/game/Game";
 import { GIFT, type GiftType } from "~/config/constants";
 import { LocalStorage } from "~/utils/LocalStorage";
+import { UIComponent } from "~/ui/UIStack";
 
-export class MenuManager {
+export class MenuManager implements UIComponent {
+    public readonly id = "menu";
+
     private game: Game;
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
@@ -256,38 +259,55 @@ export class MenuManager {
     }
 
     /**
-     * Handle navigation input
+     * Check if menu is currently active (UIComponent interface)
      */
-    handleInput(
-        direction: "up" | "down" | "left" | "right" | "select"
-    ): boolean {
+    get active(): boolean {
+        return this.isVisible;
+    }
+
+    /**
+     * Handle input - UIComponent interface implementation
+     */
+    handleInput(key: string): boolean {
         if (!this.isVisible) return false;
+
+        // Handle escape key to close menu
+        if (key === "Escape") {
+            this.hide();
+            return true;
+        }
 
         const now = performance.now();
         if (now - this.lastNavigationTime < this.navigationDelay) return false;
 
         let handled = false;
 
-        switch (direction) {
-            case "up":
+        // Map raw keys to navigation directions
+        switch (key) {
+            case "ArrowUp":
+            case "KeyW":
                 this.navigateUp();
                 handled = true;
                 break;
 
-            case "down":
+            case "ArrowDown":
+            case "KeyS":
                 this.navigateDown();
                 handled = true;
                 break;
 
-            case "left":
+            case "ArrowLeft":
+            case "KeyA":
                 handled = this.getCurrentItem()?.handleLeft() || false;
                 break;
 
-            case "right":
+            case "ArrowRight":
+            case "KeyD":
                 handled = this.getCurrentItem()?.handleRight() || false;
                 break;
 
-            case "select":
+            case "Enter":
+            case " ": // Space key
                 this.getCurrentItem()?.execute();
                 handled = true;
                 break;
@@ -633,5 +653,14 @@ export class MenuManager {
             width / 2,
             instructionsY
         );
+    }
+
+    /**
+     * Cleanup when component is removed from stack
+     */
+    cleanup(): void {
+        this.isVisible = false;
+        this.currentIndex = 0;
+        this.lastNavigationTime = 0;
     }
 }

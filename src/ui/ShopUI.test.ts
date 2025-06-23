@@ -115,29 +115,25 @@ describe("ShopUI", () => {
         });
 
         it("should become active when shown", () => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
             expect(shopUI.active).toBe(true);
         });
 
         it("should become inactive when hidden", () => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
             shopUI.hide();
             expect(shopUI.active).toBe(false);
         });
 
         it("should reset selection when shown", () => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
             expect(shopUI.selectedIndex).toBe(0);
         });
     });
 
     describe("Keyboard Navigation", () => {
         beforeEach(() => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
         });
 
         it("should handle arrow down navigation", () => {
@@ -199,11 +195,12 @@ describe("ShopUI", () => {
         });
 
         it("should handle escape key to close", () => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
+            expect(shopUI.active).toBe(true);
+            
             const handled = shopUI.handleInput("Escape");
             expect(handled).toBe(true);
-            expect(onClose).toHaveBeenCalled();
+            expect(shopUI.active).toBe(false);
         });
 
         it("should not handle input when inactive", () => {
@@ -215,8 +212,7 @@ describe("ShopUI", () => {
 
     describe("Mouse Interaction", () => {
         beforeEach(() => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
         });
 
         it("should handle mouse click to select item", () => {
@@ -238,8 +234,7 @@ describe("ShopUI", () => {
 
     describe("Purchase Logic", () => {
         beforeEach(() => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
         });
 
         it("should attempt purchase when item is available", () => {
@@ -261,16 +256,14 @@ describe("ShopUI", () => {
         });
 
         it("should render when active", () => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
             shopUI.render();
             expect(mockCtx.save).toHaveBeenCalled();
             expect(mockCtx.restore).toHaveBeenCalled();
         });
 
         it("should render shop title", () => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
             shopUI.render();
             expect(mockCtx.fillText).toHaveBeenCalledWith(
                 expect.stringContaining("Shop"),
@@ -280,8 +273,7 @@ describe("ShopUI", () => {
         });
 
         it("should render currency display using CURRENCY.NAME constant", () => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
             shopUI.render();
             expect(mockCtx.fillText).toHaveBeenCalledWith(
                 expect.stringContaining("Spacebucks"),
@@ -291,8 +283,7 @@ describe("ShopUI", () => {
         });
 
         it("should render shop items", () => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
             shopUI.render();
 
             // Should render item names
@@ -304,8 +295,7 @@ describe("ShopUI", () => {
         });
 
         it("should render item prices using CURRENCY.SYMBOL constant", () => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
             shopUI.render();
             expect(mockCtx.fillText).toHaveBeenCalledWith(
                 expect.stringContaining("🪙"),
@@ -317,14 +307,12 @@ describe("ShopUI", () => {
 
     describe("Category Organization", () => {
         it("should organize items by category", () => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
             expect(mockShopSystem.getItemsByCategory).toHaveBeenCalled();
         });
 
         it("should display category headers", () => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
             shopUI.render();
 
             expect(mockCtx.fillText).toHaveBeenCalledWith(
@@ -342,8 +330,7 @@ describe("ShopUI", () => {
 
     describe("Color-Coded Availability States", () => {
         beforeEach(() => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
         });
 
         it("should use green color for affordable items", () => {
@@ -409,8 +396,7 @@ describe("ShopUI", () => {
 
     describe("Scrollable Interface", () => {
         beforeEach(() => {
-            const onClose = vi.fn();
-            shopUI.show(onClose);
+            shopUI.show();
         });
 
         it("should initialize with zero scroll offset", () => {

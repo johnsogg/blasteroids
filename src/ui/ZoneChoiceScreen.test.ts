@@ -7,7 +7,6 @@ describe("ZoneChoiceScreen keyboard input", () => {
     let canvas: HTMLCanvasElement;
     let ctx: CanvasRenderingContext2D;
     let gameState: GameState;
-    let onChoiceMock: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
         // Create mock canvas and context
@@ -31,7 +30,6 @@ describe("ZoneChoiceScreen keyboard input", () => {
             currency: 100,
         } as GameState;
 
-        onChoiceMock = vi.fn();
         zoneChoiceScreen = new ZoneChoiceScreen(canvas, ctx, gameState);
     });
 
@@ -46,7 +44,7 @@ describe("ZoneChoiceScreen keyboard input", () => {
 
     describe("when zone choice screen is active", () => {
         beforeEach(() => {
-            zoneChoiceScreen.show(onChoiceMock);
+            zoneChoiceScreen.show();
         });
 
         it("should handle ArrowUp and w keys to navigate up", () => {
@@ -61,18 +59,24 @@ describe("ZoneChoiceScreen keyboard input", () => {
         });
 
         it("should handle Enter key to select current option", () => {
+            expect(zoneChoiceScreen.active).toBe(true);
             expect(zoneChoiceScreen.handleInput("Enter")).toBe(true);
-            expect(onChoiceMock).toHaveBeenCalledWith("continue");
+            expect(zoneChoiceScreen.active).toBe(false);
+            expect(zoneChoiceScreen.getLastChoice()).toBe("continue");
         });
 
         it("should handle Space key to select current option", () => {
+            expect(zoneChoiceScreen.active).toBe(true);
             expect(zoneChoiceScreen.handleInput(" ")).toBe(true);
-            expect(onChoiceMock).toHaveBeenCalledWith("continue");
+            expect(zoneChoiceScreen.active).toBe(false);
+            expect(zoneChoiceScreen.getLastChoice()).toBe("continue");
         });
 
         it("should handle Escape key to default to continue", () => {
+            expect(zoneChoiceScreen.active).toBe(true);
             expect(zoneChoiceScreen.handleInput("Escape")).toBe(true);
-            expect(onChoiceMock).toHaveBeenCalledWith("continue");
+            expect(zoneChoiceScreen.active).toBe(false);
+            expect(zoneChoiceScreen.getLastChoice()).toBe("continue");
         });
 
         it("should not handle unknown keys", () => {
@@ -84,52 +88,31 @@ describe("ZoneChoiceScreen keyboard input", () => {
             // Start at option 0 (continue)
             zoneChoiceScreen.handleInput("ArrowDown"); // Move to option 1 (next_zone)
             zoneChoiceScreen.handleInput("Enter");
-            expect(onChoiceMock).toHaveBeenCalledWith("next_zone");
+            expect(zoneChoiceScreen.getLastChoice()).toBe("next_zone");
 
             // Reset and test other navigation
-            onChoiceMock.mockClear();
-            zoneChoiceScreen.show(onChoiceMock);
+            zoneChoiceScreen.show();
 
             zoneChoiceScreen.handleInput("s"); // Move to option 1 (next_zone)
             zoneChoiceScreen.handleInput("s"); // Move to option 2 (shop)
             zoneChoiceScreen.handleInput(" "); // Select shop
 
-            // Shop is now enabled, so callback should be made
-            expect(onChoiceMock).toHaveBeenCalledWith("shop");
+            // Shop is now enabled, so choice should be stored
+            expect(zoneChoiceScreen.getLastChoice()).toBe("shop");
         });
     });
 
-    describe("integration with current Game.ts input handling", () => {
-        it("should demonstrate the current broken input handling pattern", () => {
-            // This test shows how Game.ts currently tries to handle input
-            // but fails because it's checking the wrong input properties
-
-            const mockInput = {
-                keys: {
-                    ArrowUp: false,
-                    ArrowDown: false,
-                    w: false,
-                    s: false,
-                    Enter: false,
-                    Escape: false,
-                },
-                space: false,
-            };
-
-            zoneChoiceScreen.show(onChoiceMock);
-
-            // Simulate what Game.ts is currently doing - checking properties that don't exist or work
-            // This is the BROKEN behavior we need to fix
-            const wouldHandle =
-                mockInput.keys.ArrowUp ||
-                mockInput.keys.w ||
-                mockInput.keys.ArrowDown ||
-                mockInput.keys.s ||
-                mockInput.space ||
-                mockInput.keys.Enter ||
-                mockInput.keys.Escape;
-
-            expect(wouldHandle).toBe(false); // This should be true but isn't due to the bug
+    describe("UIStackManager integration", () => {
+        it("should store choice when component becomes inactive", () => {
+            zoneChoiceScreen.show();
+            expect(zoneChoiceScreen.active).toBe(true);
+            
+            // Navigate to next_zone option and select it
+            zoneChoiceScreen.handleInput("ArrowDown");
+            zoneChoiceScreen.handleInput("Enter");
+            
+            expect(zoneChoiceScreen.active).toBe(false);
+            expect(zoneChoiceScreen.getLastChoice()).toBe("next_zone");
         });
     });
 });
