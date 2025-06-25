@@ -431,6 +431,9 @@ export class Game {
         // Check all collisions through CollisionSystem
         this.collisionSystem.checkAllCollisions(currentTime);
 
+        // Update explosion zones (decrement remaining frames and remove expired)
+        this.entityManager.updateExplosionZones();
+
         // Remove expired entities through EntityManager
         this.entityManager.filterExpiredEntities(currentTime);
 
@@ -1058,6 +1061,16 @@ export class Game {
                     position: pos,
                     giftType: obj.giftType,
                     scale: GIFT.SCALE,
+                    scaleManager: this.scaleManager,
+                });
+            } else if (obj.type === "explosionZone") {
+                Shapes.drawExplosionZone({
+                    ctx: this.ctx,
+                    position: pos,
+                    radius: obj.explosionRadius,
+                    remainingFrames: obj.remainingFrames,
+                    maxFrames: WEAPONS.MISSILES.EXPLOSION_DURATION_FRAMES,
+                    color: obj.color,
                     scaleManager: this.scaleManager,
                 });
             }

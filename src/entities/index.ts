@@ -9,6 +9,7 @@ export type { Bullet } from "./Bullet";
 export type { Missile } from "./Missile";
 export type { Gift } from "./Gift";
 export type { WarpBubbleIn, WarpBubbleOut } from "./WarpBubble";
+export type { ExplosionZone } from "./ExplosionZone";
 
 // Import types for local use
 import type { Ship } from "./Ship";
@@ -17,6 +18,7 @@ import type { Bullet } from "./Bullet";
 import type { Missile } from "./Missile";
 import type { Gift } from "./Gift";
 import type { WarpBubbleIn, WarpBubbleOut } from "./WarpBubble";
+import type { ExplosionZone } from "./ExplosionZone";
 
 /**
  * Union type of all game entities for type-safe operations
@@ -28,7 +30,8 @@ export type GameEntity =
     | Missile
     | Gift
     | WarpBubbleIn
-    | WarpBubbleOut;
+    | WarpBubbleOut
+    | ExplosionZone;
 
 /**
  * Type guard functions for safe entity type checking
@@ -58,3 +61,6 @@ export const isWarpBubble = (
     entity: GameEntity
 ): entity is WarpBubbleIn | WarpBubbleOut =>
     entity.type === "warpBubbleIn" || entity.type === "warpBubbleOut";
+
+export const isExplosionZone = (entity: GameEntity): entity is ExplosionZone =>
+    entity.type === "explosionZone";

@@ -1,6 +1,6 @@
 import { Vector2 } from "~/utils/Vector2";
 import { ScaleManager } from "~/utils/ScaleManager";
-import type { GameEntity, Ship } from "~/entities";
+import type { GameEntity, Ship, ExplosionZone } from "~/entities";
 import { isGift } from "~/entities";
 import { Collision } from "~/physics/Collision";
 import { AudioManager } from "~/audio/AudioManager";
@@ -107,6 +107,9 @@ export class CollisionSystem {
 
         // Check gift-warpBubbleOut collisions (gift gets captured by closing warp)
         this.checkGiftWarpBubbleCollisions(gifts, warpBubblesOut);
+
+        // Process explosion zone effects
+        this.processExplosionZoneEffects();
     }
 
     /**
@@ -143,47 +146,27 @@ export class CollisionSystem {
     private checkMissileAsteroidCollisions(
         missiles: GameEntity[],
         asteroids: GameEntity[],
-        ship: Ship | null
+        _ship: Ship | null
     ): void {
         for (const missile of missiles) {
             for (const asteroid of asteroids) {
-                const distance = Math.sqrt(
-                    Math.pow(missile.position.x - asteroid.position.x, 2) +
-                        Math.pow(missile.position.y - asteroid.position.y, 2)
-                );
-
-                // Missiles explode when within explosion radius
-                if (distance <= WEAPONS.MISSILES.EXPLOSION_RADIUS) {
+                // Use proper circle collision detection like other projectiles
+                if (
+                    Collision.checkCircleCollision(
+                        missile,
+                        asteroid,
+                        this.scaleManager
+                    )
+                ) {
                     // Mark missile for removal
                     missile.age = 999;
 
                     // Create explosion particles
                     this.particles.createMissileExplosion(missile.position);
 
-                    // Destroy all asteroids within explosion radius
-                    for (const explosionTarget of asteroids) {
-                        const explosionDistance = Math.sqrt(
-                            Math.pow(
-                                missile.position.x - explosionTarget.position.x,
-                                2
-                            ) +
-                                Math.pow(
-                                    missile.position.y -
-                                        explosionTarget.position.y,
-                                    2
-                                )
-                        );
+                    // Create persistent explosion zone
+                    this.createExplosionZone(missile.position);
 
-                        if (
-                            explosionDistance <=
-                            WEAPONS.MISSILES.EXPLOSION_RADIUS
-                        ) {
-                            this.destroyAsteroid(
-                                explosionTarget,
-                                ship?.position
-                            );
-                        }
-                    }
                     break; // Missile can only explode once
                 }
             }
@@ -792,5 +775,49 @@ export class CollisionSystem {
 
         // Add the companion to the entity manager
         this.entityManager.addEntity(companion);
+    }
+
+    /**
+     * Create a persistent explosion zone
+     */
+    private createExplosionZone(position: Vector2): void {
+        const explosionZone: ExplosionZone = {
+            type: "explosionZone",
+            position: new Vector2(position.x, position.y),
+            velocity: Vector2.zero(),
+            size: new Vector2(
+                WEAPONS.MISSILES.EXPLOSION_RADIUS * 2,
+                WEAPONS.MISSILES.EXPLOSION_RADIUS * 2
+            ),
+            rotation: 0,
+            color: WEAPONS.MISSILES.COLOR,
+            age: 0,
+            remainingFrames: WEAPONS.MISSILES.EXPLOSION_DURATION_FRAMES,
+            explosionRadius: WEAPONS.MISSILES.EXPLOSION_RADIUS,
+        };
+
+        this.entityManager.addEntity(explosionZone);
+    }
+
+    /**
+     * Process effects of all active explosion zones
+     */
+    processExplosionZoneEffects(): void {
+        const explosionZones = this.entityManager.getExplosionZones();
+        const asteroids = this.entityManager.getAsteroids();
+
+        for (const zone of explosionZones) {
+            // Destroy asteroids within explosion radius
+            for (const asteroid of asteroids) {
+                const distance = Math.sqrt(
+                    Math.pow(zone.position.x - asteroid.position.x, 2) +
+                        Math.pow(zone.position.y - asteroid.position.y, 2)
+                );
+
+                if (distance <= zone.explosionRadius) {
+                    this.destroyAsteroid(asteroid, zone.position);
+                }
+            }
+        }
     }
 }

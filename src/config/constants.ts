@@ -586,7 +586,8 @@ export const WEAPONS = {
         ACCELERATION: 150, // pixels per second squared
         MAX_SPEED: 900, // maximum speed after acceleration
         SIZE: 4, // pixels radius
-        EXPLOSION_RADIUS: 30, // pixels
+        EXPLOSION_RADIUS: 90, // pixels (large enough to encompass largest asteroid + fragment spawn radius)
+        EXPLOSION_DURATION_FRAMES: 45, // frames that explosion zone persists (long enough to catch all fragments)
         MAX_AGE: 3, // seconds before auto-explosion
         SPEED_UPGRADE: 1.5, // 50% faster travel (affects max speed)
         FIRE_RATE_UPGRADE: 0.5, // 50% faster rate of fire

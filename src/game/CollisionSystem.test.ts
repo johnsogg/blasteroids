@@ -342,11 +342,12 @@ describe("CollisionSystem", () => {
                 color: "#ff0000",
                 type: "missile",
                 age: 0,
+                originalDirection: new Vector2(1, 0),
             };
 
             // Add multiple asteroids near the missile
             const asteroid1: GameEntity = {
-                position: new Vector2(110, 110), // Within explosion radius
+                position: new Vector2(105, 105), // Within trigger radius for explosion
                 velocity: Vector2.zero(),
                 size: new Vector2(20, 20),
                 rotation: 0,

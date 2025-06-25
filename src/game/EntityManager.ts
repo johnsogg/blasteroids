@@ -1,6 +1,6 @@
 import { Vector2 } from "~/utils/Vector2";
-import type { GameEntity, Ship } from "~/entities";
-import { isGift } from "~/entities";
+import type { GameEntity, Ship, ExplosionZone } from "~/entities";
+import { isGift, isExplosionZone } from "~/entities";
 import { isShip } from "~/entities";
 import { GIFT, BULLET, WEAPONS } from "~/config/constants";
 
@@ -67,6 +67,12 @@ export class EntityManager {
 
     getWarpBubblesOut(): GameEntity[] {
         return this.getEntitiesByType("warpBubbleOut");
+    }
+
+    getExplosionZones(): ExplosionZone[] {
+        return this.getEntitiesByType<ExplosionZone>("explosionZone").filter(
+            isExplosionZone
+        );
     }
 
     getShip(): Ship | null {
@@ -247,8 +253,30 @@ export class EntityManager {
             }
 
             return !isExpired;
+        } else if (entity.type === "explosionZone") {
+            // Explosion zones are managed by updateExplosionZones method
+            if (isExplosionZone(entity)) {
+                return entity.remainingFrames > 0;
+            }
+            return false;
         }
         return true;
+    }
+
+    /**
+     * Update explosion zones - decrement remaining frames and remove expired ones
+     */
+    updateExplosionZones(): void {
+        const explosionZones = this.getExplosionZones();
+
+        for (const zone of explosionZones) {
+            zone.remainingFrames -= 1;
+
+            // Remove expired zones
+            if (zone.remainingFrames <= 0) {
+                this.removeEntity(zone);
+            }
+        }
     }
 
     /**

@@ -34,4 +34,5 @@ export type EntityType =
     | "missile"
     | "gift"
     | "warpBubbleIn"
-    | "warpBubbleOut";
+    | "warpBubbleOut"
+    | "explosionZone";

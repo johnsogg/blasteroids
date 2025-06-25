@@ -1267,4 +1267,65 @@ export class Shapes {
             this.drawNebulaParticle(ctx, particle, scaleManager);
         }
     }
+
+    /**
+     * Draw explosion zone with fading visual effect
+     */
+    static drawExplosionZone({
+        ctx,
+        position,
+        radius,
+        remainingFrames,
+        maxFrames,
+        color,
+        scaleManager: _scaleManager,
+    }: {
+        ctx: CanvasRenderingContext2D;
+        position: Vector2;
+        radius: number;
+        remainingFrames: number;
+        maxFrames: number;
+        color: string;
+        scaleManager?: ScaleManager;
+    }): void {
+        ctx.save();
+
+        // Calculate fade-out effect based on remaining frames
+        const fadeProgress = remainingFrames / maxFrames;
+        const alpha = Math.max(0.1, fadeProgress * 0.6); // Start at 60% opacity, fade to 10%
+
+        // Parse color and add alpha
+        const baseColor = color || "#ff8800";
+        const r = parseInt(baseColor.slice(1, 3), 16);
+        const g = parseInt(baseColor.slice(3, 5), 16);
+        const b = parseInt(baseColor.slice(5, 7), 16);
+
+        // Create gradient effect - bright center fading to outer edge
+        const gradient = ctx.createRadialGradient(
+            position.x,
+            position.y,
+            0,
+            position.x,
+            position.y,
+            radius
+        );
+        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.8})`);
+        gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.4})`);
+        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+
+        // Draw explosion zone as a circle with gradient
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(position.x, position.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Add outer ring effect for visual clarity
+        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.3})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(position.x, position.y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.restore();
+    }
 }

@@ -1,6 +1,6 @@
 import { Vector2 } from "~/utils/Vector2";
 import { ScaleManager } from "~/utils/ScaleManager";
-import { ASTEROID, BULLET, SHIP } from "~/config/constants";
+import { ASTEROID, BULLET, SHIP, WEAPONS } from "~/config/constants";
 
 export interface Collidable {
     position: Vector2;
@@ -49,6 +49,11 @@ export class Collision {
             case "bullet":
                 // Bullets are scaled but are small and should be precise
                 entityScaledRadius = baseRadius * BULLET.SCALE;
+                break;
+
+            case "missile":
+                // Missiles are scaled and should use proper collision detection
+                entityScaledRadius = baseRadius * WEAPONS.MISSILES.SCALE;
                 break;
 
             case "ship":
