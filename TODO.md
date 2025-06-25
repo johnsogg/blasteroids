@@ -13,8 +13,9 @@
 ### 🎮 Gameplay Features
 
 - [ ] New weapon: time freeze ray!
-    - [ ] The ray shoots in an angular range from the ship, and its range is the
-          width or height of the screen (whichever is smaller).
+    - [ ] The ray shoots in an angular range from the ship (say, ±5 degrees from
+          ship's heading), and its range is the width or height of the screen
+          (whichever is smaller).
     - [ ] Any asteroids that the ray collides with will become frozen in time
           for some duration - the closer to the ship, the longer it will stay
           frozen. 5 seconds for very close to the ship, 1 second for the extreme
